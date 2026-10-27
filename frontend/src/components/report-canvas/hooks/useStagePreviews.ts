@@ -4,33 +4,58 @@ import type { SourcePreviewState } from "../api/useSourcePreview";
 import type { CanvasSource } from "../model";
 import { isParameterBinding } from "../model";
 import { query, request } from "../../../api";
-import { testParameters, displayParameter } from "../parameters";
+import { testParameters, displayParameter, collectTestParameters } from "../parameters";
 import type { TestParameter } from "../parameters";
 
 export interface StagePreviewState extends SourcePreviewState {
   fields?: TestParameter[];
   values?: Record<string, string>;
+  assumed?: boolean;
 }
 
-export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}) {
+export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date()) {
   const fields = testParameters(schema);
   const values: Record<string,string> = {};
   if (source.type !== "report") return {fields, values};
+  for (const [name, value] of Object.entries(source.parameters || {})) {
+    if (isParameterBinding(value) && !fields.some(f => f.name === name)) {
+      fields.push(testParameters({[name]: {...ownerSchema[value.parameter], required: true}})[0]);
+    }
+  }
+  const iso = (date: Date) => [date.getFullYear(), String(date.getMonth()+1).padStart(2,"0"), String(date.getDate()).padStart(2,"0")].join("-");
   for (const field of fields) {
     const configured = source.parameters?.[field.name];
     const bound = isParameterBinding(configured);
-    const value = bound ? ownerSchema[configured.parameter]?.default : configured;
-    values[field.name] = displayParameter(value ?? field.default, field.type);
-    if (bound && value == null && field.default == null) field.required = true;
-  }
-  for (const [name, value] of Object.entries(source.parameters || {})) {
-    if (isParameterBinding(value) && !fields.some(f => f.name === name)) {
-      const field = testParameters({[name]: {...ownerSchema[value.parameter], required: true}})[0];
-      fields.push(field);
-      values[name] = displayParameter(field.default, field.type);
+    let value = bound ? ownerSchema[configured.parameter]?.default : configured;
+    value = (value === "" ? undefined : value) ?? field.default ?? ownerSchema[field.name]?.default;
+    const key = field.name.toLowerCase().replace(/^wpa_/, "");
+    if (/^(unit|unit_slug|unidade)$/.test(key) && unit) value = unit;
+    if (value == null || value === "") {
+      if (field.type === "date" || /^(start|end|start_date|end_date|data_inicial|data_final)$/.test(key)) {
+        const date = new Date(now);
+        if (/start|inicial|inicio/.test(key)) date.setDate(date.getDate()-30);
+        value = iso(date);
+      } else if (key === "year" || key === "ano") value = now.getFullYear();
+      else if (key === "month" || key === "mes") value = now.getMonth()+1;
     }
+    values[field.name] = displayParameter(value, field.type);
+    if (bound && !values[field.name] && field.default == null) field.required = true;
   }
   return {fields, values};
+}
+
+export function previewPeriod(fields: TestParameter[] = [], values: Record<string,string> = {}) {
+  return fields.filter(f => f.type === "date").map(f => values[f.name]?.slice(0,5)).filter(Boolean).join(" a ");
+}
+
+export function expandedPreviewParameters(fields: TestParameter[], values: Record<string,string>, now = new Date()) {
+  const expanded = {...values};
+  for (const field of fields) if (field.type === "date") {
+    const date = new Date(now);
+    if (/start|inicial|inicio/i.test(field.name)) date.setDate(date.getDate()-90);
+    expanded[field.name] = [String(date.getDate()).padStart(2,"0"),String(date.getMonth()+1).padStart(2,"0"),date.getFullYear()].join("/");
+  }
+  return collectTestParameters(fields, expanded);
 }
 
 export function previewError(message = ""): string {
@@ -72,24 +97,18 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
     let fields: TestParameter[] = [], values: Record<string,string> = {};
     try {
       const report = await request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${source.report_id}`, {unit: snapshot.unit}));
-      ({fields, values} = previewParameters(source, report.parameter_schema || {}, snapshot.ownerSchema));
+      ({fields, values} = previewParameters(source, report.parameter_schema || {}, snapshot.ownerSchema, snapshot.unit));
       if (parameters) for (const field of fields) values[field.name] = displayParameter(parameters[field.name] ?? field.default, field.type);
       const missing = fields.filter(f => f.required !== false && f.default == null && !values[f.name]?.trim());
       if (missing.length) {
-        put({status: "idle", data: null, error: `Preencha os parâmetros: ${missing.map(f => f.label).join(", ")}.`, loadedAt: null, fields, values});
+        put({status: "idle", data: null, error: `Sem padrão seguro; informe o filtro (ex.: o identificador desejado): ${missing.map(f => f.label).join(", ")}.`, loadedAt: null, fields, values});
         return;
       }
       // Only this request receives resolved values; never change the layout/store.
-      const resolved = {...source, parameters: {...source.parameters, ...parameters}} as typeof source;
-      for (const field of fields) {
-        if (!isParameterBinding(resolved.parameters?.[field.name])) continue;
-        const text = values[field.name];
-        resolved.parameters![field.name] = field.type === "date" && text ? text.split("/").reverse().join("-")
-          : field.type === "integer" || field.type === "number" ? Number(text) : text;
-      }
+      const resolved = {...source, parameters: {...source.parameters, ...collectTestParameters(fields, values)}} as typeof source;
       const data = await fetchSourcePreviewRequest(snapshot.reportId, snapshot.unit, resolved,
         {}, 50, controller.signal);
-      put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values });
+      put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, assumed: !parameters });
     } catch (err: any) {
       put({ status: "error", data: null, loadedAt: null, fields, values,
         error: `Não foi possível carregar a prévia. ${previewError(err?.message)}` });

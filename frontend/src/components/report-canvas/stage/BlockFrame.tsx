@@ -1,3 +1,4 @@
+import { previewPeriod, expandedPreviewParameters } from "../hooks/useStagePreviews";
 import PreviewParameters from "../blocks/PreviewParameters";
 import type { StagePreviewState as SourcePreviewState } from "../hooks/useStagePreviews";
 import { memo, useMemo } from "react";
@@ -167,6 +168,9 @@ function BlockFrameComponent({
     canLoadPreview = false;
   }
 
+  const period = previewPeriod(previewState?.fields, previewState?.values);
+  if (!showSampleData && period) originLabel += ` · período ${period}${previewState?.assumed ? " (padrão)" : ""}`;
+
   const waitingForPreview = !showSampleData && blockSourceId && sources.find(s => s.id === blockSourceId)?.type === "report" && !previewState && !localDatasets.has(blockSourceId);
   const blockDisplayName = block.title || BLOCK_LABELS[block.type];
   const pageLabel = pageName || `página ${pageIndex + 1}`;
@@ -247,6 +251,7 @@ function BlockFrameComponent({
         </span>
       )}
 
+      {!showSampleData && previewState?.status === "ready" && !!previewState.fields?.length && blockSourceId && <PreviewParameters compact key={JSON.stringify(previewState.values)} fields={previewState.fields} values={previewState.values || {}} onSubmit={parameters => onLoadSourcePreview?.(blockSourceId!, parameters)} />}
       {waitingForPreview ? (
         <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status">Carregando prévia…</div></div>
       ) : !showSampleData && previewState && previewState.status !== "ready" ? (
@@ -256,7 +261,7 @@ function BlockFrameComponent({
           {previewState.status !== "loading" && !previewState.fields?.length && blockSourceId && <button type="button" className="cv-btn-compact" onClick={() => onLoadSourcePreview?.(blockSourceId!)}>Tentar de novo</button>}
         </div></div>
       ) : !showSampleData && block.type !== "text" && block.type !== "image" && blockSourceId && localDatasets.has(blockSourceId) && !localDatasets.get(blockSourceId)?.rows.length ? (
-        <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status"><p>A fonte não retornou linhas para estes parâmetros</p>{onLoadSourcePreview && sources.find(s => s.id === blockSourceId)?.type === "report" && <PreviewParameters fields={previewState?.fields || []} values={previewState?.values || {}} onSubmit={parameters => onLoadSourcePreview(blockSourceId!, parameters)} />}</div></div>
+        <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status"><p>Nenhuma linha neste período</p>{onLoadSourcePreview && sources.find(s => s.id === blockSourceId)?.type === "report" && <button type="button" className="cv-btn-compact" onClick={() => onLoadSourcePreview(blockSourceId!, expandedPreviewParameters(previewState?.fields || [], previewState?.values || {}))}>Ampliar para 90 dias</button>}</div></div>
       ) : <>
       {/* Block Preview Content or Inline Problem Message */}
       {problem && problem.severity === "error" && hasMissingSource ? (

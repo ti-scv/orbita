@@ -920,5 +920,16 @@
 .cv-preview-parameters label { display: grid; gap: 3px; }
 .cv-root .cv-preview-parameters input, .cv-root .cv-preview-parameters select {
   pointer-events: auto; width: 100%; min-width: 0; padding: 5px; color: var(--cv-text);
-  background: var(--cv-surface); border: 1px solid var(--cv-border); border-radius: 4px;
+  background: var(--cv-surface); border: 1px solid var(--cv-line); border-radius: 4px;
 }
+
+.cv-root .cv-preview-controls { position: absolute; top: 6px; right: 8px; z-index: 8; max-width: min(460px, 96%); font-size: 12px; }
+.cv-root .cv-preview-controls summary { cursor: pointer; padding: 4px 8px; background: var(--cv-surface); color: var(--cv-text); border: 1px solid var(--cv-line); border-radius: 4px; }
+.cv-root .cv-preview-controls[open] { background: var(--cv-surface); border: 1px solid var(--cv-line); padding: 6px; max-height: 220px; overflow: auto; }
+.cv-root .cv-preview-controls .cv-preview-parameters { display: flex; flex-wrap: wrap; gap: 8px; }
+.cv-root .cv-preview-controls label { width: 150px; }
+
+/* Keep all 50 preview rows inside the sheet, with their own scrollbar. */
+.cv-root .cv-block-table > .cv-block-inner { height: 100%; }
+.cv-root .cv-block-table:has(> .cv-preview-controls) > .cv-block-inner { padding-top: 36px; }
+.cv-root .cv-block-table .cv-table-wrap { pointer-events: auto; }

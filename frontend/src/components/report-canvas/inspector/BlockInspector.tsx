@@ -1,3 +1,4 @@
+import { previewPeriod } from "../hooks/useStagePreviews";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import {
@@ -9,7 +10,6 @@ import {
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
-import type { SourcePreviewState } from "../api/useSourcePreview";
 import { useSourcePreview } from "../api/useSourcePreview";
 import { COMPONENT_ICONS, COMPONENT_NAMES } from "../library/BlockLibrary";
 import type {
@@ -52,7 +52,7 @@ export interface BlockInspectorProps {
   parameterSchema?: Record<string, unknown>;
   sourcePreviews?: Record<string, SourcePreview | null | undefined>;
   forcePreviewUnavailable?: boolean;
-  previewState?: SourcePreviewState;
+  previewState?: import("../hooks/useStagePreviews").StagePreviewState;
   onLoadSourcePreview?: (sourceId: string) => void;
   onChangeTab: (tab: InspectorTab) => void;
   onReorderLayer: (dir: -1 | 1) => void;
@@ -552,6 +552,7 @@ export default function BlockInspector({
           monthlyGoals={monthlyGoals}
           knownColumns={columnInfos.map((c) => c.name)}
           preview={activePreview}
+          previewPeriod={previewPeriod(previewState?.fields, previewState?.values) + (previewState?.assumed ? " (padrão)" : "")}
           previewLoading={onLoadSourcePreview ? previewState?.status === "loading" : previewHook.isLoading}
           previewError={onLoadSourcePreview ? previewState?.error : previewHook.error}
           previewUnavailable={isPreviewUnavailable}

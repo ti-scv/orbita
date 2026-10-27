@@ -42,6 +42,7 @@ export interface DataFieldsProps {
   sources: CanvasSource[];
   availableSources?: readonly CatalogSqlSource[];
   monthlyGoals?: ReadonlyArray<{ year: number; month: number; value: number }>;
+  previewPeriod?: string;
   preview?: SourcePreview | null;
   previewLoading?: boolean;
   previewError?: string | null;
@@ -72,6 +73,7 @@ export default function DataFields({
   availableSources = [],
   monthlyGoals,
   preview = null,
+  previewPeriod = "",
   previewLoading = false,
   previewError = null,
   previewUnavailable = false,
@@ -656,6 +658,7 @@ export default function DataFields({
             ) : undefined
           }
         >
+          {preview && <p className="cv-field-hint">Prévia · {preview.rows.length} linhas{previewPeriod ? ` · período ${previewPeriod}` : ""}</p>}
           {rowsMeta.hasRows && miniPreviewCols.length > 0 ? (
             <>
               <div className="cv-mini-preview-wrap">

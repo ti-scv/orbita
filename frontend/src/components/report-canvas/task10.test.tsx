@@ -16,15 +16,14 @@ describe("Tarefa 10: prévia da folha",()=>{
     expect(collectTestParameters(result.fields,result.values)).toEqual({start:"2026-10-01",year:2026,month:10});
     expect(JSON.stringify(source)).toBe(before);
   });
-  it("não considera um binding como valor preenchido e exige sua resolução",()=>{
+  it("resolve datas vinculadas sem default usando o período da prévia",()=>{
     const result=previewParameters(source,{start:{type:"date",required:false}});
-    expect(result.fields[0].required).toBe(true);
-    expect(result.values.start).toBe("");
-    expect(()=>collectTestParameters(result.fields,result.values)).toThrow(/Informe/);
+    expect(result.values.start).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+    expect(()=>collectTestParameters(result.fields,result.values)).not.toThrow();
   });
   it.each(["table","kpi","bar","line","pie"] as const)("explica resultado vazio em %s", type=>{
     const html=renderToStaticMarkup(<BlockFrame {...props} block={{...props.block,type}} localDatasets={new Map([["s",{columns:["X","Y"],rows:[]}]])} />);
-    expect(html).toContain("A fonte não retornou linhas para estes parâmetros");
+    expect(html).toContain("Nenhuma linha neste período");
     expect(html).toContain("Prévia · 0 linhas");
   });
   it("mostra carregamento antes de receber o primeiro estado",()=>{

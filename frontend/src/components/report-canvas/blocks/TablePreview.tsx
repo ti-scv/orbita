@@ -108,7 +108,7 @@ export default function TablePreview({
                   </td>
                 </tr>
               ) : (
-                dataset.rows.slice(0, 14).map((r, ri) => (
+                dataset.rows.slice(0, showSampleData ? 14 : 50).map((r, ri) => (
                   <tr key={ri}>
                     {indices.map((ci, k) => (
                       <td key={k}>

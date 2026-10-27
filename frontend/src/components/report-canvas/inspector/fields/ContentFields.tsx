@@ -1090,7 +1090,7 @@ export default function ContentFields({
             )}
           </CollapsibleSection>
 
-          <div className="cv-field">
+          <div className="cv-insp-fit-content">
             <button type="button" className="cv-btn-compact" onClick={() => {
               const frame = Array.from(document.querySelectorAll<HTMLElement>(".cv-block")).find(el => el.dataset.blockId === block.id);
               const table = frame?.querySelector<HTMLElement>(".cv-table-preview");
