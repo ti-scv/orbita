@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { AlertTriangle, PanelRightOpen } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
+import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import DataPanel from "./report-canvas/data/DataPanel";
 import SourceDialog from "./report-canvas/data/SourceDialog";
 import PreviewDialog from "./report-canvas/dialogs/PreviewDialog";
@@ -395,7 +396,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
   } as CSSProperties;
 
   return (
-    <>
+    <CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
       <EditorShell
         canSave={!session.loading && !session.busy}
         onSave={() => void session.handleSaveCanvas()}
@@ -669,6 +670,6 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
         }}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-    </>
+    </CanvasErrorBoundary>
   );
 }

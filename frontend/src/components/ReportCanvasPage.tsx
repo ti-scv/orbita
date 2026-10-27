@@ -4,6 +4,7 @@ import { query, request } from "../api";
 const loadReportCanvas = () => import("./ReportCanvas");
 const ReportCanvas = lazy(loadReportCanvas);
 import type { ReportSummary } from "./report-canvas/model";
+import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import ShellSkeleton from "./report-canvas/shell/ShellSkeleton";
 import "./report-canvas/tokens.css";
 import "./report-canvas/layout.css";
@@ -116,5 +117,5 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     return <ShellSkeleton label="Carregando relatório…" />;
   }
 
-  return <Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} onClose={back} /></Suspense>;
+  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} onClose={back} /></Suspense></CanvasErrorBoundary>;
 }

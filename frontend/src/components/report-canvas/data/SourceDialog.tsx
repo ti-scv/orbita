@@ -87,17 +87,11 @@ export default function SourceDialog({
     }
   }, [sourceModal?.columnsJson, sourceModal?.rowsJson, sourceModal?.type]);
 
-  if (!sourceModal) return null;
-
-  const isCreate = sourceModal.mode === "create";
   const idError = useMemo(() => {
+    if (!sourceModal) return null;
     const res = validateSourceId(sourceModal.id, existingSources, sourceModal.originalId);
     return res.ok ? null : res.error;
-  }, [existingSources, sourceModal.id, sourceModal.originalId]);
-
-  const selectedCatalog = availableSources.find(
-    (s) => s.id === Number(sourceModal.reportId),
-  );
+  }, [existingSources, sourceModal?.id, sourceModal?.originalId]);
 
   // Filter available catalog reports
   const filteredCatalog = useMemo(() => {
@@ -109,6 +103,60 @@ export default function SourceDialog({
         s.code.toLowerCase().includes(term),
     );
   }, [availableSources, searchCatalog]);
+
+  const currentParamsMap = useMemo(() => {
+    try {
+      const parsed = JSON.parse(sourceModal?.parametersJson || "{}");
+      return typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }, [sourceModal?.parametersJson]);
+
+  // Combined parameters: from catalog schema + existing custom parameters
+  const paramItems = useMemo<ParsedParamItem[]>(() => {
+    const items: ParsedParamItem[] = [];
+    const seen = new Set<string>();
+
+    // From current parameter JSON
+    for (const [k, v] of Object.entries(currentParamsMap)) {
+      seen.add(k);
+      if (isParameterBinding(v)) {
+        items.push({
+          key: k,
+          isBinding: true,
+          bindingKey: v.parameter,
+          fixedValue: "",
+          type: "string",
+        });
+      } else {
+        items.push({
+          key: k,
+          isBinding: false,
+          bindingKey: "",
+          fixedValue: v === null || v === undefined ? "" : String(v),
+          type: typeof v === "number" ? "number" : typeof v === "boolean" ? "boolean" : "string",
+        });
+      }
+    }
+
+    return items;
+  }, [currentParamsMap]);
+
+  const inferredGridTypes = useMemo(() => {
+    return gridColumns.map((_, colIdx) => {
+      const colValues = gridRows.map((r) => r[colIdx]);
+      return inferColumnType(colValues);
+    });
+  }, [gridColumns, gridRows]);
+
+  if (!sourceModal) return null;
+
+  const isCreate = sourceModal.mode === "create";
+
+  const selectedCatalog = availableSources.find(
+    (s) => s.id === Number(sourceModal.reportId),
+  );
 
   // Handle label change and auto slug
   const handleLabelChange = (val: string) => {
@@ -144,44 +192,6 @@ export default function SourceDialog({
   };
 
   // Parameters list management for "report" source
-  const currentParamsMap = useMemo(() => {
-    try {
-      const parsed = JSON.parse(sourceModal.parametersJson || "{}");
-      return typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-    } catch {
-      return {};
-    }
-  }, [sourceModal.parametersJson]);
-
-  // Combined parameters: from catalog schema + existing custom parameters
-  const paramItems = useMemo<ParsedParamItem[]>(() => {
-    const items: ParsedParamItem[] = [];
-    const seen = new Set<string>();
-
-    // From current parameter JSON
-    for (const [k, v] of Object.entries(currentParamsMap)) {
-      seen.add(k);
-      if (isParameterBinding(v)) {
-        items.push({
-          key: k,
-          isBinding: true,
-          bindingKey: v.parameter,
-          fixedValue: "",
-          type: "string",
-        });
-      } else {
-        items.push({
-          key: k,
-          isBinding: false,
-          bindingKey: "",
-          fixedValue: v === null || v === undefined ? "" : String(v),
-          type: typeof v === "number" ? "number" : typeof v === "boolean" ? "boolean" : "string",
-        });
-      }
-    }
-
-    return items;
-  }, [currentParamsMap]);
 
   const updateParameterJson = (items: ParsedParamItem[]) => {
     const obj: Record<string, any> = {};
@@ -377,17 +387,11 @@ export default function SourceDialog({
   };
 
   const draftSource = constructDraftSource();
-  const inferredGridTypes = useMemo(() => {
-    return gridColumns.map((_, colIdx) => {
-      const colValues = gridRows.map((r) => r[colIdx]);
-      return inferColumnType(colValues);
-    });
-  }, [gridColumns, gridRows]);
 
   return (
     <InlineDialog
       title={isCreate ? "Adicionar fonte de dados" : "Editar fonte de dados"}
-      subtitle="Fontes integradas ao relatório para alimentar tabelas, gráficos e KPIs"
+      subtitle="Confirmar aplica a fonte ao rascunho. Cancelar descarta esta edição. O relatório só é gravado ao salvar o Canvas."
       className="cv-subdialog cv-root"
       onClose={onClose}
       footer={
@@ -411,7 +415,7 @@ export default function SourceDialog({
             className="cv-btn-compact primary"
             disabled={Boolean(idError)}
           >
-            {sourceModal.testError ? "Salvar sem testar" : "Salvar fonte"}
+            {sourceModal.testError ? "Confirmar sem testar" : "Confirmar fonte"}
           </button>
         </>
       }
@@ -512,6 +516,15 @@ export default function SourceDialog({
             </button>
           </div>
         </div>
+
+        {sourceModal.type === "report" && (
+          <p className="cv-source-sub">
+            Origem: {selectedCatalog?.name || `Relatório #${sourceModal.reportId}`} {selectedCatalog?.code && `· ${selectedCatalog.code}`}. Colunas: {(
+              selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns
+              || selectedCatalog?.columns || []
+            ).join(", ") || "Use Testar e carregar prévia para consultar as colunas."}
+          </p>
+        )}
 
         {/* 3. Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (

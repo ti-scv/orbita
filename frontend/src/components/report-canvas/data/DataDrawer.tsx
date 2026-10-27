@@ -25,11 +25,9 @@ export default function DataDrawer({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [copied, setCopied] = useState(false);
 
-  if (!source) return null;
-
   const columns: import("../model").ColumnInfo[] =
     preview?.columns ||
-    (source.type === "inline"
+    (source?.type === "inline"
       ? source.columns.map((c) => ({
           name: c,
           type: "unknown" as const,
@@ -37,7 +35,7 @@ export default function DataDrawer({
           null_count: 0,
         }))
       : []);
-  const rawRows = preview?.rows || (source.type === "inline" ? source.rows : []);
+  const rawRows = preview?.rows || (source?.type === "inline" ? source.rows : []);
 
   // Filter rows locally
   const filteredRows = useMemo(() => {
@@ -71,6 +69,8 @@ export default function DataDrawer({
       return sortDir === "asc" ? comp : -comp;
     });
   }, [columns, filteredRows, sortCol, sortDir]);
+
+  if (!source) return null;
 
   const displayRows = sortedRows.slice(0, 50);
 
