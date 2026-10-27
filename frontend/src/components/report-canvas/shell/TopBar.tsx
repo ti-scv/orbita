@@ -407,31 +407,28 @@ export default function TopBar({
             )}
 
             <div className="cv-data-mode" role="group" aria-label="Dados exibidos nos blocos">
-              <span className="cv-data-mode-prefix" aria-hidden="true">
-                Dados:
-              </span>
               <div className="cv-segmented">
                 <button
                   type="button"
                   tabIndex={0}
-                  aria-label="Dados: Exemplo"
+                  aria-label="Dados de exemplo"
                   aria-pressed={dataMode === "sample"}
-                  title="Exemplo: os blocos exibem estrutura e valores sintéticos para montagem visual sem consultar a fonte real."
+                  title="Mostrar valores fictícios para montar o relatório."
                   className={`cv-seg-btn ${dataMode === "sample" ? "is-active" : ""}`.trim()}
                   onClick={() => onChangeDataMode("sample")}
                 >
-                  Exemplo
+                  Dados de exemplo
                 </button>
                 <button
                   type="button"
                   tabIndex={0}
-                  aria-label="Dados: Prévia"
+                  aria-label="Dados reais"
                   aria-pressed={dataMode === "preview"}
-                  title="Prévia: os blocos exibem dados reais carregados das fontes ou metas configuradas, sem valores fictícios."
+                  title="Consultar as fontes e mostrar dados reais nos blocos."
                   className={`cv-seg-btn ${dataMode === "preview" ? "is-active" : ""}`.trim()}
                   onClick={() => onChangeDataMode("preview")}
                 >
-                  Prévia
+                  Dados reais
                 </button>
               </div>
             </div>
@@ -500,12 +497,13 @@ export default function TopBar({
                   type="button"
                   tabIndex={0}
                   className="cv-btn"
-                  aria-label="Gerar prévia do relatório"
+                  aria-label="Testar relatório"
+                  title="Abrir o teste do relatório com parâmetros."
                   disabled={loading || busy}
                   onClick={onOpenPreview}
                 >
                   <Eye size={14} aria-hidden="true" />
-                  <span>Prévia</span>
+                  <span>Testar relatório</span>
                 </button>
               </>
             )}

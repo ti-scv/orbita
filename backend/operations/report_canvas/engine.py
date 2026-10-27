@@ -28,7 +28,7 @@ def assets_for(report,layout,*,metadata_only=False):
     return assets
 
 
-def definition_snapshot(report,layout=None):
+def definition_snapshot(report,layout=None,*,reports_by_id=None):
     layout=validate_layout(report.canvas_layout if layout is None else layout)
     validate_complete(layout)
     if not any(p["blocks"] for p in layout["pages"]):fail("Adicione ao menos um bloco ao Canvas.")
@@ -36,7 +36,7 @@ def definition_snapshot(report,layout=None):
     signatures={}
     for s in layout["sources"]:
         if s["type"]=="report":
-            child=resolve_report(report,s)
+            child=resolve_report(report,s,reports_by_id=reports_by_id)
             if child.pk not in signatures:signatures[child.pk]=signature(child)
             sources[s["id"]]={"id":child.pk,"signature":signatures[child.pk]}
     assets=assets_for(report,layout,metadata_only=True)
@@ -49,9 +49,9 @@ def check_snapshot(job):
         raise PermissionDenied("Layout, fonte ou imagem do Canvas alterados.")
 
 
-def report_readiness(report):
+def report_readiness(report,*,reports_by_id=None):
     try:
-        definition_snapshot(report)
+        definition_snapshot(report,reports_by_id=reports_by_id)
         if report.output_format not in {"pdf","xlsx"}:fail("Canvas exporta PDF ou XLSX.")
     except ValidationError as exc:return error_messages(exc)
     return []

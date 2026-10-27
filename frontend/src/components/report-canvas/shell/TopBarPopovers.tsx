@@ -165,7 +165,8 @@ export function MoreActionsMenu({
       <button
         type="button"
         role="menuitem"
-        aria-label="Prévia"
+        aria-label="Testar relatório"
+        title="Abrir o teste do relatório com parâmetros."
         disabled={disabled}
         className="cv-menu-item"
         onClick={() => {
@@ -174,7 +175,7 @@ export function MoreActionsMenu({
         }}
       >
         <Eye size={14} aria-hidden="true" />
-        <span>Prévia</span>
+        <span>Testar relatório</span>
       </button>
     </div>
   );

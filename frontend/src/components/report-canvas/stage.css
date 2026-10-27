@@ -933,3 +933,15 @@
 .cv-root .cv-block-table > .cv-block-inner { height: 100%; }
 .cv-root .cv-block-table:has(> .cv-preview-controls) > .cv-block-inner { padding-top: 36px; }
 .cv-root .cv-block-table .cv-table-wrap { pointer-events: auto; }
+
+/* Editor controls follow the application theme even over a white report sheet. */
+[data-theme="dark"] .cv-root .cv-preview-controls summary,
+[data-theme="dark"] .cv-root .cv-preview-controls[open],
+[data-theme="dark"] .cv-root .cv-origin-chip {
+  background: var(--cv-surface-3);
+  border-color: var(--cv-line-strong);
+  box-shadow: none;
+}
+[data-theme="dark"] .cv-root .cv-preview-controls summary {
+  color: var(--cv-text-2);
+}

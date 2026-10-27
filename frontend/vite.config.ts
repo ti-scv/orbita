@@ -14,7 +14,11 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: { charts: ["recharts"] },
+        // Keep shared React runtime out of the lazy chart chunk.
+        onlyExplicitManualChunks: true,
+        manualChunks(id) {
+          if (id.includes("/node_modules/recharts/")) return "charts";
+        },
       },
     },
   },

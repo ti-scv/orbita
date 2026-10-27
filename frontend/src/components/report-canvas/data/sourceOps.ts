@@ -218,7 +218,7 @@ export function editSourceModalState(
     mode: "edit",
     originalId: src.id,
     id: src.id,
-    label: src.label || "",
+    label: src.label || src.id,
     type: src.type,
     reportId:
       src.type === "report"

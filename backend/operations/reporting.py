@@ -30,7 +30,7 @@ def is_admin(user, unit):
     )
 
 
-def readiness(report, seen=None, *, check_external_file=True):
+def readiness(report, seen=None, *, check_external_file=True, canvas_reports=None):
     seen = set(seen or ())
     if report.pk in seen:
         return ["Composição circular"]
@@ -46,7 +46,7 @@ def readiness(report, seen=None, *, check_external_file=True):
         except ValidationError as exc:return [str(x) for x in exc.detail]
     if report.canvas_enabled:
         from operations.report_canvas.engine import report_readiness
-        return list(dict.fromkeys(missing + report_readiness(report)))
+        return list(dict.fromkeys(missing + report_readiness(report,reports_by_id=canvas_reports)))
     if report.handler == "bed_snapshots_v1":
         from operations.bed_snapshots import report_readiness
         return list(dict.fromkeys(missing + report_readiness(report)))

@@ -110,7 +110,7 @@ export default function DataDrawer({
           <h3 className="cv-drawer-title">
             Dados: {source.label || source.id}
           </h3>
-          <span className="cv-drawer-count">{countText}</span>
+          {!loading && <span className="cv-drawer-count">{countText}</span>}
           {loading && <span className="cv-chip loading">Atualizando…</span>}
         </div>
         <div className="cv-drawer-controls">
@@ -127,6 +127,7 @@ export default function DataDrawer({
             className="cv-btn-compact"
             onClick={handleCopyTsv}
             title="Copiar dados exibidos como TSV"
+            disabled={loading || !columns.length}
           >
             {copied ? <Check size={12} color="var(--cv-success)" /> : <Copy size={12} />}
             {copied ? "Copiado!" : "Copiar TSV"}
@@ -155,8 +156,10 @@ export default function DataDrawer({
         </div>
       </div>
 
-      <div className="cv-drawer-body">
-        {columns.length === 0 ? (
+      <div className="cv-drawer-body" aria-busy={loading}>
+        {loading ? (
+          <div className="cv-drawer-loading" role="status">Carregando dados…</div>
+        ) : columns.length === 0 ? (
           <EmptyState
             compact={true}
             title="Nenhuma coluna encontrada"

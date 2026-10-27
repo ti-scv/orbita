@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   ChevronRight,
@@ -571,14 +572,15 @@ export default function DataPanel({
       )}
 
       {/* Gaveta Ver Dados (DataDrawer) */}
-      {drawerSource && (
+      {drawerSource && createPortal(
         <DataDrawer
           source={drawerSource}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
           loading={previews[drawerSource.id]?.status === "loading"}
           onClose={() => setDrawerSource(null)}
           onRefresh={() => handleLoadPreview(drawerSource, true)}
-        />
+        />,
+        document.body,
       )}
 
       {/* Confirmação de Remoção com lista de blocos afetados */}

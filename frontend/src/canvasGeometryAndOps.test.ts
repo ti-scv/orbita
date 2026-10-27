@@ -198,6 +198,7 @@ describe("Operações puras de geometria, fontes, validação e paridade byte-a-
           id: "ocupacao",
           type: "report",
           report_id: 50,
+          label: "dados1",
           dataset: "setores",
           parameters: { data_referencia: { parameter: "data_referencia" } },
         },

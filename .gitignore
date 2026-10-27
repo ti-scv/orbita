@@ -53,3 +53,6 @@ coverage.xml
 # Local QA captures and operational report output
 /.canvas-task*-shots/
 /files/reports/internacoes-ps/
+
+# QA14 screenshots contain operational data; keep on the staging host only.
+/docs/qa14/*.png

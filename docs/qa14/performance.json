@@ -1,0 +1,209 @@
+[
+  {
+    "run": 1,
+    "browserCache": "empty context",
+    "readyMs": 2114,
+    "api": [
+      {
+        "path": "/api/v1/auth/csrf/",
+        "status": 200,
+        "ms": 38
+      },
+      {
+        "path": "/api/v1/auth/session/",
+        "status": 200,
+        "ms": 31
+      },
+      {
+        "path": "/api/v1/report-app-connections/",
+        "status": 200,
+        "ms": 216
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 535
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 550
+      },
+      {
+        "path": "/api/v1/report-connections/",
+        "status": 200,
+        "ms": 554
+      },
+      {
+        "path": "/api/v1/report-recipients/users/",
+        "status": 200,
+        "ms": 559
+      },
+      {
+        "path": "/api/v1/report-recipients/",
+        "status": 200,
+        "ms": 574
+      },
+      {
+        "path": "/api/v1/reports/inventory/",
+        "status": 200,
+        "ms": 670
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 770
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/index-CUVEsLDD.js",
+        "bytes": 580097,
+        "ms": 40
+      },
+      {
+        "path": "/assets/index-pXHMkmFH.js",
+        "bytes": 12440,
+        "ms": 33
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "browserCache": "empty context",
+    "readyMs": 1538,
+    "api": [
+      {
+        "path": "/api/v1/auth/csrf/",
+        "status": 200,
+        "ms": 20
+      },
+      {
+        "path": "/api/v1/auth/session/",
+        "status": 200,
+        "ms": 36
+      },
+      {
+        "path": "/api/v1/report-app-connections/",
+        "status": 200,
+        "ms": 88
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 191
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 207
+      },
+      {
+        "path": "/api/v1/report-connections/",
+        "status": 200,
+        "ms": 210
+      },
+      {
+        "path": "/api/v1/report-recipients/users/",
+        "status": 200,
+        "ms": 226
+      },
+      {
+        "path": "/api/v1/report-recipients/",
+        "status": 200,
+        "ms": 241
+      },
+      {
+        "path": "/api/v1/reports/inventory/",
+        "status": 200,
+        "ms": 277
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 787
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/index-CUVEsLDD.js",
+        "bytes": 580097,
+        "ms": 39
+      },
+      {
+        "path": "/assets/index-pXHMkmFH.js",
+        "bytes": 12440,
+        "ms": 31
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "browserCache": "empty context",
+    "readyMs": 1406,
+    "api": [
+      {
+        "path": "/api/v1/auth/csrf/",
+        "status": 200,
+        "ms": 20
+      },
+      {
+        "path": "/api/v1/auth/session/",
+        "status": 200,
+        "ms": 44
+      },
+      {
+        "path": "/api/v1/report-app-connections/",
+        "status": 200,
+        "ms": 58
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 192
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 195
+      },
+      {
+        "path": "/api/v1/report-recipients/",
+        "status": 200,
+        "ms": 218
+      },
+      {
+        "path": "/api/v1/report-connections/",
+        "status": 200,
+        "ms": 227
+      },
+      {
+        "path": "/api/v1/report-recipients/users/",
+        "status": 200,
+        "ms": 233
+      },
+      {
+        "path": "/api/v1/reports/inventory/",
+        "status": 200,
+        "ms": 273
+      },
+      {
+        "path": "/api/v1/reports/",
+        "status": 200,
+        "ms": 377
+      }
+    ],
+    "assets": [
+      {
+        "path": "/assets/index-CUVEsLDD.js",
+        "bytes": 580097,
+        "ms": 31
+      },
+      {
+        "path": "/assets/index-pXHMkmFH.js",
+        "bytes": 12440,
+        "ms": 20
+      }
+    ]
+  }
+]

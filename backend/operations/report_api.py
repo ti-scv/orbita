@@ -238,6 +238,14 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
 
 
     def get_pending_items(self, obj) -> list[str]:
+        if obj.canvas_enabled and getattr(self.context.get("view"), "action", None) == "list":
+            # Reuse the index already needed for technical descriptions instead
+            # of resolving each Canvas source again for every list row.
+            from operations.report_descriptions import index_for
+            key = ("description_index", obj.unit_id)
+            if key not in self.context:
+                self.context[key] = index_for(obj.unit_id)
+            return readiness(obj, canvas_reports=self.context[key]["by_id"])
         return readiness(obj)
 
     def validate(self, attrs):

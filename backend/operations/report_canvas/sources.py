@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from copy import copy
 import hashlib
 import json
 import math
@@ -14,8 +15,16 @@ class Dataset:
     rows: list
 
 
-def resolve_report(owner, spec):
-    child=ReportDefinition.objects.filter(pk=spec["report_id"],unit=owner.unit,reviewed=True,review_queue=False).select_related("connection","unit").first()
+def resolve_report(owner, spec, *, reports_by_id=None):
+    if reports_by_id is None:
+        child=ReportDefinition.objects.filter(pk=spec["report_id"],unit=owner.unit,reviewed=True,review_queue=False).select_related("connection","unit").first()
+    else:
+        # Request-local catalog index: preserve every restriction of the DB lookup.
+        child=reports_by_id.get(spec["report_id"])
+        if child and (child.unit_id != owner.unit_id or not child.reviewed or child.review_queue):
+            child=None
+        if child:
+            child=copy(child)
     if not child or (not child.enabled and child.pk!=owner.pk):fail("Fonte indisponível nesta unidade.")
     from .native import datasets
     native=datasets(child)

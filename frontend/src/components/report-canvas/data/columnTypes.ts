@@ -1,4 +1,5 @@
 import type { ColumnDataType, ColumnInfo } from "../model";
+import { displayCanvasValue } from "../common/displayValue";
 
 export type { ColumnDataType, ColumnInfo };
 
@@ -67,30 +68,15 @@ export function formatCellValue(val: unknown, type?: ColumnDataType): string {
     return num.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 4 });
   }
 
-  if (
-    type === "date" ||
-    (type === undefined && typeof val === "string" && ISO_DATE_RE.test(val.trim()))
-  ) {
-    const str = String(val).trim();
-    if (ISO_DATE_RE.test(str)) {
-      const [year, month, day] = str.split("-");
-      return `${day}/${month}/${year}`;
-    }
-    if (val instanceof Date) {
-      return val.toLocaleDateString("pt-BR", { timeZone: "UTC" });
-    }
+  // Share date validation and wall-clock formatting with block previews.
+  if (type === "date" && val instanceof Date) {
+    return Number.isFinite(val.getTime()) ? val.toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
   }
-
   if (
-    type === "datetime" ||
-    (type === undefined && typeof val === "string" && ISO_DATETIME_RE.test(val.trim()))
+    type === "date" || type === "datetime" ||
+    (typeof val === "string" && (ISO_DATE_RE.test(val.trim()) || ISO_DATETIME_RE.test(val.trim())))
   ) {
-    const str = String(val).trim();
-    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (match) {
-      const [, y, m, d, hh, mm, ss] = match;
-      return ss ? `${d}/${m}/${y} ${hh}:${mm}:${ss}` : `${d}/${m}/${y} ${hh}:${mm}`;
-    }
+    return displayCanvasValue(typeof val === "string" ? val.trim() : val);
   }
 
   if (type === "boolean" || typeof val === "boolean") {

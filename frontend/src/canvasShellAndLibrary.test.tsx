@@ -62,7 +62,9 @@ describe("Shell do editor — TopBar, LeftRail, painéis, StatusBar e Banner", (
     expect(html).not.toContain("cv-problems-btn");
     expect(html).not.toContain("cv-unsaved-dot");
     expect(html).toContain("Publicação");
-    expect(html).toContain("Prévia");
+    expect(html).toContain("Testar relatório");
+    expect(html).toContain("Dados reais");
+    expect(html).toContain("Dados de exemplo");
     expect(html).toContain("Salvar");
   });
 

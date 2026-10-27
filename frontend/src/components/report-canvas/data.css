@@ -816,3 +816,8 @@
   max-height: 140px;
   overflow: auto;
 }
+
+/* The drawer is portaled to body, above the entire editor and its rail. */
+.cv-data-drawer .cv-drawer-head { flex-wrap: wrap; gap: var(--cv-sp-2); }
+.cv-data-drawer .cv-drawer-title-group { min-width: 0; flex-wrap: wrap; }
+.cv-data-drawer .cv-drawer-loading { padding: var(--cv-sp-5); color: var(--cv-text-2); }

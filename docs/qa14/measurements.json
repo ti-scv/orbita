@@ -1,0 +1,561 @@
+{
+  "profile_before": [
+    {
+      "run": 1,
+      "status": 200,
+      "total_ms": 987.8,
+      "sql_count": 17,
+      "sql_ms": 66.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 12,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    },
+    {
+      "run": 2,
+      "status": 200,
+      "total_ms": 132.3,
+      "sql_count": 17,
+      "sql_ms": 48.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 12,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    },
+    {
+      "run": 3,
+      "status": 200,
+      "total_ms": 111.5,
+      "sql_count": 17,
+      "sql_ms": 40.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 12,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    }
+  ],
+  "profile_after": [
+    {
+      "run": 1,
+      "status": 200,
+      "total_ms": 824.1,
+      "sql_count": 9,
+      "sql_ms": 31.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 4,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    },
+    {
+      "run": 2,
+      "status": 200,
+      "total_ms": 77.3,
+      "sql_count": 9,
+      "sql_ms": 24.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 4,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    },
+    {
+      "run": 3,
+      "status": 200,
+      "total_ms": 60.7,
+      "sql_count": 9,
+      "sql_ms": 16.0,
+      "rows": 10,
+      "selects_by_table": {
+        "operations_reportdefinition": 4,
+        "core_membership": 0,
+        "operations_reportcanvasasset": 0,
+        "operations_reportsnapshotconfiguration": 1
+      }
+    }
+  ],
+  "cold_http_api": [
+    {
+      "run": 1,
+      "status": 200,
+      "ms": 896,
+      "bytes": 18536,
+      "rows": 10
+    },
+    {
+      "run": 2,
+      "status": 200,
+      "ms": 85,
+      "bytes": 18536,
+      "rows": 10
+    },
+    {
+      "run": 3,
+      "status": 200,
+      "ms": 86,
+      "bytes": 18536,
+      "rows": 10
+    },
+    {
+      "run": 4,
+      "status": 200,
+      "ms": 59,
+      "bytes": 18536,
+      "rows": 10
+    }
+  ],
+  "api_parity": {
+    "equal": true,
+    "rows": 10,
+    "sha256": "08155b8fd5bdb182be2010d40732abb8b35c93b6fbaae3bcfb026778d3fedfc8"
+  },
+  "browser_before_lazy": [
+    {
+      "run": 1,
+      "browserCache": "empty context",
+      "readyMs": 3460,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 36
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 49
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 100
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 219
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 220
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 241
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 245
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 256
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 277
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 373
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-Dnsy3sUd.js",
+          "bytes": 592671,
+          "ms": 60
+        },
+        {
+          "path": "/assets/charts-BaDlfMZt.js",
+          "bytes": 427881,
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "browserCache": "empty context",
+      "readyMs": 1536,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 41
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 64
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 79
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 187
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 193
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 213
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 219
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 225
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 245
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 337
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-Dnsy3sUd.js",
+          "bytes": 592671,
+          "ms": 28
+        },
+        {
+          "path": "/assets/charts-BaDlfMZt.js",
+          "bytes": 427881,
+          "ms": 30
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "browserCache": "empty context",
+      "readyMs": 1967,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 37
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 40
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 61
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 59
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 226
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 264
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 317
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 323
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 329
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 421
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-Dnsy3sUd.js",
+          "bytes": 592671,
+          "ms": 32
+        },
+        {
+          "path": "/assets/charts-BaDlfMZt.js",
+          "bytes": 427881,
+          "ms": 36
+        }
+      ]
+    }
+  ],
+  "browser_cold_worker_final": [
+    {
+      "run": 1,
+      "browserCache": "empty context",
+      "readyMs": 4150,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 2555
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 31
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 90
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 234
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 278
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 297
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 316
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 324
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 346
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 489
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-CUVEsLDD.js",
+          "bytes": 580097,
+          "ms": 33
+        },
+        {
+          "path": "/assets/index-pXHMkmFH.js",
+          "bytes": 12440,
+          "ms": 29
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "browserCache": "empty context",
+      "readyMs": 938,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 18
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 39
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 62
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 71
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 101
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 127
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 146
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 157
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 213
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 270
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-CUVEsLDD.js",
+          "bytes": 580097,
+          "ms": 31
+        },
+        {
+          "path": "/assets/index-pXHMkmFH.js",
+          "bytes": 12440,
+          "ms": 20
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "browserCache": "empty context",
+      "readyMs": 1111,
+      "api": [
+        {
+          "path": "/api/v1/auth/csrf/",
+          "status": 200,
+          "ms": 21
+        },
+        {
+          "path": "/api/v1/auth/session/",
+          "status": 200,
+          "ms": 21
+        },
+        {
+          "path": "/api/v1/report-app-connections/",
+          "status": 200,
+          "ms": 86
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 102
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 174
+        },
+        {
+          "path": "/api/v1/report-connections/",
+          "status": 200,
+          "ms": 193
+        },
+        {
+          "path": "/api/v1/report-recipients/",
+          "status": 200,
+          "ms": 221
+        },
+        {
+          "path": "/api/v1/report-recipients/users/",
+          "status": 200,
+          "ms": 231
+        },
+        {
+          "path": "/api/v1/reports/inventory/",
+          "status": 200,
+          "ms": 254
+        },
+        {
+          "path": "/api/v1/reports/",
+          "status": 200,
+          "ms": 288
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/index-CUVEsLDD.js",
+          "bytes": 580097,
+          "ms": 27
+        },
+        {
+          "path": "/assets/index-pXHMkmFH.js",
+          "bytes": 12440,
+          "ms": 18
+        }
+      ]
+    }
+  ],
+  "lazy_routes_smoke": {
+    "checks": [
+      {
+        "path": "/visao-geral",
+        "module": "OverviewWorkspace-",
+        "rendered": true,
+        "errors": [],
+        "blocked": []
+      },
+      {
+        "path": "/custos-meta",
+        "module": "MetaCosts-",
+        "rendered": true,
+        "errors": [],
+        "blocked": []
+      }
+    ]
+  }
+}

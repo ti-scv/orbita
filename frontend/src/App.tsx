@@ -1,13 +1,11 @@
 import Select from "./components/Select";
 import ReportCanvasPage from "./components/ReportCanvasPage";
-import MetaCosts from "./components/MetaCosts";
 import BrandLogo from "./components/BrandLogo";
 import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
 import FormAction from "./components/FormAction";
 import { Badge, Empty, Panel, SearchField } from "./components/ui";
 import OperationalAppointments from "./components/OperationalAppointments";
-import OverviewWorkspace from "./components/OverviewWorkspace";
 import AppointmentGroups from "./components/AppointmentGroups";
 import ExecutionLogs from "./components/ExecutionLogs";
 import MetaConfiguration from "./components/MetaConfiguration";
@@ -26,7 +24,7 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import Login from "./components/Login";
 import type { Modal } from "./types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -74,6 +72,9 @@ import type {
   Session,
   Template,
 } from "./types";
+
+const MetaCosts = lazy(() => import("./components/MetaCosts"));
+const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
 
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "appointments", label: "Agendamentos", icon: CalendarDays },
@@ -693,8 +694,9 @@ function Workspace({
             </div>
           ) : (
             <>
-              {page === "costs" && <MetaCosts unit={unit} />}
+              {page === "costs" && <Suspense fallback={<p role="status">Carregando custos…</p>}><MetaCosts unit={unit} /></Suspense>}
               {page === "overview" && (
+                <Suspense fallback={<p role="status">Carregando visão geral…</p>}>
                 <OverviewWorkspace
                   data={d!}
                   unit={unit}
@@ -713,6 +715,7 @@ function Workspace({
                     cardNavigate(nextPage, filter || "", isResponse || false);
                   }}
                 />
+                </Suspense>
               )}
               {page === "appointments" && (
                 <OperationalAppointments

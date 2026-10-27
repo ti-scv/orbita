@@ -9,5 +9,5 @@ export function displayCanvasValue(value: unknown): string {
   if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== text.slice(0, 10) ||
       (hour != null && (+hour > 23 || +minute > 59 || +(second || 0) > 59))) return text;
   const hasTime = +(hour || 0) || +(minute || 0) || +(second || 0) || +(fraction || 0);
-  return `${day}/${month}/${year}${hasTime ? ` ${hour}:${minute}:${second || "00"}` : ""}`;
+  return `${day}/${month}/${year}${hasTime ? ` ${hour}:${minute}` : ""}`;
 }
