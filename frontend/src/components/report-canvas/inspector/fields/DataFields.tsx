@@ -476,7 +476,8 @@ export default function DataFields({
                       type="button"
                       role="option"
                       aria-selected={selected}
-                      className={`cv-col-option ${idx === activeIdx ? "is-active" : ""}`.trim()}
+                      className={`cv-col-option cv-source-option ${idx === activeIdx ? "is-active" : ""}`.trim()}
+                      title={`${opt.title} › ${opt.subtitle}`}
                       onMouseEnter={() => setActiveIdx(idx)}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleChooseSource(opt.id)}
@@ -485,11 +486,11 @@ export default function DataFields({
                         className="cv-col-option-left"
                         style={{ flexDirection: "column", alignItems: "flex-start", gap: "1px" }}
                       >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        <span className="cv-source-option-title">
                           {opt.source && <SourceTypeIcon type={opt.source.type} />}
-                          <span style={{ fontWeight: 500 }}>{opt.title}</span>
+                          <span className="cv-col-select-name" title={opt.title}>{opt.title}</span>
                         </span>
-                        <span className="cv-col-option-reason">{opt.subtitle}</span>
+                        <span className="cv-col-option-reason" title={opt.subtitle}>{opt.subtitle}</span>
                       </span>
                       {selected && <Check size={13} aria-hidden="true" />}
                     </button>

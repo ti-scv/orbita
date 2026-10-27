@@ -107,7 +107,7 @@ export default function DataDrawer({
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
-          <h3 className="cv-drawer-title">
+          <h3 className="cv-drawer-title" title={`Dados: ${source.label || source.id}`}>
             Dados: {source.label || source.id}
           </h3>
           {!loading && <span className="cv-drawer-count">{countText}</span>}

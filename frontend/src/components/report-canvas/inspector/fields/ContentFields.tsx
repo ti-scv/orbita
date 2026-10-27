@@ -1047,12 +1047,14 @@ export default function ContentFields({
                           type={item.info?.type || "unknown"}
                           looksLike={item.info?.looks_like}
                         />
-                        <span className="cv-table-col-name" title={item.name}>
-                          {item.name}
-                        </span>
-                        <small className="cv-column-origin" title={`${sourceOrigin || block.source_id || "Sem fonte"} › ${item.name}`}>
-                          {sourceOrigin || block.source_id || "Sem fonte"} › {item.name}
-                        </small>
+                        <div className="cv-table-col-copy">
+                          <span className="cv-table-col-name" title={item.name}>
+                            {item.name}
+                          </span>
+                          <small className="cv-column-origin" title={`${sourceOrigin || block.source_id || "Sem fonte"} › ${item.name}`}>
+                            {sourceOrigin || block.source_id || "Sem fonte"} › {item.name}
+                          </small>
+                        </div>
                         {isMissing && <span className="cv-col-missing-tag">Ausente</span>}
                         {item.checked && selectedTableCols.length > 1 && (
                           <div className="cv-well-actions">

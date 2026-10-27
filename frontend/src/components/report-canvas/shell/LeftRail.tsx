@@ -87,7 +87,8 @@ export default function LeftRail({
               aria-label={item.label}
               title={item.label}
               className="cv-rail-tab"
-              onClick={() => onSelectLibrary(item.id)}
+              // Selecting a tab is idempotent. Closing belongs to the panel toggle.
+              onClick={() => (onOpenTab || onSelectLibrary)(item.id)}
             >
               <item.Icon size={18} strokeWidth={1.8} aria-hidden="true" />
               <span className="cv-rail-tab-label">{item.label}</span>

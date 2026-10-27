@@ -821,3 +821,29 @@
 .cv-data-drawer .cv-drawer-head { flex-wrap: wrap; gap: var(--cv-sp-2); }
 .cv-data-drawer .cv-drawer-title-group { min-width: 0; flex-wrap: wrap; }
 .cv-data-drawer .cv-drawer-loading { padding: var(--cv-sp-5); color: var(--cv-text-2); }
+
+/* Lists must keep their intrinsic row height inside scrollable flex panels. */
+.cv-root .cv-source-item { flex: 0 0 auto; }
+.cv-root .cv-source-row { line-height: 16px; }
+.cv-root .cv-source-sub { display: block; line-height: 16px; }
+.cv-root .cv-column-row { height: auto; min-height: 32px; flex: 0 0 auto; gap: 6px; padding-block: 4px; line-height: 16px; }
+.cv-root .cv-column-sample { max-width: 100px; flex-shrink: 0; line-height: 16px; }
+.cv-root .cv-use-as-dropdown { flex: 0 0 auto; }
+.cv-root .cv-drawer-head { flex-shrink: 0; }
+.cv-root .cv-drawer-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; }
+.cv-root .cv-preview-table :is(th, td) { line-height: 18px; }
+
+/* Source actions have their own compact row instead of covering the source name. */
+.cv-root .cv-source-row { flex-direction: column; gap: 6px; }
+.cv-root .cv-source-main { flex: 1 1 auto; width: 100%; }
+.cv-root .cv-source-actions {
+  position: static;
+  align-self: flex-end;
+  opacity: 1;
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cv-root .cv-source-actions .cv-icon-btn { width: 24px; height: 24px; }

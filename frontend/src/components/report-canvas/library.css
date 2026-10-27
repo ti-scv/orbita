@@ -623,3 +623,7 @@
   background: var(--cv-surface);
   flex: 0 0 28px;
 }
+
+.cv-root .cv-block-tree-item { flex: 0 0 auto; min-height: 44px; padding-block: 4px; }
+.cv-root .cv-block-tree-main { gap: 3px; }
+.cv-root :is(.cv-block-tree-title, .cv-block-tree-lineage) { line-height: 16px; }

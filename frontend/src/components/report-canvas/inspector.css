@@ -1246,7 +1246,45 @@
 
 .cv-root .cv-lineage-text { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .cv-root .cv-source-breadcrumb, .cv-root .cv-column-origin { color: var(--cv-text-2); white-space: normal; overflow-wrap: anywhere; font-size: var(--cv-fs-xs); }
-.cv-root .cv-table-col-item { flex-wrap: wrap; }
+/* Keep controls on one row; the copy owns its two text lines. */
+.cv-root .cv-table-col-item {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-height: 48px;
+  padding: 6px;
+  gap: 8px;
+  line-height: 16px;
+}
+.cv-root .cv-table-col-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+}
+.cv-root .cv-table-col-copy > :is(.cv-table-col-name, .cv-column-origin) {
+  display: block;
+  min-width: 0;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+.cv-root .cv-table-col-item > :is(.cv-type-badge, .cv-well-actions) { flex-shrink: 0; }
+.cv-root .cv-table-col-item .cv-well-btn { flex: 0 0 24px; }
+.cv-root .cv-source-option { flex: 0 0 auto; min-height: 48px; line-height: 16px; }
+.cv-root .cv-source-option-title { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+.cv-root .cv-source-option-title > svg { flex-shrink: 0; }
+.cv-root .cv-source-option :is(.cv-col-select-name, .cv-col-option-reason) {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 16px;
+}
 
 .cv-root input.cv-insp-title-input { color: var(--cv-text); opacity: 1; -webkit-text-fill-color: var(--cv-text); }
 .cv-root input.cv-insp-title-input::placeholder { color: var(--cv-text-2); opacity: 1; }

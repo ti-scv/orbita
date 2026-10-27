@@ -21,6 +21,7 @@ import type {
   SourcePreview,
 } from "../model";
 import ColumnBadge from "./ColumnBadge";
+import { formatCellValue } from "./columnTypes";
 import DataDrawer from "./DataDrawer";
 import EmptyState from "../common/EmptyState";
 import { findSourceUsages } from "./sourceOps";
@@ -462,7 +463,8 @@ export default function DataPanel({
                           </span>
                         )}
                         {columns.map((col) => {
-                          const sampleVal = col.sample?.[0] ?? "";
+                          const rawSample = col.sample?.[0];
+                          const sampleVal = rawSample == null || rawSample === "" ? "" : formatCellValue(rawSample, col.type);
                           const hasPreview = Boolean(previewData);
                           const isMenuOpen =
                             activeMenuCol?.sourceId === src.id &&
