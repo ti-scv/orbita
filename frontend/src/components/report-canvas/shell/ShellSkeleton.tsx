@@ -15,8 +15,9 @@ export function WorkspaceSkeleton({ label = "Carregando estrutura do Canvas…" 
         <span className="cv-skel-line" style={{ width: "90%" }} />
         <span className="cv-skel-line" style={{ width: "64%" }} />
       </div>
-      <div className="cv-skel-stage" aria-hidden="true">
-        <div className="cv-skel-paper">
+      <div className="cv-skel-stage">
+        <p className="cv-skel-message">{label} Aguarde, preparando os dados e a área de edição.</p>
+        <div className="cv-skel-paper" aria-hidden="true">
           <span className="cv-skel-line" style={{ width: "42%", height: "18px" }} />
           <span className="cv-skel-line" style={{ width: "68%" }} />
           <span className="cv-skel-line" style={{ width: "100%", height: "140px", marginTop: "8px" }} />

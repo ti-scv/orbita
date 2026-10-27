@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CanvasAssetMeta, CanvasLayout, CatalogSqlSource } from "./components/report-canvas/model";
-import { normalizeLayout, sanitizeLayoutForApi } from "./components/report-canvas/model";
+import { normalizeLayout, sanitizeLayoutForApi, validColor } from "./components/report-canvas/model";
 import {
   applyBlockRemove,
   applyBlockUpdate,
@@ -224,7 +224,7 @@ describe("Operações puras de geometria, fontes, validação e paridade byte-a-
               y: 150,
               width: 220,
               height: 96,
-              options: { color: "#075b94", font_size: 14 },
+              options: { color: validColor(undefined), font_size: 14 },
               asset_id: "11111111-2222-3333-4444-555555555555",
             },
             {
@@ -234,7 +234,7 @@ describe("Operações puras de geometria, fontes, validação e paridade byte-a-
               y: 270,
               width: 674,
               height: 110,
-              options: { color: "#075b94", font_size: 26 },
+              options: { color: validColor(undefined), font_size: 26 },
               // Tarefa 08: uma chave vazia existente não deve ser descartada.
               title: "",
               text: "{{report_name}}",

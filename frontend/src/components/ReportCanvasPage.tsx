@@ -3,6 +3,7 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 import { query, request } from "../api";
 const loadReportCanvas = () => import("./ReportCanvas");
 const ReportCanvas = lazy(loadReportCanvas);
+import type { CanvasGetResponse } from "./report-canvas/model";
 import type { ReportSummary } from "./report-canvas/model";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import ShellSkeleton from "./report-canvas/shell/ShellSkeleton";
@@ -18,6 +19,7 @@ export interface ReportCanvasPageProps {
 
 export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPageProps) {
   const [report, setReport] = useState<ReportSummary | null>(null);
+  const [initialCanvas, setInitialCanvas] = useState<CanvasGetResponse | undefined>();
   const [error, setError] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -35,12 +37,16 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
   useEffect(() => {
     let alive = true;
     setReport(null);
+    setInitialCanvas(undefined);
     setError("");
     if (admin) {
       void loadReportCanvas().catch(() => {});
-      request<ReportSummary>(query(`reports/${id}`, { unit }))
-        .then((res) => {
-          if (alive) setReport(res);
+      Promise.all([
+        request<ReportSummary>(query(`reports/${id}`, { unit })),
+        request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })),
+      ])
+        .then(([res, canvas]) => {
+          if (alive) { setInitialCanvas(canvas); setReport(res); }
         })
         .catch((err: unknown) => {
           if (alive) {
@@ -117,5 +123,5 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     return <ShellSkeleton label="Carregando relatório…" />;
   }
 
-  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} onClose={back} /></Suspense></CanvasErrorBoundary>;
+  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} initialCanvas={initialCanvas} onClose={back} /></Suspense></CanvasErrorBoundary>;
 }

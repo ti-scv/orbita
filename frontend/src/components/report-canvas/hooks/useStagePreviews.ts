@@ -80,7 +80,7 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
   const load = useCallback(async (sourceId: string, retry = false, parameters?: Record<string, unknown>) => {
     const snapshot = current.current;
     const source = snapshot.sources.find(s => s.id === sourceId);
-    if (!source || source.type !== "report" || !snapshot.enabled) return;
+    if (!source || source.type !== "report") return;
     const key = `${current.current.unit}:${current.current.reportId}:${hashSourceSpec(source)}`;
     if (pending.current.has(key) && !retry) return;
     if (parameters) runtimeParameters.current.set(key, parameters);
@@ -96,7 +96,9 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
     put({ status: "loading", data: null, error: null, loadedAt: null });
     let fields: TestParameter[] = [], values: Record<string,string> = {};
     try {
-      const report = await request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${source.report_id}`, {unit: snapshot.unit}));
+      const report = source.report_id === snapshot.reportId
+        ? { parameter_schema: snapshot.ownerSchema }
+        : await request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${source.report_id}`, {unit: snapshot.unit}));
       ({fields, values} = previewParameters(source, report.parameter_schema || {}, snapshot.ownerSchema, snapshot.unit));
       if (parameters) for (const field of fields) values[field.name] = displayParameter(parameters[field.name] ?? field.default, field.type);
       const missing = fields.filter(f => f.required !== false && f.default == null && !values[f.name]?.trim());

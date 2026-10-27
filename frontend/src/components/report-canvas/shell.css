@@ -951,3 +951,14 @@
 .cv-root .cv-status-problems:focus-visible { outline: 2px solid var(--cv-focus); }
 
 .cv-root .cv-save-dot-slot { display: inline-flex; width: 6px; flex: 0 0 6px; }
+
+/* Query progress is neutral, including when placed on the white report sheet. */
+.cv-root .cv-block-status-inline {
+  width: 100%; height: 100%; box-sizing: border-box; padding: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; font-family: var(--cv-font-ui);
+  background: var(--cv-surface-3); color: var(--cv-text-2);
+}
+.cv-root .cv-block-status-inline button { pointer-events: auto; }
+.cv-root .cv-skel-stage { flex-direction: column; align-items: center; }
+.cv-root .cv-skel-message { color: var(--cv-text); margin: 0 0 12px; }

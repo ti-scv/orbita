@@ -23,9 +23,11 @@ import type {
 import type { BannerMessage } from "../shell/Banner";
 import { validateLayoutBeforeSend } from "../stage/geometry";
 import type { CanvasStore } from "../state/canvasStore";
+import { normalizeLayout } from "../model";
 import { useAssetUrls } from "./useAssetUrls";
 
 export interface UseCanvasSessionParams {
+  initialCanvas?: import("../model").CanvasGetResponse;
   unit: string;
   report: ReportCanvasProps["report"];
   onSaved?: () => void;
@@ -46,6 +48,7 @@ export interface UseCanvasSessionParams {
 
 export function useCanvasSession({
   unit,
+  initialCanvas,
   report,
   onSaved,
   store,
@@ -98,7 +101,9 @@ export function useCanvasSession({
       setLoading(true);
       setBanner(null);
       try {
-        const { data, normalizedLayout } = await api.fetchCanvas();
+        const { data, normalizedLayout } = !isReload && initialCanvas
+          ? { data: initialCanvas, normalizedLayout: normalizeLayout(initialCanvas.layout) }
+          : await api.fetchCanvas();
         if (data.port_notice) setBanner({ tone: "conflict", text: data.port_notice });
         const nextEnabled = Boolean(data.enabled);
         const nextFormat: OutputFormat = data.output_format === "xlsx" ? "xlsx" : "pdf";
@@ -125,7 +130,7 @@ export function useCanvasSession({
         setLoading(false);
       }
     },
-    [api, assetState.registerAssetsBatch, setActivePageId, setSelectedBlockId, store.replace],
+    [api, initialCanvas, assetState.registerAssetsBatch, setActivePageId, setSelectedBlockId, store.replace],
   );
 
   useEffect(() => {

@@ -26,6 +26,8 @@ import EmptyState from "../common/EmptyState";
 import { findSourceUsages } from "./sourceOps";
 
 export interface DataPanelProps {
+  stagePreviewStates?: Record<string, SourcePreviewEntry>;
+  onLoadStagePreview?: (sourceId: string) => Promise<void>;
   active: boolean;
   sources: CanvasSource[];
   availableSources: CatalogSqlSource[];
@@ -53,6 +55,8 @@ interface SourcePreviewEntry {
 
 export default function DataPanel({
   active,
+  stagePreviewStates,
+  onLoadStagePreview,
   sources,
   availableSources,
   layout,
@@ -73,7 +77,8 @@ export default function DataPanel({
     return () => controller.abort();
   }, []);
   const [expandedSourceId, setExpandedSourceId] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<Record<string, SourcePreviewEntry>>({});
+  const [localPreviews, setPreviews] = useState<Record<string, SourcePreviewEntry>>({});
+  const previews = { ...localPreviews, ...stagePreviewStates };
   const [drawerSource, setDrawerSource] = useState<CanvasSource | null>(null);
   const [sourceToDelete, setSourceToDelete] = useState<CanvasSource | null>(null);
   const [activeMenuCol, setActiveMenuCol] = useState<{ sourceId: string; colName: string } | null>(null);
@@ -81,6 +86,10 @@ export default function DataPanel({
   // Load preview for a given source
   const handleLoadPreview = useCallback(
     async (src: CanvasSource, bypassCache = false) => {
+      if (src.type === "report" && onLoadStagePreview) {
+        await onLoadStagePreview(src.id);
+        return;
+      }
       if (!bypassCache) {
         const cached = getCachedSourcePreview(src, (src.type === "report" && src.parameters) || {}, 50, cacheScope);
         if (cached) {
@@ -147,7 +156,7 @@ export default function DataPanel({
         }));
       }
     },
-    [reportId, unit, cacheScope],
+    [reportId, unit, cacheScope, onLoadStagePreview],
   );
 
   const toggleExpand = (src: CanvasSource) => {
@@ -574,6 +583,7 @@ export default function DataPanel({
       {/* Gaveta Ver Dados (DataDrawer) */}
       {drawerSource && createPortal(
         <DataDrawer
+          key={drawerSource.id}
           source={drawerSource}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
           loading={previews[drawerSource.id]?.status === "loading"}

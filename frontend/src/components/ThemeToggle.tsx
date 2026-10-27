@@ -16,7 +16,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   return <button type="button"
     className={`theme-bulb-toggle ${resolvedTheme === "light" ? "is-lit" : ""} ${className}`.trim()}
     aria-label={`Tema: ${current.label}. Alternar para ${next.label.toLowerCase()}`}
-    title={`Tema ${current.label.toLowerCase()}. Próximo: ${next.label.toLowerCase()}`}
+    title={`Tema: ${current.label}. Clique para alternar para ${next.label.toLowerCase()}${next.id === "system" ? " e acompanhar o tema do dispositivo" : ""}.`}
     onClick={() => setTheme(next.id)}>
     <Lightbulb size={19} strokeWidth={1.8} aria-hidden="true" />
     {preference === "system" && <span className="theme-auto-mark" aria-hidden="true">A</span>}

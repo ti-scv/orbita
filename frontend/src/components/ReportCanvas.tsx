@@ -61,12 +61,14 @@ import "./report-canvas/data.css";
 import "./report-canvas/stage.css";
 import "./report-canvas/dialogs.css";
 
-export default function ReportCanvas(props: ReportCanvasProps) {
+type LoadedCanvasProps = ReportCanvasProps & { initialCanvas?: import("./report-canvas/model").CanvasGetResponse };
+
+export default function ReportCanvas(props: LoadedCanvasProps) {
   useEffect(() => () => clearSourcePreviewCache(), []);
   return <PreviewCacheScope.Provider value={`${props.unit}:${props.report.id}`}><ReportCanvasEditor {...props} /></PreviewCacheScope.Provider>;
 }
 
-function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProps) {
+function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: LoadedCanvasProps) {
   const store = useCanvasStore();
   const { layout } = store;
 
@@ -127,6 +129,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
   const session = useCanvasSession({
     unit,
     report,
+    initialCanvas,
     onSaved: handleSessionSaved,
     store,
     activePage,
@@ -517,6 +520,8 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
               />
               <div className="cv-panel-slot" hidden={prefs.libraryTab !== "data"}>
                 <DataPanel
+                  stagePreviewStates={stagePreviews.states}
+                  onLoadStagePreview={(id) => stagePreviews.load(id, true)}
                   active={prefs.libraryTab === "data"}
                   sources={layout.sources}
                   availableSources={session.availableSources}
