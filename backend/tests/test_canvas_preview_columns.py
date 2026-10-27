@@ -56,3 +56,26 @@ def test_unknown_or_partial_column_contract_is_rejected_instead_of_silently_trun
  from rest_framework.exceptions import ValidationError
  with pytest.raises(ValidationError,match="Declare todas as colunas"):
   resolve_columns({"future_dataset":spec},date(2027,1,1))
+
+
+@pytest.mark.parametrize("value,expected", [
+ ("2026-09-28T00:00:00", "28/09/2026"),
+ ("2026-09-28T00:00:00.000Z", "28/09/2026"),
+ ("2026-09-28", "28/09/2026"),
+ ("2026-09-28T14:35:09-03:00", "28/09/2026 14:35:09"),
+ ("2026-09-28 08:15", "28/09/2026 08:15:00"),
+ ("2026-02-30", "2026-02-30"),
+ (None, "—"), ("", "—"), ("  ", "—"), (0, "0"),
+])
+def test_canvas_export_matches_preview_display(value, expected):
+ from operations.report_canvas.formatting import display
+ assert display(value) == expected
+
+
+def test_canvas_table_reorders_result_and_assignee_without_losing_values():
+ from operations.report_canvas.blocks import TableBlock
+ from operations.report_canvas.sources import Dataset
+ block={"id":"b", "source_id":"s", "options":{"columns":["Responsável","Data","Resultado"]}}
+ ctx=SimpleNamespace(datasets={"s":Dataset(["Data","Resultado","Responsável"], [["2026-09-28T00:00:00",None,""],["2026-09-29T13:00:00","confirmed","Operador QA"]])})
+ result=TableBlock().prepare(block,ctx)
+ assert result["rows"] == [["","2026-09-28T00:00:00",None],["Operador QA","2026-09-29T13:00:00","confirmed"]]

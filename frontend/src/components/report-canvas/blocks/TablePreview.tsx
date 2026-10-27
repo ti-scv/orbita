@@ -1,3 +1,4 @@
+import { displayCanvasValue } from "../common/displayValue";
 import type { CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
 import ColumnBadge from "../data/ColumnBadge";
 import { inferColumnType } from "../data/columnTypes";
@@ -112,7 +113,7 @@ export default function TablePreview({
                   <tr key={ri}>
                     {indices.map((ci, k) => (
                       <td key={k}>
-                        {r[ci] === null || r[ci] === undefined ? "" : String(r[ci])}
+                        {displayCanvasValue(r[ci])}
                       </td>
                     ))}
                   </tr>

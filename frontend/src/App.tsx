@@ -253,8 +253,12 @@ function Workspace({
   }
   const loadSequence = useRef(0);
   const load = useCallback(async () => {
-    if (canvasId) return;
     const sequence = ++loadSequence.current;
+    // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
+    if (canvasId || page === "reports") {
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -681,7 +685,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {!data ? (
+          {page === "reports" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />

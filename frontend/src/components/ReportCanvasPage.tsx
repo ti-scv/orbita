@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { query, request } from "../api";
-const ReportCanvas = lazy(() => import("./ReportCanvas"));
+const loadReportCanvas = () => import("./ReportCanvas");
+const ReportCanvas = lazy(loadReportCanvas);
 import type { ReportSummary } from "./report-canvas/model";
 import ShellSkeleton from "./report-canvas/shell/ShellSkeleton";
 import "./report-canvas/tokens.css";
@@ -35,6 +36,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     setReport(null);
     setError("");
     if (admin) {
+      void loadReportCanvas().catch(() => {});
       request<ReportSummary>(query(`reports/${id}`, { unit }))
         .then((res) => {
           if (alive) setReport(res);

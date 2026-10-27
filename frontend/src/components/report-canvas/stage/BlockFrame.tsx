@@ -129,8 +129,8 @@ function BlockFrameComponent({
         }
       }
     } else {
-      originState = "sample";
-      originLabel = "Exemplo";
+      originState = showSampleData ? "sample" : "preview";
+      originLabel = showSampleData ? "Exemplo" : "Texto do relatório";
     }
   } else {
     // table, kpi, bar, line, pie
