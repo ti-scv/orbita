@@ -15,3 +15,10 @@ Ainda não foi implementada a remoção de relatórios ou conexões, nem seu res
 
 FIM-TAREFA-30 — parcial; integração e pendências acima não concluídas.
 FIM-DO-PROCESSO
+
+## Continuação 30c — componentes
+
+- No palco, Shift+clique seleciona mais componentes. O menu de contexto informa quando removerá o conjunto, que entra no histórico como uma única ação. O inspetor continua removendo apenas o componente indicado. O aviso de remoção permite desfazer; as fontes permanecem disponíveis. A alteração só é persistida ao salvar o relatório.
+- O teste de interação usa dados sintéticos e cobriu remoção múltipla pelo menu, desfazer, Delete fora de campos editáveis e refazer. Passaram dois testes, TypeScript e lint de hooks. A versão instalada do Vitest não aceita `--poolOptions.forks.singleFork`; usou-se `--pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=120000`. Uma tentativa anterior expirou ao iniciar o worker e não executou testes.
+- Ainda faltam remoção e restauração de relatórios e conexões, dependências, permissões, auditoria, testes desses fluxos, matriz visual e integração. Nenhuma migração foi criada ou aplicada; não se alterou o banco real.
+

@@ -2,7 +2,7 @@ import { formatRowCount } from "../data/rowCount";
 import { previewPeriod, expandedPreviewParameters } from "../hooks/useStagePreviews";
 import PreviewParameters from "../blocks/PreviewParameters";
 import type { StagePreviewState as SourcePreviewState } from "../hooks/useStagePreviews";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import BlockPreview from "../blocks/BlockPreview";
 import type {
@@ -40,6 +40,9 @@ export interface BlockFrameProps {
   onStartResize: (e: ReactPointerEvent, block: CanvasBlock, handle: ResizeHandle) => void;
   onKeyboardResize?: (blockId: string, dx: number, dy: number) => void;
   onFocusBlock: (blockId: string) => void;
+  onToggleBlock?: (blockId: string) => void;
+  onRemoveBlock?: (blockId: string) => void;
+  selectedCount?: number;
 }
 
 const ALL_HANDLES: { handle: ResizeHandle; label: string; className: string }[] = [
@@ -76,8 +79,12 @@ function BlockFrameComponent({
   onStartDrag,
   onStartResize,
   onFocusBlock,
+  onToggleBlock,
+  onRemoveBlock,
+  selectedCount = 1,
   onKeyboardResize,
 }: BlockFrameProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const currentX = tempGeometry ? tempGeometry.x : block.x;
   const currentY = tempGeometry ? tempGeometry.y : block.y;
   const currentW = tempGeometry ? tempGeometry.width : block.width;
@@ -187,6 +194,7 @@ function BlockFrameComponent({
       role="group"
       tabIndex={0}
       aria-label={ariaLabel}
+      title="Use Shift e clique para selecionar mais componentes. Clique com o botão direito para abrir as ações."
       className={`cv-block cv-block-${block.type} ${isSelected ? "is-selected" : ""} ${
         isDragging ? "is-dragging" : ""
       } ${problem ? `has-problem is-${problem.severity}` : ""} ${overlapping ? "is-overlapping" : ""}`.trim()}
@@ -199,10 +207,18 @@ function BlockFrameComponent({
       }}
       onPointerDown={(e) => {
         if ((e.target as HTMLElement).closest("button, input, select, textarea, a, [contenteditable]")) return;
+        if ((e.shiftKey || e.ctrlKey || e.metaKey) && onToggleBlock) { e.preventDefault(); onToggleBlock(block.id); return; }
         onStartDrag(e, block);
       }}
-      onFocus={() => onFocusBlock(block.id)}
+      onFocus={(e) => { if (e.target === e.currentTarget && !isSelected) onFocusBlock(block.id); }}
+      onContextMenu={(e) => { if (!onRemoveBlock) return; e.preventDefault(); if (!isSelected) onFocusBlock(block.id); setMenuOpen(true); }}
+      onKeyDown={(e) => {
+        if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && onRemoveBlock) { e.preventDefault(); setMenuOpen(true); }
+        if (e.shiftKey && e.key === " " && onToggleBlock && e.target === e.currentTarget) { e.preventDefault(); e.stopPropagation(); onToggleBlock(block.id); }
+        if (e.key === "Escape" && menuOpen) { e.stopPropagation(); setMenuOpen(false); e.currentTarget.focus(); }
+      }}
     >
+      {menuOpen && onRemoveBlock && <div role="menu" className="cv-block-context-menu"><button type="button" role="menuitem" autoFocus onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onRemoveBlock(block.id); }}>{isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`}</button><button type="button" role="menuitem" onClick={(e) => { const frame = e.currentTarget.closest<HTMLElement>(".cv-block"); setMenuOpen(false); frame?.focus(); }}>Cancelar</button></div>}
       {overlapping && isSelected && !isDragging && <span className="cv-overlap-warning" role="status">Sobreposição com outro bloco · mova ou redimensione</span>}
       {/* Origin Chip (Top-Left) */}
       <div
@@ -322,6 +338,10 @@ function BlockFrameComponent({
 
 export default memo(BlockFrameComponent, (prev, next) => {
   return (
+    prev.onToggleBlock === next.onToggleBlock &&
+    prev.onRemoveBlock === next.onRemoveBlock &&
+    prev.onFocusBlock === next.onFocusBlock &&
+    prev.selectedCount === next.selectedCount &&
     prev.overlapping === next.overlapping &&
     prev.previewState === next.previewState &&
     prev.isSelected === next.isSelected &&
