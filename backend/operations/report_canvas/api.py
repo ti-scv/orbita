@@ -35,6 +35,7 @@ NUMBER_REGEX = re.compile(r"^-?\d+(?:\.\d+)?$")
 
 
 class CanvasConfigSchema(serializers.Serializer):
+    default_data_mode = serializers.ChoiceField(choices=["sample", "preview"], read_only=True)
     version = serializers.IntegerField(min_value=1)
     layout = serializers.JSONField()
     enabled = serializers.BooleanField(default=False)
@@ -101,7 +102,7 @@ def response(report):
     sources = []
     for child in candidates:
         native = catalog_datasets(child)
-        if not child.enabled and not (child.pk == report.pk and native):
+        if not child.enabled and not (child.pk == report.pk and (native or child.source == "sql")):
             continue
         if native:
             sources.append({
@@ -111,13 +112,26 @@ def response(report):
                 "datasets": [{"id": k, "name": labels.get(k, k.replace("_", " ")), "columns": v} for k, v in native.items()],
             })
         elif child.source == "sql" and child.connection_id and child.connection.unit_id == report.unit_id and child.connection.enabled and child.connection.validated:
-            sources.append({"id": child.pk, "name": child.name, "code": child.code})
+            from .sql_columns import query_columns
+            sources.append({"id": child.pk, "name": child.name, "code": child.code, "columns": query_columns(child.query_sql, child.connection.engine)})
+    # Draft contracts expose fields for design only. Runtime resolution still
+    # requires reviewed, enabled sources and a validated same-unit connection.
+    from operations.external_report_mapping import catalog_contract
+    existing={s["id"] for s in sources}
+    for child in ReportDefinition.objects.filter(unit=report.unit,legacy__external_mapping__isnull=False):
+        if child.pk in existing:continue
+        pending=catalog_contract(child)
+        if pending:sources.append(pending)
     notice = ""
     if report.handler == "external_pdf_v1" and not report.canvas_layout:
         notice = "PDF recebido pronto. A edição dos elementos depende do arquivo de origem."
     elif not report.reviewed and not report.canvas_layout:
         notice = "Portabilidade pendente: a fonte deste relatório ainda não foi integrada."
+    mapping=report.legacy.get("external_mapping",{})
+    if mapping and not report.canvas_enabled:
+        notice=mapping.get("blocker") or "Modelo Canvas mapeado; geração pendente de homologação da fonte."
     return {
+        "default_data_mode": "preview" if report.reviewed and report.legacy.get("canvas_legacy_delivery", {}).get("data_mode") == "preview" else "sample",
         "port_notice": notice,
         "monthly_goals": report.monthly_goals,
         "version": report.version,

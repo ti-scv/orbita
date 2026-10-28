@@ -21,6 +21,7 @@ export const Y_AGGREGATE_VALUES: readonly ChartAggregateMode[] = [
 ];
 
 export interface BlockOptions {
+  header_fields?: Record<string, string>;
   column_widths?: number[];
   x_field?: string;
   y_fields?: string[];
@@ -114,6 +115,8 @@ export interface CanvasLayout {
 }
 
 export interface CatalogSqlSource {
+  available?: boolean;
+  unavailable_reason?: string;
   datasets?: Array<{id:string;name:string;columns:string[]}>;
 
   id: number;
@@ -132,6 +135,7 @@ export interface CanvasAssetMeta {
 }
 
 export interface CanvasGetResponse {
+  default_data_mode?: "sample" | "preview";
   port_notice?: string;
   monthly_goals?: Array<{year:number;month:number;value:number}>;
   version: number;
@@ -172,6 +176,8 @@ export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 export const MAX_ASSET_BYTES = 2 * 1024 * 1024;
 
 export const SWATCH_COLORS = [
+  "#171717",
+  "#595959",
   "#075b94",
   "#14b4cb",
   "#0f766e",
@@ -231,7 +237,7 @@ export function round2(val: number): number {
   return Math.round(val * 100) / 100;
 }
 
-export function validColor(val: unknown, fallback = "#075b94"): string {
+export function validColor(val: unknown, fallback = "#262626"): string {
   return typeof val === "string" && HEX_COLOR_RE.test(val) ? val : fallback;
 }
 
@@ -353,6 +359,7 @@ export function normalizeLayout(raw: unknown): CanvasLayout {
               .slice(0, 6)
           : [];
         const opt: BlockOptions = {
+          ...(rawOpt.header_fields && typeof rawOpt.header_fields === "object" && !Array.isArray(rawOpt.header_fields) ? {header_fields: Object.fromEntries(Object.entries(rawOpt.header_fields).filter(([k,v]) => k.length>0 && k.length<=100 && typeof v === "string" && v.length>0 && v.length<=100).slice(0,100)) as Record<string,string>} : {}),
           ...(Array.isArray(rawOpt.column_widths) ? {column_widths: rawOpt.column_widths.filter((v:unknown) => typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 3000).slice(0,100)} : {}),
           ...(rawOpt.color !== undefined ? { color: validColor(rawOpt.color) } : {}),
           ...(rawOpt.font_size !== undefined ? { font_size: clamp(Number(rawOpt.font_size) || 14, 6, 100) } : {}),
@@ -461,6 +468,7 @@ export function sanitizeLayoutForApi(layout: CanvasLayout): CanvasLayout {
         ...(rawOpt.color !== undefined ? { color: validColor(rawOpt.color) } : {}),
         ...(rawOpt.font_size !== undefined ? { font_size: clamp(Number(rawOpt.font_size) || 14, 6, 100) } : {}),
       };
+      if (rawOpt.header_fields && typeof rawOpt.header_fields === "object" && !Array.isArray(rawOpt.header_fields)) cleanOpt.header_fields=Object.fromEntries(Object.entries(rawOpt.header_fields).filter(([k,v]) => k.length>0 && k.length<=100 && typeof v === "string" && v.length>0 && v.length<=100).slice(0,100)) as Record<string,string>;
       if (Array.isArray(rawOpt.column_widths)) cleanOpt.column_widths=rawOpt.column_widths.filter(v=>Number.isFinite(v) && v>=1 && v<=3000).slice(0,100);
       if (rawOpt.aggregate === "sum" || rawOpt.aggregate === "count" || rawOpt.aggregate === "first") {
         cleanOpt.aggregate = rawOpt.aggregate;

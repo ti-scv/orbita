@@ -117,10 +117,13 @@ def validate_layout(value):
                 if not isinstance(b.get(key,""),str) or len(b.get(key,""))>limit:
                     fail_at(f'Bloco "{block_label(b)}": título ou texto inválido (até 300 e 20.000 caracteres).', block_id=b["id"], code="block_text_invalid")
             opt=b.setdefault("options",{})
-            if not isinstance(opt,dict) or not color(opt.get("color","#075b94")) or not number(opt.get("font_size",14),6,100):
+            if not isinstance(opt,dict) or not color(opt.get("color","#262626")) or not number(opt.get("font_size",14),6,100):
                 fail_at(f'Bloco "{block_label(b)}": cor ou tamanho de fonte inválidos (fonte de 6 a 100).', block_id=b["id"], code="block_style_invalid")
             if opt.get("aggregate","sum") not in ("sum","count","first") or type(opt.get("precision",0)) is not int or not 0 <= opt.get("precision",0) <= 4:
                 fail_at(f'Bloco "{block_label(b)}": agregação ou precisão inválida (precisão de 0 a 4).', block_id=b["id"], code="block_aggregate_invalid")
+            header_fields=opt.get("header_fields",{})
+            if not isinstance(header_fields,dict) or len(header_fields)>100 or any(not isinstance(k,str) or not k or len(k)>100 or not isinstance(v,str) or not v or len(v)>100 for k,v in header_fields.items()):
+                fail_at("Mapeamento de cabeçalhos inválido.",block_id=b["id"],code="table_headers_invalid")
             widths=opt.get("column_widths",[])
             if not isinstance(widths,list) or len(widths)>100 or any(not number(x,1,3000) for x in widths):fail_at(f'Bloco "{block_label(b)}": larguras de colunas inválidas.', block_id=b["id"], code="block_widths_invalid")
             for key in ["x_field","value_field"]:

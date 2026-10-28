@@ -649,7 +649,7 @@ class ReportSnapshotConfiguration(models.Model):
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
     code = models.SlugField(max_length=80)
     name = models.CharField(max_length=150)
-    dataset_kind = models.CharField(max_length=20, default="beds", choices=[("beds", "Leitos totais"), ("capacity", "Capacidade SUS/convênio"), ("lives", "Vidas Sansaúde")])
+    dataset_kind = models.CharField(max_length=20, default="beds", choices=[("beds", "Leitos totais"), ("capacity", "Capacidade SUS/convênio"), ("lives", "Vidas Sansaúde"), ("fpo_quotas", "FPO · cotas históricas"), ("fpo_mapping", "FPO · de/para histórico")])
     reference_offset_days = models.SmallIntegerField(default=0)
     consumers = models.ManyToManyField(ReportDefinition, blank=True, related_name="snapshot_dependencies")
     source_report = models.ForeignKey(ReportDefinition, on_delete=models.PROTECT, related_name="snapshot_sources")

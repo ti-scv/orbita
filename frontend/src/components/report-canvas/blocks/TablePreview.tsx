@@ -27,6 +27,13 @@ export default function TablePreview({
   showSampleData,
 }: TablePreviewProps) {
   const opt = block.options || {};
+  const columnTitle = (column: string) => {
+    const field=opt.header_fields?.[column];
+    if (!field) return column;
+    const index=dataset.columns.indexOf(field);
+    const values=[...new Set(dataset.rows.map(row => row[index]).filter(v => v!=null && String(v).trim()).map(v => String(v).trim()))];
+    return values.length>1 ? "Conflito de cabeçalho" : values[0] || column;
+  };
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
     const sourceLabel = catalog
@@ -43,7 +50,7 @@ export default function TablePreview({
               <tr>
                 {headers.map((c) => (
                   <th key={c} style={{ borderBottomColor: primaryColor }}>
-                    <span>{c}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}
               </tr>
@@ -96,7 +103,7 @@ export default function TablePreview({
               <tr>
                 {chosenCols.map((c) => (
                   <th key={c} style={{ borderBottomColor: primaryColor }}>
-                    <span>{c}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}
               </tr>

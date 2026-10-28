@@ -526,6 +526,7 @@ export default function SourceDialog({
           </p>
         )}
 
+        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">{selectedCatalog.unavailable_reason}</p>}
         {/* 3. Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (
           <>
@@ -567,7 +568,7 @@ export default function SourceDialog({
                   <option value="">Selecione um relatório</option>
                   {filteredCatalog.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} · {s.code}
+                      {s.name} · {s.code}{s.available === false ? " · Pendente" : ""}
                     </option>
                   ))}
                 </Select>

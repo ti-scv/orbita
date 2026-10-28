@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from .models import ReportSnapshotDataRow
 
-KINDS = {"beds": "Leitos totais", "capacity": "Capacidade SUS/convênio", "lives": "Vidas Sansaúde"}
+KINDS = {"beds": "Leitos totais", "capacity": "Capacidade SUS/convênio", "lives": "Vidas Sansaúde", "fpo_quotas": "FPO · cotas históricas", "fpo_mapping": "FPO · de/para histórico"}
 COLUMNS = {
     "capacity": ["CD_UNID_INT", "DS_UNID_INT", "SUS", "CONVENIO", "TOTAL", "DATA"],
     "lives": ["TP_CONTRATO", "SN_ATIVO", "DATA_FILTRO", "TOTAL"],
@@ -13,6 +13,8 @@ COLUMNS = {
 def contract(config, *, require_source):
     from .bed_snapshots import SnapshotError
     kind = config.dataset_kind
+    if kind in {"fpo_quotas", "fpo_mapping"}:
+        raise SnapshotError("legacy_reference", "Referência histórica importada; coleta automática ainda não configurada.")
     if kind not in KINDS or type(config.reference_offset_days) is not int:
         raise SnapshotError("invalid_source", "Tipo de coleta inválido.")
     if config.reference_offset_days not in ({-1, 0} if kind == "lives" else {0}):
