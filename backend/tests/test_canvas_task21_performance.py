@@ -112,6 +112,7 @@ def test_postgres_pagination_timeout_and_revoked_source(sample, monkeypatch):
     payload={"source":{"id":"s","type":"report","report_id":report.pk},"limit":50}
     first=client.post(url,payload,format="json")
     assert first.status_code==200
+    assert "connection_ms" in first.data["timings"]
     assert len(first.data["rows"])==50
     assert first.data["total_rows"]==51
     assert first.data["total_rows_exact"] is False

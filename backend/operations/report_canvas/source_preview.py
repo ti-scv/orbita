@@ -68,6 +68,7 @@ def source_preview(view, request):
     page_key = base_key + ":" + str(source.get("dataset")) + ":" + str(limit) + ":" + str(offset)
     cached = _cache.get(page_key)
     cache_hit = cached is not None
+    timings = {}
     read_start = time.perf_counter()
     with ExitStack() as stack:
         ctx = SimpleNamespace(
@@ -81,6 +82,7 @@ def source_preview(view, request):
             preview_limit=limit + 1,
             preview_offset=offset,
             stack=stack,
+            timings=timings,
         )
         try:
             dataset = cached if cache_hit else SOURCES[source_type].read(ctx, source)
@@ -161,7 +163,7 @@ def source_preview(view, request):
         "cache_hit": cache_hit,
         "external": external,
         "notice": "Origem externa: o tempo depende do sistema consultado." if external else "",
-        "timings": {"read_ms": read_ms, "serialize_ms": serialize_ms},
+        "timings": {**timings, "read_ms": read_ms, "serialize_ms": serialize_ms},
         "elapsed_ms": elapsed_ms,
     })
 
