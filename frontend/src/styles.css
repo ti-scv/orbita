@@ -4122,7 +4122,7 @@ body:has([role="dialog"][aria-modal="true"]) {
   animation: theme-flick 4s infinite;
 }
 .theme-cycle .lamp.lit .bulb {
-  fill: #ffd36b;
+  fill: var(--brand-cyan);
 }
 @keyframes theme-flick {
   0%, 100% { opacity: 1; }

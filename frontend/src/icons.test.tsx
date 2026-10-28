@@ -236,6 +236,28 @@ describe("Auditoria Estática de Ícones do Frontend", () => {
     expect(tsconfig.compilerOptions.paths["lucide-react"]).toEqual(["src/components/icons"]);
   });
 
+  it("não fixa amarelo nas regras CSS de ícones", () => {
+    function scan(dir: string) {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const file = path.join(dir, entry.name);
+        if (entry.isDirectory()) { scan(file); continue; }
+        if (!entry.name.endsWith(".css")) continue;
+        const css = fs.readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+        for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+          const [, selector, declarations] = rule;
+          if (!/\bsvg\b|icon|bulb/i.test(selector) || /whatsapp|patient-icon|user/i.test(selector)) continue;
+          expect(declarations, `${file}: ${selector}`).not.toMatch(/\byellow\b/i);
+          for (const match of declarations.matchAll(/#([\da-f]{3}|[\da-f]{6})(?![\da-f])/gi)) {
+            const hex = match[1].length === 3 ? [...match[1]].map(c => c + c).join("") : match[1];
+            const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
+            expect(r > 150 && g > 110 && b < r * .55 && b < g * .65, `${file}: ${selector} #${hex}`).toBe(false);
+          }
+        }
+      }
+    }
+    scan(path.resolve("./src"));
+  });
+
   it("nenhum componente importa bibliotecas externas concorrentes de ícones", () => {
     const srcDir = path.resolve("./src");
     const forbiddenLibraries = [
