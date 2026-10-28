@@ -324,11 +324,12 @@ export default function DataPanel({
 
             const subtitle =
               src.type === "report"
-                ? `${sqlItem?.name || "Relatório"} › ${src.dataset || "Dados"}`
+                ? `${sqlItem?.name || "Relatório"} › ${sqlItem?.datasets?.find(item => item.id === src.dataset)?.name || "Dados"}`
                 : src.type === "inline"
                   ? `Tabela manual (${src.columns.length} colunas)`
                   : "Metas mensais (year, month, value)";
 
+            const displayName = src.type === "report" && (!src.label || src.label.toLowerCase() === "dados") ? subtitle : src.label || src.id;
             const usages = layout ? findSourceUsages(layout, src.id) : [];
 
             return (
@@ -346,7 +347,7 @@ export default function DataPanel({
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}
                       />
                       <span className="cv-source-label" title={src.label || src.id}>
-                        {src.label || src.id}
+                        {displayName}
                       </span>
                       {src.label && <span className="cv-source-id">#{src.id}</span>}
                     </button>

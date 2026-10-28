@@ -155,9 +155,9 @@
   font-size: var(--cv-fs-sm);
   font-weight: var(--cv-fw-medium);
   color: var(--cv-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: left;
 }
 
 .cv-source-id {

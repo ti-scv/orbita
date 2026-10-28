@@ -436,6 +436,7 @@ export default function SourceDialog({
           </p>
         )}
 
+        {sourceModal.type === "report" && selectedCatalog && <p className="cv-source-sub">Fonte: {selectedCatalog.name} › {selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}</p>}
         {/* 1. Nome amigável e Identificador técnico */}
         <div className="cv-grid-2">
           <label className="op-field">
@@ -452,7 +453,7 @@ export default function SourceDialog({
 
           <label className="op-field">
             <span style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Identificador técnico</span>
+              <span>Identificador técnico (avançado)</span>
               {!showAdvancedId && (
                 <button
                   type="button"

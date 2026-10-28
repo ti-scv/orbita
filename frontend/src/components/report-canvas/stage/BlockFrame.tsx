@@ -88,8 +88,12 @@ function BlockFrameComponent({
     [assets],
   );
   const lineage = useMemo(
-    () => describeBlockLineage(block, sources, assetFilenames),
-    [block, sources, assetFilenames],
+    () => describeBlockLineage(block, sources.map(src => {
+      if (src.type !== "report" || (src.label && src.label.toLowerCase() !== "dados")) return src;
+      const catalog = availableSources.find(item => item.id === src.report_id);
+      return {...src, label: `${catalog?.name || "Fonte"} › ${catalog?.datasets?.find(item => item.id === src.dataset)?.name || "Dados"}`};
+    }), assetFilenames),
+    [block, sources, assetFilenames, availableSources],
   );
 
   let originState: "no_source" | "preview" | "sample" = "sample";
