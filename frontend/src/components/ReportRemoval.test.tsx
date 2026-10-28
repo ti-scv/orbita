@@ -30,7 +30,7 @@ it("mostra dependências e impede a remoção", async () => {
 
 it("lista e restaura um relatório removido", async () => {
   const changed = vi.fn();
-  vi.mocked(request).mockResolvedValueOnce({results:[{id:1,name:"Vendas",version:3}],next:null}).mockResolvedValueOnce({}).mockResolvedValueOnce({results:[],next:null});
+  vi.mocked(request).mockImplementation(async (path) => path.includes("restaurar") ? {} : {results:[{id:1,name:"Vendas",version:3}],next:null});
   render(<RemovedRecords unit="ame" resource="reports" kind="relatório" revision={0} onChanged={changed} />);
   const details = screen.getByText("Relatórios removidos").parentElement as HTMLDetailsElement;
   details.open = true;
