@@ -99,10 +99,10 @@ export function PublishPopover({
           type="checkbox"
           checked={enabled}
           disabled={disabled}
-          aria-label="Usar este canvas para gerar o relatório"
+          aria-label="Usar este modelo para gerar o relatório"
           onChange={(e) => onToggleEnabled(e.target.checked)}
         />
-        <span>Usar este canvas para gerar o relatório</span>
+        <span>Usar este modelo para gerar o relatório</span>
       </label>
 
       <div className="cv-publish-format">
@@ -309,7 +309,7 @@ export function ConfirmEnableCanvasDialog({
   if (!open) return null;
   return (
     <InlineDialog
-      title="Usar este canvas para gerar o relatório?"
+      title="Usar este modelo para gerar o relatório?"
       subtitle=""
       onClose={onCancel}
       className="cv-root cv-dialog"
@@ -326,7 +326,7 @@ export function ConfirmEnableCanvasDialog({
           <button
             type="button"
             className="cv-btn cv-btn-primary"
-            aria-label="Confirmar geração por este canvas"
+            aria-label="Confirmar geração por este modelo"
             onClick={onConfirm}
           >
             Ativar ao salvar

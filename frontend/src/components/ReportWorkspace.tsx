@@ -907,12 +907,12 @@ export default function ReportWorkspace({
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <strong>{String(r.name || r.report_name || "").replace(/^\p{Ll}/u, c => c.toLocaleUpperCase("pt-BR"))}</strong>
+                      <strong>{String(r.name || r.report_name || "")}</strong>
                       {isReports && r.category && <small className="report-category">{r.category}</small>}
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}
                       <small>
-                        {(r.engine &&
+                        {(tab !== "connections" && r.engine &&
                             (r.legacy?.source_config
                               ? `Destino: ${engines[r.engine]}`
                               : engines[r.engine])) ||
@@ -945,7 +945,7 @@ export default function ReportWorkspace({
                           {r.engine === "sqlite"
                             ? "Arquivo local"
                             : r.engine === "postgres" ? "PostgreSQL" : r.engine === "oracle" ? "Oracle" : "Banco configurado"}
-                          <small>{r.engine === "postgres" && r.database === "orbita" ? "PostgreSQL do Orbita" : r.database ? "Banco configurado" : "Destino pendente"}</small>
+                          <small>{r.database === "orbita" ? "Orbita" : r.database ? "Banco configurado" : "Destino pendente"}</small>
                         </>
                       ) : tab === "recipients" || tab === "grants" ? (
                         <span className="report-address">{r.address}</span>
@@ -999,7 +999,7 @@ export default function ReportWorkspace({
                           (tab === "connections" && !r.validated) ||
                           (tab === "recipients" && !r.verified_at) ? (
                             <details className="report-pending-details">
-                              <summary><AlertTriangle size={15} aria-hidden="true" /> {r.pending_items?.length ? `${r.pending_items.length} pendências` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</summary>
+                              <summary title="Clique para ver o que precisa ser resolvido"><AlertTriangle size={15} aria-hidden="true" /> {r.pending_items?.length ? `${r.pending_items.length} pendências` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</summary>
                               <ul>{(r.pending_items?.length ? r.pending_items : [tab === "connections" ? "Valide a conexão antes de ativar." : "Verifique o destinatário antes de ativar."]).map((item: string) => <li key={item}>{item}</li>)}</ul>
                             </details>
                           ) : (
@@ -1035,7 +1035,7 @@ export default function ReportWorkspace({
                           </button>
                         )}
                         {admin && (tab === "reports" || tab === "connections") && (
-                          <RemovalButton unit={unit} resource={resources[tab]} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
+                          <RemovalButton unit={unit} resource={resources[tab]} active={tab === "reports" && !!r.enabled} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
                         )}
                         {admin && isReports && (
                           <button
@@ -1348,12 +1348,12 @@ export default function ReportWorkspace({
                           spellCheck={false}
                           value={form.query_sql}
                           onChange={(e) => update("query_sql", e.target.value)}
-                          placeholder="SELECT coluna FROM schema.view WHERE data >= :data_inicial"
+                          placeholder="SELECT coluna FROM dados WHERE data >= :data_inicial"
                         />
                       </Field>
                     )}
                     {form.source === "composite" && (
-                      <Field label="Componentes (JSON: code e parameters)">
+                      <Field label="Componentes (código e parâmetros)">
                         <textarea
                           className="report-code"
                           rows={5}
@@ -1665,7 +1665,7 @@ export default function ReportWorkspace({
                         </div>
                       </>
                     )}
-                    <Field label="Parâmetros da execução (JSON)">
+                    <Field label="Parâmetros da execução (avançado)">
                       <textarea
                         className="report-code"
                         rows={5}

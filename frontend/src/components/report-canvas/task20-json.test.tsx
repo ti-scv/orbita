@@ -9,7 +9,7 @@ it("valida antes de confirmar e aplica somente no rascunho", async () => {
  const confirm=vi.spyOn(window,"confirm").mockReturnValue(false);
  const validate=vi.fn().mockResolvedValue(layout);
  render(<JsonEditorDialog layout={layout} validate={validate} onApply={apply} onUndo={() => {}} canUndo={false} onClose={() => {}} />);
- expect(screen.getByRole("textbox",{name:"JSON do canvas"})).toBeTruthy();
+ expect(screen.getByRole("textbox",{name:"Código do relatório"})).toBeTruthy();
  fireEvent.click(screen.getByRole("button",{name:"Validar e aplicar"}));
  await waitFor(() => expect(confirm).toHaveBeenCalled());
  expect(apply).not.toHaveBeenCalled();

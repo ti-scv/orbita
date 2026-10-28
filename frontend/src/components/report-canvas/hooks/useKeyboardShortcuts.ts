@@ -60,6 +60,9 @@ export function useKeyboardShortcuts({
   onFitToWidth,
 }: UseKeyboardShortcutsParams) {
   useEffect(() => {
+    let pointerOverStage = false;
+    const onPointerMove = (e: PointerEvent) => { pointerOverStage = e.target instanceof Element && !!e.target.closest(".cv-stage"); };
+    document.addEventListener("pointermove", onPointerMove);
     function onKeyDown(e: KeyboardEvent) {
       if (e.defaultPrevented) return;
       const isCmdOrCtrl = e.ctrlKey || e.metaKey;
@@ -140,6 +143,9 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // Browser zoom remains available outside the stage.
+      const stageActive = pointerOverStage || !!target?.closest?.(".cv-stage");
+      if (!stageActive && isCmdOrCtrl && ["=", "+", "-", "_", "0"].includes(e.key)) return;
       // Zoom shortcuts: Ctrl+= / Ctrl++, Ctrl+-, Ctrl+0, Shift+1
       if (isCmdOrCtrl && (e.key === "=" || e.key === "+")) {
         e.preventDefault();
@@ -195,7 +201,7 @@ export function useKeyboardShortcuts({
     }
 
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => { document.removeEventListener("pointermove", onPointerMove); window.removeEventListener("keydown", onKeyDown); };
   }, [
     selectedBlockId,
     modalOpen,

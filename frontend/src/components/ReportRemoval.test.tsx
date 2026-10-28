@@ -60,7 +60,7 @@ it("exibe vínculos e bloqueia a remoção quando ela não está liberada", asyn
   fireEvent.click(screen.getByRole("button", {name: "Remover conexão Banco"}));
   expect(await screen.findByText("Relatório: Vendas")).toBeTruthy();
   expect(screen.getByText("Usada por 1 relatório.")).toBeTruthy();
-  expect(screen.getByText("A remoção ainda não foi liberada neste ambiente.")).toBeTruthy();
+  expect(screen.getByText("A remoção está desativada. Entre em contato com o administrador para solicitar a liberação.")).toBeTruthy();
   expect((screen.getByRole("button", {name: /^Remover$/}) as HTMLButtonElement).disabled).toBe(true);
 });
 
@@ -70,4 +70,15 @@ it("explica ausência de vínculos sem repetir bloqueios", async () => {
   fireEvent.click(screen.getByRole("button", {name: "Remover relatório Vendas"}));
   expect(await screen.findByText("Sem agendamentos nem vínculos.")).toBeTruthy();
   expect(screen.queryByText(/Remoção bloqueada/)).toBeNull();
+});
+
+
+it("explica e bloqueia a remoção de relatório ativo antes do clique", () => {
+  render(<RemovalButton unit="ame" resource="reports" row={{id: 1, name: "Vendas", version: 1}} kind="relatório" active onChanged={() => {}} />);
+  expect(screen.getByText("Desative o relatório antes de removê-lo.")).toBeTruthy();
+  const button = screen.getByRole("button", {name: /Não é possível remover relatório Vendas/}) as HTMLButtonElement;
+  expect(button.disabled).toBe(true);
+  expect(button.title).toContain("desative o relatório");
+  fireEvent.click(button);
+  expect(request).not.toHaveBeenCalled();
 });

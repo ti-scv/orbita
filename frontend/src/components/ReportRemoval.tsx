@@ -8,8 +8,8 @@ type Row = { id: number; name: string; version: number };
 type Page = { results: Row[]; next: string | null; remocao_disponivel?: boolean };
 type Kind = "relatório" | "conexão";
 
-export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = false, showLabel = false, menuItem = false, onOpened, onDismiss }: {
-  unit: string; resource: string; row: Row; kind: Kind; onChanged: () => void; dirty?: boolean; showLabel?: boolean; menuItem?: boolean; onOpened?: () => void; onDismiss?: () => void;
+export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = false, showLabel = false, menuItem = false, onOpened, onDismiss, active = false }: {
+  unit: string; resource: string; row: Row; kind: Kind; onChanged: () => void; dirty?: boolean; showLabel?: boolean; menuItem?: boolean; onOpened?: () => void; onDismiss?: () => void; active?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,13 +36,14 @@ export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = fa
     finally { setLoading(false); }
   }
   return <>
-    <button role={menuItem ? "menuitem" : undefined} className="button" title={`Remover ${kind}: ${row.name}`} aria-label={`Remover ${kind} ${row.name}`} onClick={() => void show()}><Trash2 size={14}/>{showLabel && " Remover relatório"}</button>
+    {active && <span className="report-removal-reason">Desative o relatório antes de removê-lo.</span>}
+    <button disabled={active} role={menuItem ? "menuitem" : undefined} className="button" title={active ? `Não é possível remover ${kind} ${row.name}: desative o relatório antes de removê-lo.` : `Remover ${kind}: ${row.name}`} aria-label={active ? `Não é possível remover ${kind} ${row.name}: desative o relatório antes de removê-lo` : `Remover ${kind} ${row.name}`} onClick={() => void show()}><Trash2 size={14}/>{showLabel && " Remover relatório"}</button>
     {open && <InlineDialog title={`Remover ${kind} “${row.name}”?`} subtitle="" busy={loading} onClose={() => { setOpen(false); onDismiss?.(); }} footer={<>
       <button className="button" onClick={() => { setOpen(false); onDismiss?.(); }}>Cancelar</button>
       <button className="button report-removal-danger" disabled={loading || !available || !!error || links.length > 0} onClick={() => void remove()}>Remover</button>
     </>}>
       <p>{kind === "relatório" ? "Ele deixará de aparecer para os usuários." : "Ela deixará de ficar disponível."}</p>
-      {!available && <p>A remoção ainda não foi liberada neste ambiente.</p>}
+      {!available && <p>A remoção está desativada. Entre em contato com o administrador para solicitar a liberação.</p>}
       {dirty && <p>As alterações não salvas no editor serão perdidas.</p>}
       {loading && <p>Consultando vínculos…</p>}
       {kind === "conexão" && reportCount > 0 && <p>Usada por {reportCount} {reportCount === 1 ? "relatório" : "relatórios"}.</p>}
@@ -95,7 +96,7 @@ export function RemovedRecords({ unit, resource, kind, revision, onChanged }: {
     <summary>{kind === "relatório" ? "Relatórios removidos" : "Conexões removidas"}</summary>
     {error && <div className="inline-error" role="alert">{error}</div>}
     {busy && <p>Carregando…</p>}
-    {!busy && !available && <p>A remoção ainda não foi liberada neste ambiente.</p>}
+    {!busy && !available && <p>A remoção está desativada. Entre em contato com o administrador para solicitar a liberação.</p>}
     {!busy && available && !rows.length && <p>Nenhum registro removido.</p>}
     {rows.map(row => <div key={row.id} className="report-actions"><span>{row.name}</span><button className="button" aria-label={`Restaurar ${kind} ${row.name}`} disabled={busy} onClick={() => void restore(row)}>Restaurar</button></div>)}
   </details>;

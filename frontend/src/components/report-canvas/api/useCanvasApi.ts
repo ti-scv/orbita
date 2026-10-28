@@ -60,7 +60,7 @@ export async function validateCanvasRequest(reportId: number, unit: string, text
   let layout: CanvasLayout;
   try { layout = JSON.parse(text); } catch { throw new Error("JSON inválido. Confira a sintaxe antes de validar."); }
   if (!layout || typeof layout !== "object" || !Array.isArray(layout.pages) || !Array.isArray(layout.sources)) throw new Error("O JSON precisa conter as listas de páginas e fontes.");
-  if (new TextEncoder().encode(text).length > 750000) throw new Error("O JSON excede o limite de 750 KB.");
+  if (new TextEncoder().encode(text).length > 750000) throw new Error("O código do relatório excede o limite de 750 KB.");
   if (typeof enabled !== "boolean" || !["pdf", "xlsx"].includes(outputFormat) || !Array.isArray(parameterEdits)) throw new Error("Configuração de validação inválida. Confira o formato e os parâmetros.");
   const result = await request<{layout: CanvasLayout}>(query(`reports/${reportId}/canvas-validate`, {unit}), "POST", {json: text, enabled, output_format: outputFormat, parameter_edits: parameterEdits});
   return result.layout;

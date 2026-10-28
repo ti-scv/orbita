@@ -1,6 +1,5 @@
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
-import ReportCanvasPage from "./components/ReportCanvasPage";
 import BrandLogo from "./components/BrandLogo";
 import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
@@ -74,6 +73,7 @@ import type {
   Template,
 } from "./types";
 
+const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
 const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
 
@@ -469,7 +469,7 @@ function Workspace({
         : page === "messages"
           ? data?.messages
           : null;
-  if (canvasId) return <ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} />;
+  if (canvasId) return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
