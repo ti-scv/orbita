@@ -39,7 +39,7 @@ def readiness(report, seen=None, *, check_external_file=True, canvas_reports=Non
     if report.review_queue:
         missing.append("Rotina legada pendente de validação")
     if not report.reviewed:
-        missing.append("Revisão da definição pendente")
+        missing.append("Abra o editor, confira as colunas e marque como revisado")
     if report.handler=="app_operational_v1":
         from operations.app_reporting import manifest
         try:manifest(report)

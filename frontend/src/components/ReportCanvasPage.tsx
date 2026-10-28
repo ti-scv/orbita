@@ -65,7 +65,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
   useEffect(() => {
     if (!report) return;
     const previous = document.title;
-    document.title = `${report.name} · Canvas · SCV Messenger`;
+    document.title = `${report.name} · Desenho do relatório · SCV Messenger`;
     return () => {
       document.title = previous;
     };

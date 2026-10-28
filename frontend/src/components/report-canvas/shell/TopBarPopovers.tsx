@@ -156,7 +156,7 @@ export function MoreActionsMenu({
         type="button"
         role="menuitem"
         aria-label="Publicação"
-        title="Abrir opções de publicação: ativar o Canvas e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
+        title="Abrir opções de publicação: ativar o modelo do relatório e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
         className="cv-menu-item"
         onClick={onOpenPublish}
       >

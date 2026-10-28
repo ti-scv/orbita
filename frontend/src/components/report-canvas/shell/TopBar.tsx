@@ -485,7 +485,7 @@ export default function TopBar({
                     tabIndex={0}
                     className={`cv-btn ${openPopover === "publish" ? "is-open" : ""}`.trim()}
                     aria-label="Publicação: abrir opções de ativação do Canvas e formato de saída"
-                    title="Abrir opções de publicação: ativar o Canvas e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
+                    title="Abrir opções de publicação: ativar o modelo do relatório e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
                     aria-haspopup="dialog"
                     aria-expanded={openPopover === "publish"}
                     onClick={() => setOpenPopover((p) => (p === "publish" ? null : "publish"))}

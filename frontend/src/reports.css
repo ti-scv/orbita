@@ -1027,3 +1027,7 @@
 .report-filters .scv-select-trigger > span { white-space: normal; overflow: visible; text-overflow: clip; }
 .report-pending-details summary { cursor: pointer; color: var(--text-primary); }
 .report-pending-details ul { padding-left: 16px; margin: 6px 0; font-size: 12px; }
+
+/* Keep origin and database names readable at browser zoom levels. */
+.report-workspace .report-table td:nth-child(2) { min-width: 145px; word-break: normal; overflow-wrap: normal; }
+.report-workspace .report-table td:nth-child(2) small { word-break: normal; overflow-wrap: normal; }

@@ -1,3 +1,4 @@
+import { friendlyDatabaseName } from "../reportLabels";
 import ReportDataPreview from "./ReportDataPreview";
 import ReportAppConnections from "./ReportAppConnections";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
@@ -775,7 +776,7 @@ export default function ReportWorkspace({
             >
               <Icon size={15} aria-hidden="true" />
               {names[t]}
-              {t === "components" && inventory && <span className="report-tab-count" title="Fontes auxiliares cadastradas; blocos do editor são contados dentro do relatório" aria-label={`${inventory.components || 0} fontes auxiliares cadastradas`}>{inventory.components || 0}</span>}
+              {t === "components" && !!inventory?.components && <span className="report-tab-count" title="Fontes auxiliares cadastradas; blocos do editor são contados dentro do relatório" aria-label={`${inventory.components || 0} fontes auxiliares cadastradas`}>{inventory.components || 0}</span>}
             </button>;
           })}
       </div>
@@ -945,7 +946,7 @@ export default function ReportWorkspace({
                           {r.engine === "sqlite"
                             ? "Arquivo local"
                             : r.engine === "postgres" ? "PostgreSQL" : r.engine === "oracle" ? "Oracle" : "Banco configurado"}
-                          <small>{r.database === "orbita" ? "Orbita" : r.database ? "Banco configurado" : "Destino pendente"}</small>
+                          <small>{friendlyDatabaseName(r.database)}</small>
                         </>
                       ) : tab === "recipients" || tab === "grants" ? (
                         <span className="report-address">{r.address}</span>
@@ -1041,13 +1042,13 @@ export default function ReportWorkspace({
                           <button
                             type="button"
                             className="button"
-                            title={`Canvas: ${r.name}`}
+                            title={`Editar relatório: ${r.name}`}
                             onClick={() => {
                               window.history.pushState({}, "", `/relatorios/${r.id}/canvas?unit=${encodeURIComponent(unit)}`);
                               window.dispatchEvent(new PopStateEvent("popstate"));
                             }}
                           >
-                            Canvas
+                            Editar relatório
                           </button>
                         )}
                         {admin && tab === "recipients" && (
