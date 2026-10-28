@@ -186,7 +186,7 @@ export default function OperationsAdministration({
                       required
                       value={view}
                       onChange={(e) => setView(e.target.value)}
-                      placeholder="SCHEMA.VIEW"
+                      placeholder="MINHA_VISAO"
                     />
                   </Field>
                   <Field label="Evidência da validação">

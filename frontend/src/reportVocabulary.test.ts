@@ -14,9 +14,10 @@ describe("vocabulário visível", () => {
           if (jsx || ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) {
             const text = (node as ts.StringLiteral).text;
             // Internal keys, module paths, class names and diagnostics are not UI copy.
-            const attr = ts.isJsxAttribute(node.parent) ? node.parent.name.getText(source) : "";
+            const attrNode = ts.isJsxExpression(node.parent) ? node.parent.parent : node.parent;
+            const attr = ts.isJsxAttribute(attrNode) ? attrNode.name.getText(source) : "";
             const internal = ["className", "id", "htmlFor", "aria-describedby", "aria-labelledby", "data-testid"].includes(attr) || /^(?:\.\.?\/|\/)/.test(text) || text.startsWith("[Canvas]");
-            const prose = jsx || /\s/.test(text) || /^(Canvas|JSON|XLSX)$/.test(text);
+            const prose = jsx || ["title", "aria-label", "label", "placeholder"].includes(attr) || /\s/.test(text) || /^(Canvas|JSON|XLSX)$/.test(text);
             if (!internal && prose && (/\b(canvas|JSON|payload|schema|slug)\b/i.test(text) || (/\bXLSX\b/.test(text) && !/Excel/.test(text)))) {
               failures.push(name + ":" + (source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1) + ": " + text.trim());
             }
