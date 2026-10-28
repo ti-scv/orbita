@@ -387,7 +387,7 @@ export default function BlockInspector({
                 }}
               >
                 <Trash2 size={13} aria-hidden="true" />
-                <span>Excluir</span>
+                <span>Remover</span>
               </button>
             </div>
           )}

@@ -85,6 +85,8 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   const [hiddenAssetIds, setHiddenAssetIds] = useState<string[]>([]);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [removalNotice, setRemovalNotice] = useState<{ revision: number; hasSource: boolean } | null>(null);
+  const removalUndoRef = useRef<HTMLButtonElement>(null);
   const [problemsPanelOpen, setProblemsPanelOpen] = useState(false);
   const [draftBanner, setDraftBanner] = useState<{
     text: string;
@@ -229,6 +231,20 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     setBanner: session.setBanner,
   });
 
+  const removeBlock = useCallback((blockId: string) => {
+    const block = layout.pages.flatMap((page) => page.blocks).find((item) => item.id === blockId);
+    if (!block) return;
+    actions.removeBlock(blockId);
+    setRemovalNotice({ revision: store.state.nextRevision, hasSource: Boolean(block.source_id) });
+    requestAnimationFrame(() => removalUndoRef.current?.focus());
+  }, [actions, layout.pages, store.state.nextRevision]);
+
+  useEffect(() => {
+    if (!removalNotice) return;
+    const timer = window.setTimeout(() => setRemovalNotice(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [removalNotice]);
+
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -281,7 +297,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     modalOpen: Boolean(session.sourceModal || session.previewModal || shortcutsOpen),
     onClearSelection: () => setSelectedBlockId(null),
     onSelectBlock: setSelectedBlockId,
-    onDeleteBlock: actions.removeBlock,
+    onDeleteBlock: removeBlock,
     onNudgeBlock: actions.nudgeBlock,
     onDuplicateBlock: actions.duplicateSelectedBlock,
     onReorderBlock: handleReorderBlock,
@@ -477,6 +493,12 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
             </div>
           </div>
         )}
+        {removalNotice && store.state.revision === removalNotice.revision && (
+          <div className="cv-banner cv-banner-ok" role="status" aria-live="polite">
+            <span>Componente removido.{removalNotice.hasSource ? " A fonte continua disponível." : ""}</span>
+            <button ref={removalUndoRef} type="button" className="cv-btn" onClick={() => { store.undo(); setRemovalNotice(null); }}>Desfazer</button>
+          </div>
+        )}
         <Banner
           banner={session.banner}
           disabled={session.loading || session.busy}
@@ -623,7 +645,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 <PanelRightOpen size={16} aria-hidden="true" />
               </button>
             )}
-            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={actions.removeBlock} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
+            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={removeBlock} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
           </div>
         )}
         <ProblemsPanel

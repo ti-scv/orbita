@@ -273,8 +273,8 @@ export default function PageInspector({
                     <button
                       type="button"
                       className="cv-well-btn is-danger"
-                      aria-label={`Remover ${({title: "Título", data: "Dados"} as Record<string, string>)[b.title || b.id] || b.title || b.id}`}
-                      title="Excluir bloco"
+                      aria-label={`Remover ${b.title || BLOCK_LABELS[b.type]}`}
+                      title={`Remover ${b.title || BLOCK_LABELS[b.type]}`}
                       onClick={() => onRemoveBlock(b.id)}
                     >
                       <Trash2 size={12} aria-hidden="true" />
