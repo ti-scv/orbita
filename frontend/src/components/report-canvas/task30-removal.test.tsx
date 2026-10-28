@@ -61,6 +61,7 @@ it("relatório ativo não permite remover com Delete nem pelo inspetor", async (
   const first = await screen.findByRole("group", { name: /Primeiro/ });
   fireEvent.focus(first);
   fireEvent.keyDown(first, { key: "Delete" });
+  expect(screen.getByRole("status", {name: "Aviso de edição"}).textContent).toContain("Relatório ativo: crie uma nova versão para editar");
   expect(screen.getByRole("group", { name: /Primeiro/ })).toBeTruthy();
   fireEvent.contextMenu(first);
   expect(screen.queryByRole("menuitem", { name: /Remover.*Primeiro/ })).toBeNull();

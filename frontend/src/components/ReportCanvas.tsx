@@ -90,12 +90,23 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   const [jsonOpen, setJsonOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [removalNotice, setRemovalNotice] = useState<{ revision: number; hasSource: boolean; count: number } | null>(null);
+  const [readOnlyNotice, setReadOnlyNotice] = useState(false);
+  useEffect(() => {
+    if (!readOnlyNotice) return;
+    const timer = window.setTimeout(() => setReadOnlyNotice(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [readOnlyNotice]);
   const removalUndoRef = useRef<HTMLButtonElement>(null);
   const reportActionsRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       const menu = reportActionsRef.current;
-      if (menu?.open && !menu.contains(event.target as Node)) { menu.open = false; menu.querySelector<HTMLElement>("summary")?.focus(); }
+      if (menu?.open && !menu.contains(event.target as Node)) {
+        menu.open = false;
+        menu.querySelector<HTMLElement>("summary")?.focus();
+        // Restore after the clicked control performs its native focus action.
+        requestAnimationFrame(() => menu.querySelector<HTMLElement>("summary")?.focus());
+      }
     };
     const escape = (event: KeyboardEvent) => {
       const menu = reportActionsRef.current;
@@ -252,8 +263,17 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     setBanner: session.setBanner,
   });
 
+  const routePreviewOpened = useRef(false);
+  const { loading: routePreviewLoading, openPreviewDialog: openRoutePreview } = session;
+  useEffect(() => {
+    if (!routePreviewLoading && /\/previa\/?$/.test(window.location.pathname) && !routePreviewOpened.current) {
+      routePreviewOpened.current = true;
+      openRoutePreview();
+    }
+  }, [routePreviewLoading, openRoutePreview]);
+
   const removeBlock = useCallback((blockId: string, removeSelection = true) => {
-    if (report.enabled) return;
+    if (report.enabled) { setReadOnlyNotice(true); return; }
     const block = layout.pages.flatMap((page) => page.blocks).find((item) => item.id === blockId);
     if (!block) return;
     const ids = removeSelection && selectedBlockId && (blockId === selectedBlockId || extraSelectedIds.includes(blockId)) ? [selectedBlockId, ...extraSelectedIds] : [blockId];
@@ -524,6 +544,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
             </div>
           </div>
         )}
+        {readOnlyNotice && <div className="cv-removal-toast" role="status" aria-label="Aviso de edição">Relatório ativo: crie uma nova versão para editar.</div>}
         {removalNotice && store.state.revision === removalNotice.revision && (
           <div className="cv-removal-toast" role="status" aria-live="polite">
             <span>{removalNotice.count === 1 ? "Componente removido." : `${removalNotice.count} componentes removidos.`}{removalNotice.hasSource ? " As fontes continuam disponíveis." : ""}</span>
