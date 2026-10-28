@@ -2,6 +2,14 @@ import type { CanvasBlock, CanvasPageConfig } from "../../model";
 import { round2 } from "../../model";
 import CollapsibleSection from "./CollapsibleSection";
 import NumberField from "./NumberField";
+import {
+  AlignLeft,
+  AlignCenterH,
+  AlignRight,
+  AlignTop,
+  AlignCenterV,
+  AlignBottom,
+} from "../../../icons";
 
 export interface GeometryFieldsProps {
   block: CanvasBlock;
@@ -46,9 +54,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 2v10M4.5 4.5h6v2h-6zM4.5 8h4v2h-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignLeft size={14} aria-hidden="true" />
             </button>
 
             <button
@@ -63,9 +69,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1.5v11M3.5 4h7v2h-7zM4.5 8h5v2h-5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignCenterH size={14} aria-hidden="true" />
             </button>
 
             <button
@@ -80,9 +84,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M12 2v10M3.5 4.5h6v2h-6zM5.5 8h4v2h-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignRight size={14} aria-hidden="true" />
             </button>
 
             <button
@@ -97,9 +99,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 2h10M4.5 4.5v6h2v-6zM8 4.5v4h2v-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignTop size={14} aria-hidden="true" />
             </button>
 
             <button
@@ -114,9 +114,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M1.5 7h11M4 3.5v7h2v-7zM8 4.5v5h2v-5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignCenterV size={14} aria-hidden="true" />
             </button>
 
             <button
@@ -131,9 +129,7 @@ export default function GeometryFields({
                 }))
               }
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 12h10M4.5 3.5v6h2v-6zM8 5.5v4h2v-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
+              <AlignBottom size={14} aria-hidden="true" />
             </button>
           </div>
         </div>
