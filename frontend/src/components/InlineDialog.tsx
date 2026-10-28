@@ -56,7 +56,10 @@ export default function InlineDialog({
       ).filter((el) => el.offsetParent !== null);
       const first = fields[0],
         last = fields[fields.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!fields.includes(document.activeElement as HTMLElement)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first)?.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last?.focus();
       }
@@ -95,7 +98,7 @@ export default function InlineDialog({
         >
           <X size={18} />
         </button>
-        <header className="observation-header">
+        <div className="observation-header">
           <h2><LegacyLabel legacy={legacy}>{title}</LegacyLabel></h2>
           {subtitle && (
             <p className="inline-dialog-subtitle">
@@ -103,7 +106,7 @@ export default function InlineDialog({
               <span>{subtitle}</span>
             </p>
           )}
-        </header>
+        </div>
         <div className="inline-dialog-body">{children}</div>
         {footer && <div className="inline-dialog-actions">{footer}</div>}
       </section>

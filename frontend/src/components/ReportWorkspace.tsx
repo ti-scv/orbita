@@ -2,7 +2,7 @@ import ReportAppConnections from "./ReportAppConnections";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
 import Select from "./Select";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   AlertTriangle,
   Check,
@@ -658,6 +658,17 @@ export default function ReportWorkspace({
       setError((e as Error).message);
     }
   }
+  function navigateTabs(event: KeyboardEvent<HTMLDivElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+    if (index < 0 || !tabs.length) return;
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+      (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  }
   function changeTab(t: Tab) {
     setTab(t);
     setPage(1);
@@ -748,7 +759,7 @@ export default function ReportWorkspace({
   );
   return (
     <div className="report-workspace">
-      <div className="report-tabs" role="tablist" aria-label="Relatórios">
+      <div className="report-tabs" role="tablist" aria-label="Relatórios" onKeyDown={navigateTabs}>
         {(Object.keys(names) as Tab[])
           .filter((t) => t !== "grants" && t !== "snapshots" && (admin || t === "reports" || t === "executions"))
           .map((t) => {
@@ -756,6 +767,7 @@ export default function ReportWorkspace({
             return <button
               role="tab"
               aria-selected={tab === t || (t === "components" && tab === "snapshots")}
+              tabIndex={tab === t || (t === "components" && tab === "snapshots") ? 0 : -1}
               key={t}
               className={tab === t || (t === "components" && tab === "snapshots") ? "active" : ""}
               onClick={() => changeTab(t)}
@@ -767,9 +779,9 @@ export default function ReportWorkspace({
           })}
       </div>
       {admin && (tab === "components" || tab === "snapshots") && (
-        <div className="report-tabs" role="tablist" aria-label="Categoria de componentes">
-          <button role="tab" aria-selected={tab === "components"} className={tab === "components" ? "active" : ""} onClick={() => changeTab("components")}><Layers size={15} aria-hidden="true"/>Auxiliares</button>
-          <button role="tab" aria-selected={tab === "snapshots"} className={tab === "snapshots" ? "active" : ""} onClick={() => changeTab("snapshots")}><DatabaseBackup size={15} aria-hidden="true"/>Coleta</button>
+        <div className="report-tabs" role="tablist" aria-label="Categoria de componentes" onKeyDown={navigateTabs}>
+          <button role="tab" tabIndex={tab === "components" ? 0 : -1} aria-selected={tab === "components"} className={tab === "components" ? "active" : ""} onClick={() => changeTab("components")}><Layers size={15} aria-hidden="true"/>Auxiliares</button>
+          <button role="tab" tabIndex={tab === "snapshots" ? 0 : -1} aria-selected={tab === "snapshots"} className={tab === "snapshots" ? "active" : ""} onClick={() => changeTab("snapshots")}><DatabaseBackup size={15} aria-hidden="true"/>Coleta</button>
         </div>
       )}
       {error && !modal && (
@@ -802,7 +814,7 @@ export default function ReportWorkspace({
       <section className="panel">
         <div className="report-list-heading">
           <div>
-            <h2>{names[tab]}</h2>
+            <h1>{names[tab]}</h1>
             <span>{!loading && loadedScope === `${unit}:${tab}` ? `${count} ${count === 1 ? "registro" : "registros"}` : "Carregando…"}</span>
           </div>
           <div className="report-actions">
