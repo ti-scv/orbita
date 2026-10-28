@@ -43,7 +43,7 @@ const path = require('node:path');
           }
           return {horizontal:document.documentElement.scrollWidth > innerWidth, unnamed, clipped, overlaps};
         });
-        const filename = `t28c-${id}-${width}-${theme}-${panel}.png`;
+        const filename = `t29-${id}-${width}-${theme}-${panel}.png`;
         await page.screenshot({path:path.join(dest,filename)}); fs.copyFileSync(path.join(dest,filename),path.join('/tmp/qa-prints',filename));
         record.panels.push({panel,...metrics});
       }
@@ -76,7 +76,7 @@ const path = require('node:path');
         await page.locator('.cv-source-row').first().getByRole('button',{name:/Editar fonte/}).click(); await capture('fonte');
       } catch (error) { record.errors.push(error.message); }
       results.push(record); await context.close();
-      fs.writeFileSync(path.join(dest,process.env.CANVAS_QA_READONLY ? 'inspetor-resultados.json' : 't28c-resultados.json'),JSON.stringify(results,null,2));
+      fs.writeFileSync(path.join(dest,process.env.CANVAS_QA_READONLY ? 'inspetor-resultados.json' : 't29-resultados.json'),JSON.stringify(results,null,2));
     }
   } finally { await browser.close(); }
   console.log(JSON.stringify(results,null,2));
