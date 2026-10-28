@@ -27,3 +27,23 @@ it("formata vazios, datas e estados conhecidos em português", () => {
  expect(formatCellValue("open")).toBe("Aberto");
  expect(formatCellValue("outro")).toBe("outro");
 });
+
+
+it("mostra data brasileira e envia ISO na prévia", async () => {
+ const { default: PreviewParameters } = await import("./blocks/PreviewParameters");
+ const submit = vi.fn();
+ render(<PreviewParameters fields={[{name:"start", label:"Data inicial", type:"date"}]} values={{start:"2026-10-01"}} onSubmit={submit} />);
+ const input = screen.getByLabelText("Data inicial *") as HTMLInputElement;
+ expect(input.value).toBe("01/10/2026");
+ fireEvent.change(input, {target:{value:"15/11/2026"}});
+ fireEvent.click(screen.getByRole("button", {name:"Tentar de novo"}));
+ expect(submit).toHaveBeenCalledWith({start:"2026-11-15"});
+});
+
+
+it("formata contagens exatas, limitadas e estimadas", async () => {
+ const { formatRowCount } = await import("./data/rowCount");
+ expect(formatRowCount(50, {total_rows:187, total_rows_exact:true})).toBe("50 de 187 linhas");
+ expect(formatRowCount(50, {total_rows:10000, total_rows_exact:false, total_rows_capped:true})).toBe("50 de mais de 10.000 linhas");
+ expect(formatRowCount(50, {total_rows:51, total_rows_exact:false})).toBe("50 de pelo menos 51 linhas");
+});

@@ -106,7 +106,7 @@ export default function PageInspector({
         </div>
       </div>
 
-      <div className="cv-inspector-scroll">
+      <div className={`cv-inspector-scroll${!onUpdatePageConfig ? " cv-page-readonly" : ""}`}>
         {!onUpdatePageConfig && <p className="cv-field-hint">Relatório ativo: crie uma nova versão para editar.</p>}
         <CollapsibleSection title="Página" defaultOpen={true}>
           {activePage && (

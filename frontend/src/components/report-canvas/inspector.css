@@ -1302,3 +1302,11 @@
 
 .cv-root .cv-insp-fit-content { padding: 8px 12px; min-width: 0; }
 .cv-root .cv-insp-fit-content button { max-width: 100%; white-space: normal; text-align: left; }
+
+/* Os valores do relatório ativo continuam legíveis em modo somente leitura. */
+.cv-root .cv-page-readonly :is(input, select, textarea, button):disabled {
+  opacity: 1;
+  color: var(--cv-text);
+  -webkit-text-fill-color: var(--cv-text);
+}
+.cv-root .cv-page-readonly .cv-seg-group.is-disabled { opacity: 1; }

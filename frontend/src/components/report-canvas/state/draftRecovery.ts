@@ -5,6 +5,7 @@ function draftStorage(): Storage | null {
   try { return typeof window === "undefined" ? null : window.localStorage; } catch { return null; }
 }
 
+export const MAX_DRAFT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 export const MAX_DRAFT_BYTES = 700 * 1024; // 700 KB limit
 
 export interface DraftPayload {
@@ -82,10 +83,19 @@ export function loadDraftFromStorage(
   }
   try {
     const key = getDraftStorageKey(unit, reportId, version);
+    const prefix = `orbita:canvas_draft:${unit}:${reportId}:`;
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const candidate = storage.key(i);
+      if (candidate?.startsWith(prefix) && candidate !== key) storage.removeItem(candidate);
+    }
     const item = storage.getItem(key);
     if (!item || new TextEncoder().encode(item).length > MAX_DRAFT_BYTES) return null;
     const parsed = JSON.parse(item) as DraftPayload;
     if (!parsed || !parsed.layout || parsed.layout.schema_version !== 1 || !Array.isArray(parsed.layout.pages) || !parsed.layout.pages.length || typeof parsed.enabled !== "boolean" || !["pdf", "xlsx"].includes(parsed.outputFormat) || !Number.isFinite(parsed.timestamp)) {
+      return null;
+    }
+    if (parsed.timestamp > Date.now() || Date.now() - parsed.timestamp > MAX_DRAFT_AGE_MS) {
+      storage.removeItem(key);
       return null;
     }
     return { ...parsed, layout: normalizeLayout(parsed.layout) };
