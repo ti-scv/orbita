@@ -527,7 +527,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 onClosePanel={prefs.closeLeftPanel}
               />
               <div className="cv-panel-slot" hidden={prefs.libraryTab !== "data"}>
-                <ParameterEditor layout={layout} items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
+                <ParameterEditor changedParameters={Object.values(stagePreviews.states).flatMap(state => state.changedParameters || [])} layout={layout} items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
                 <DataPanel
                   stagePreviewStates={stagePreviews.states}
                   onLoadStagePreview={(id) => stagePreviews.load(id, true)}

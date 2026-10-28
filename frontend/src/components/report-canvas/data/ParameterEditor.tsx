@@ -5,7 +5,8 @@ import { friendlySourceName } from "./sourceName";
 import { useState } from "react";
 import type { CanvasLayout, ParameterDeclaration, ParameterEdit } from "../model";
 
-export default function ParameterEditor({ items, edits, onChange, layout }: { layout?: CanvasLayout; items: ParameterDeclaration[]; edits: ParameterEdit[]; onChange: (edits: ParameterEdit[]) => void }) {
+export default function ParameterEditor({ items, edits, onChange, layout, changedParameters = [] }: { changedParameters?: string[]; layout?: CanvasLayout; items: ParameterDeclaration[]; edits: ParameterEdit[]; onChange: (edits: ParameterEdit[]) => void }) {
+  const changedCount = new Set([...edits.map(edit => edit.name), ...changedParameters]).size;
   const { sources: catalog = [] } = useContext(OriginContext);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
@@ -29,7 +30,7 @@ export default function ParameterEditor({ items, edits, onChange, layout }: { la
   }
   return <section className="cv-parameter-editor" aria-label="Parâmetros do relatório">
     <button type="button" className="cv-btn-compact" aria-expanded={open} onClick={() => setOpen(!open)}>Editar parâmetros ({visible.length})</button>
-    {!open && <span className="cv-hint"> {items.length} {items.length === 1 ? "parâmetro" : "parâmetros"} · {edits.length} {edits.length === 1 ? "alterado" : "alterados"}</span>}
+    {!open && <span className="cv-hint"> {items.length} {items.length === 1 ? "parâmetro" : "parâmetros"} · {changedCount} {changedCount === 1 ? "alterado" : "alterados"}</span>}
     {open && <div className="cv-parameter-body">
       {visible.some(i => !i.uses.length) && <button type="button" className="cv-btn-compact" onClick={() => setSelected(visible.filter(i => !i.uses.length).map(i => i.name))}>Selecionar não usados</button>}
       <p>{selected.length ? `${selected.length} selecionados: ${selected.map(friendlyParameterName).join(", ")}. ` : ""}Alterações serão gravadas ao salvar o relatório.</p>

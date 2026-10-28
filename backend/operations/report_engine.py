@@ -141,8 +141,9 @@ def parameters(report, values):
         raise ValidationError("Parâmetros devem ser um objeto.")
     unknown = sorted(set(values) - set(schema))
     if unknown:
-        names = ", ".join(schema) or "nenhum"
-        raise ValidationError(f'O parâmetro "{unknown[0]}" não existe nesta fonte. Parâmetros válidos: {names}.')
+        labels = {"start": "Data inicial", "end": "Data final", "unidade": "Unidade", "unit": "Unidade", "tipo_envio": "Tipo de envio"}
+        names = ", ".join(str(spec.get("label") or labels.get(name.lower(), name.replace("_", " ").capitalize())) if isinstance(spec, dict) else labels.get(name.lower(), name.replace("_", " ").capitalize()) for name, spec in schema.items()) or "nenhum"
+        raise ValidationError(f'O parâmetro "{unknown[0]}" não existe nesta fonte. Parâmetros disponíveis: {names}.')
     result = {}
     for name, spec in schema.items():
         value = values.get(name, spec.get("default"))

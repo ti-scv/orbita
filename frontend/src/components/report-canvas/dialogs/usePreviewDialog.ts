@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { CanvasLayout, OutputFormat } from "../model";
-import { collectTestParameters, displayParameter, testParameters } from "../parameters";
+import { collectTestParameters, displayParameter, friendlyParameterValue, testParameters } from "../parameters";
 import type { PreviewModalState, PreviewServerError } from "./PreviewDialog";
 
 export function usePreviewDialog({
@@ -35,7 +35,7 @@ export function usePreviewDialog({
     setPreviewModal({
       format: outputFormat,
       values: Object.fromEntries(
-        previewFields.map((f) => [f.name, displayParameter(f.default, f.type)]),
+        previewFields.map((f) => [f.name, /^(unidade|unit)$/i.test(f.name) && !f.options && f.default != null ? friendlyParameterValue(f.name, f.default) : displayParameter(f.default, f.type)]),
       ),
       busy: false,
       error: "",

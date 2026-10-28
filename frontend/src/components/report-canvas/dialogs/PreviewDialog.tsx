@@ -5,6 +5,7 @@ import { AlertCircle, Check, Clock, Download } from "lucide-react";
 import InlineDialog from "../../InlineDialog";
 import Select from "../../Select";
 import type { OutputFormat } from "../model";
+import { friendlyParameterValue } from "../parameters";
 import type { TestParameter } from "../parameters";
 import "../dialogs.css";
 
@@ -110,7 +111,7 @@ export default function PreviewDialog({
                           onClose();
                         }}
                       >
-                        Bloco <code>{err.blockId}</code>: {err.message}
+                        Ver bloco: {err.message}
                       </button>
                     ) : (
                       <span>{err.message}</span>
@@ -169,7 +170,7 @@ export default function PreviewDialog({
                     <option value="">Selecionar</option>
                     {field.options.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {option.label === option.value ? friendlyParameterValue(field.name, option.value) : option.label}
                       </option>
                     ))}
                   </Select>

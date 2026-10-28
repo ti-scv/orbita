@@ -11,6 +11,7 @@ export interface StagePreviewState extends SourcePreviewState {
   fields?: TestParameter[];
   values?: Record<string, string>;
   assumed?: boolean;
+  changedParameters?: string[];
 }
 
 export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date()) {
@@ -96,12 +97,16 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
     put({ status: "loading", data: null, error: null, loadedAt: null });
     const startedAt = performance.now();
     let fields: TestParameter[] = [], values: Record<string,string> = {};
+    let changedParameters: string[] = [];
     try {
       const report = source.report_id === snapshot.reportId
         ? { parameter_schema: snapshot.ownerSchema }
         : await request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${source.report_id}`, {unit: snapshot.unit}));
       ({fields, values} = previewParameters(source, report.parameter_schema || {}, snapshot.ownerSchema, snapshot.unit));
-      if (parameters) for (const field of fields) values[field.name] = displayParameter(parameters[field.name] ?? field.default, field.type);
+      if (parameters) {
+        changedParameters = fields.filter(field => Object.prototype.hasOwnProperty.call(parameters, field.name) && displayParameter(parameters[field.name], field.type) !== values[field.name]).map(field => field.name);
+        for (const field of fields) values[field.name] = displayParameter(parameters[field.name] ?? field.default, field.type);
+      }
       const missing = fields.filter(f => f.required !== false && f.default == null && !values[f.name]?.trim());
       if (missing.length) {
         put({status: "idle", data: null, error: `Sem padrão seguro; informe o filtro (ex.: o identificador desejado): ${missing.map(f => f.label).join(", ")}.`, loadedAt: null, fields, values});
@@ -111,9 +116,9 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
       const resolved = {...source, parameters: {...source.parameters, ...collectTestParameters(fields, values)}} as typeof source;
       const data = await fetchSourcePreviewRequest(snapshot.reportId, snapshot.unit, resolved,
         {}, 50, controller.signal);
-      put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, assumed: !parameters });
+      put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, changedParameters, assumed: !parameters });
     } catch (err: any) {
-      put({ status: "error", data: null, loadedAt: null, fields, values,
+      put({ status: "error", data: null, loadedAt: null, fields, values, changedParameters,
         httpStatus: typeof err?.status === "number" ? err.status : undefined,
         elapsedMs: Math.round(performance.now() - startedAt),
         error: `Não foi possível carregar a prévia. ${previewError(err?.message)}` });

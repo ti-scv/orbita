@@ -38,3 +38,8 @@ it("resume os parâmetros e as alterações com o editor recolhido", () => {
   expect(screen.getByText("4 parâmetros · 1 alterado")).toBeTruthy();
   expect(screen.getByRole("button", {name:/Editar parâmetros/}).getAttribute("aria-expanded")).toBe("false");
 });
+
+ it("inclui valores de execução alterados no resumo", () => {
+  render(<ParameterEditor items={[{name:"unidade",status:"Usado",uses:[],suggestion:"",historical:false}]} edits={[]} changedParameters={["unidade"]} onChange={() => {}} />);
+  expect(screen.getByText("1 parâmetro · 1 alterado")).toBeTruthy();
+ });
