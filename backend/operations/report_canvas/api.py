@@ -1,3 +1,4 @@
+from operations.report_removal_compat import active_conditions
 import base64
 import binascii
 import copy
@@ -95,7 +96,7 @@ class CanvasAssetSchema(serializers.Serializer):
 
 def context_report(view, request):
     unit = get_unit(request, ["admin"])
-    return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit)
+    return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
 
 
 def response(report):
@@ -108,7 +109,7 @@ def response(report):
         "opinions_months": "Pareceres por mês", "opinions_days": "Pareceres por dia",
     }
     candidates = ReportDefinition.objects.filter(
-        unit=report.unit, reviewed=True, review_queue=False
+        unit=report.unit, **active_conditions(), reviewed=True, review_queue=False
     ).select_related("connection", "unit").order_by("name")
     from .sources import external_source
     sources = []
@@ -131,7 +132,7 @@ def response(report):
     # requires reviewed, enabled sources and a validated same-unit connection.
     from operations.external_report_mapping import catalog_contract
     existing={s["id"] for s in sources}
-    for child in ReportDefinition.objects.filter(unit=report.unit,legacy__external_mapping__isnull=False):
+    for child in ReportDefinition.objects.filter(unit=report.unit,**active_conditions(),legacy__external_mapping__isnull=False):
         if child.pk in existing:continue
         pending=catalog_contract(child)
         if pending:sources.append(pending)
@@ -163,11 +164,11 @@ def validate_configuration(report, raw_layout, enabled=False, fmt="pdf"):
         fail("Formato ou ativação inválidos.")
     # Drafts may refer to a source not yet available, but never to another unit's assets/sources.
     for spec in layout["sources"]:
-        if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit).exists():
+        if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit, **active_conditions()).exists():
             fail("Fonte de outra unidade ou não encontrada.")
         if spec["type"] == "report":
             from .native import datasets
-            child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit).first()
+            child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit, **active_conditions()).first()
             if child and datasets(child):
                 from .sources import resolve_report
                 resolve_report(report, spec)

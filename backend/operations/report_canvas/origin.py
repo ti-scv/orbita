@@ -1,4 +1,6 @@
 """Metadados de origem sem executar consultas nem retornar credenciais."""
+from operations.report_removal_compat import active_conditions
+
 import re
 from rest_framework.response import Response
 from operations.models import ReportDefinition
@@ -18,7 +20,7 @@ def column_origin(view, request):
         return Response({"source": name, "column": column, "database": "Dados manuais do canvas", "query": "", "expression": "Valor informado na tabela manual"})
     if source["type"] == "goals":
         return Response({"source": name, "column": column, "database": "Cadastro de metas do relatório no Orbita", "query": "", "expression": "Campo de meta mensal: " + column})
-    child = ReportDefinition.objects.filter(pk=source["report_id"], unit=owner.unit).select_related("connection").first()
+    child = ReportDefinition.objects.filter(pk=source["report_id"], unit=owner.unit, **active_conditions()).select_related("connection").first()
     if not child: fail("Fonte de outra unidade ou não encontrada.")
     from .native import datasets
     if datasets(child):

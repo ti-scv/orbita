@@ -1,4 +1,5 @@
 import ReportAppConnections from "./ReportAppConnections";
+import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
 import Select from "./Select";
 import { useEffect, useRef, useState } from "react";
@@ -1022,6 +1023,9 @@ export default function ReportWorkspace({
                             <Edit3 size={14} />
                           </button>
                         )}
+                        {admin && (tab === "reports" || tab === "connections") && (
+                          <RemovalButton unit={unit} resource={resources[tab]} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
+                        )}
                         {admin && isReports && (
                           <button
                             type="button"
@@ -1099,6 +1103,7 @@ export default function ReportWorkspace({
             Próxima
           </button>
         </div>
+        {admin && (tab === "reports" || tab === "connections") && <RemovedRecords key={`${unit}:${tab}:${revision}`} unit={unit} resource={resources[tab]} kind={tab === "reports" ? "relatório" : "conexão"} revision={revision} onChanged={() => setRevision(n => n + 1)} />}
       </section>
       </>}
       {modal && (

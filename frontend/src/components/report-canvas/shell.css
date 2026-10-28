@@ -963,3 +963,7 @@
 .cv-root .cv-block-status-inline button { pointer-events: auto; }
 .cv-root .cv-skel-stage { flex-direction: column; align-items: center; }
 .cv-root .cv-skel-message { color: var(--cv-text); margin: 0 0 12px; }
+
+.cv-report-actions { position: relative; }
+.cv-report-actions summary { cursor: pointer; list-style: none; padding: 2px 6px; }
+.cv-report-actions-menu { position: absolute; top: 100%; left: 0; z-index: 60; padding: 4px; background: var(--cv-surface); border: 1px solid var(--cv-line); box-shadow: var(--cv-shadow-pop); }

@@ -51,6 +51,7 @@ function useCompactTopbar(): boolean {
 
 export interface TopBarProps {
   reportName: string;
+  reportActions?: React.ReactNode;
   version: number;
   enabled: boolean;
   outputFormat: OutputFormat;
@@ -103,6 +104,7 @@ function ToolbarThemeToggle() {
 
 export default function TopBar({
   reportName,
+  reportActions,
   version,
   enabled,
   outputFormat,
@@ -295,6 +297,7 @@ export default function TopBar({
               <span className="cv-version-tag" title={`Versão ${version}`}>
                 v{version}
               </span>
+              {reportActions}
             </div>
           </div>
 

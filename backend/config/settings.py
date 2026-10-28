@@ -182,3 +182,6 @@ ORBITA_INSTANCE_ID = os.getenv("ORBITA_INSTANCE_ID", "")
 REPORT_BAILEYS_URL = os.getenv("REPORT_BAILEYS_URL", "http://baileys:9322")
 REPORT_BAILEYS_TOKEN = os.getenv("REPORT_BAILEYS_TOKEN", "")
 REPORT_BAILEYS_ALLOW_SENDS = os.getenv("REPORT_BAILEYS_ALLOW_SENDS", "0") == "1"
+
+# Ative somente depois de aplicar a migração 0031 no banco correspondente.
+REPORT_REMOVAL_ENABLED = os.getenv("REPORT_REMOVAL_ENABLED", "0") == "1"

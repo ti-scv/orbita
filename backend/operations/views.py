@@ -1,3 +1,4 @@
+from operations.report_removal_compat import active_conditions
 import base64
 import binascii
 
@@ -1197,7 +1198,7 @@ class CampaignViewSet(ScopedRead):
 
 
 class ReportViewSet(ConfigViewSet):
-    queryset = m.ReportDefinition.objects.order_by("name")
+    queryset = m.ReportDefinition.objects.filter(**active_conditions()).order_by("name")
     serializer_class = s.ReportSerializer
 
     def get_queryset(self):
@@ -1308,7 +1309,7 @@ class ReportRequestViewSet(ScopedRead):
         def execute():
             unit = get_unit(request, ["admin", "operator"])
             data = values.validated_data
-            report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"])
+            report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"], **active_conditions())
             params = validate_parameters(data["parameters"])
             job = m.ReportRequest(
                 unit=unit,

@@ -55,7 +55,7 @@ def model_serializer(model, readonly=()):
                 {
                     "model": model,
                     "fields": "__all__",
-                    "read_only_fields": ["unit", "created_at", *readonly],
+                    "read_only_fields": ["unit", "created_at", *readonly, *([f.name for f in model._meta.fields if f.name in {"removed_at", "removed_by", "removed_was_enabled"}])],
                 },
             )
         },

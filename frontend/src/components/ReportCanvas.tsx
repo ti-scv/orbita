@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { RemovalButton } from "./ReportRemoval";
 import { AlertTriangle, PanelRightOpen } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
@@ -443,6 +444,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         <TopBar
           onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
+          reportActions={<details className="cv-report-actions"><summary aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} showLabel onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
           outputFormat={session.outputFormat}

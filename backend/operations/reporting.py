@@ -242,6 +242,8 @@ def make_execution(
     run_date=None,
     transport=None,
 ):
+    if getattr(report, "removed_at", None) is not None:
+        raise ValidationError("Relatório removido.")
     if report.catalog_kind != "report":
         raise ValidationError("Componentes só podem ser executados pelo relatório principal ou em prévia técnica.")
     if report.handler == "occupancy_indicators_v1":

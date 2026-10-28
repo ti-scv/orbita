@@ -1,0 +1,6 @@
+.button.report-removal-danger:not(:disabled) {
+  color: var(--danger-text, #b91c1c);
+  background: var(--danger-bg, #fef2f2);
+  border-color: var(--danger-border, #fecaca);
+}
+

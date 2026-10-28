@@ -1,3 +1,4 @@
+from django.conf import settings
 from operations.report_app_api import AppDataResponseSchema
 import base64
 import re
@@ -18,6 +19,7 @@ from core.models import Audit, Membership
 from core.permissions import get_unit
 from operations import models as m
 from operations.report_engine import connect, parameters, seal
+from operations.report_removal import ReversibleRemovalMixin
 from operations.report_canvas.api import CanvasConfigSchema, CanvasPreviewSchema, CanvasPreviewResult, CanvasSourcePreviewSchema, CanvasSourcePreviewResult, CanvasAssetSchema
 from operations.reporting import (
     enqueue,
@@ -95,6 +97,7 @@ class ConnectionSerializer(
             "checked_at",
             "validation_error",
             "legacy",
+            *(["removed_at", "removed_by", "removed_was_enabled"] if settings.REPORT_REMOVAL_ENABLED else []),
         ]
 
     def get_has_password(self, obj) -> bool:
@@ -572,7 +575,7 @@ class Managed(ConfigViewSet):
                     )
 
 
-class ConnectionViewSet(Managed):
+class ConnectionViewSet(ReversibleRemovalMixin, Managed):
     queryset = m.ReportConnection.objects.order_by("name")
     serializer_class = ConnectionSerializer
 
@@ -627,7 +630,7 @@ class ConnectionViewSet(Managed):
         ]
     )
 )
-class CatalogViewSet(ReportViewSet):
+class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     pagination_class = ReportPagination
     @extend_schema(parameters=[OpenApiParameter("metric",str,required=True),OpenApiParameter("start",str),OpenApiParameter("end",str),OpenApiParameter("filters",str)],responses=AppDataResponseSchema)
     @action(detail=False,methods=["get"],url_path="app-data")
@@ -729,7 +732,7 @@ class CatalogViewSet(ReportViewSet):
                 qs = qs.exclude(query_sql="")
             elif params.get("sql") == "no":
                 qs = qs.filter(query_sql="")
-        return qs
+        return self.scope_removals(qs)
 
     def validate_config(self, obj):
         from operations.reports import HANDLERS
@@ -993,7 +996,12 @@ class AutomationViewSet(Managed):
         if weekday:
             if not weekday.isdigit() or int(weekday) not in range(7):
                 raise ValidationError("Dia da semana inválido.")
-            qs = qs.filter(weekdays__contains=[int(weekday)])
+            from django.db import connection
+            if connection.vendor == "sqlite":
+                # SQLite não implementa o lookup JSON contains do Django.
+                qs = qs.extra(where=["EXISTS (SELECT 1 FROM json_each(operations_reportautomation.weekdays) WHERE json_each.value = %s)"], params=[int(weekday)])
+            else:
+                qs = qs.filter(weekdays__contains=[int(weekday)])
         times = {}
         for key in ("time_from", "time_to"):
             if params.get(key):

@@ -293,6 +293,10 @@ class PurposePolicy(models.Model):
 
 
 class ReportConnection(models.Model):
+    if settings.REPORT_REMOVAL_ENABLED:
+        removed_at = models.DateTimeField(null=True, blank=True)
+        removed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+        removed_was_enabled = models.BooleanField(null=True, blank=True)
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
     name = models.CharField(max_length=150)
     engine = models.CharField(
@@ -323,6 +327,10 @@ class ReportConnection(models.Model):
 
 
 class ReportApplicationConnection(models.Model):
+    if settings.REPORT_REMOVAL_ENABLED:
+        removed_at = models.DateTimeField(null=True, blank=True)
+        removed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+        removed_was_enabled = models.BooleanField(null=True, blank=True)
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT, related_name="report_app_connections")
     name = models.CharField(max_length=150)
     mode = models.CharField(max_length=10, choices=[("local", "Instância local"), ("remote", "Instância remota")], default="local")
@@ -336,6 +344,10 @@ class ReportApplicationConnection(models.Model):
 
 
 class ReportDefinition(models.Model):
+    if settings.REPORT_REMOVAL_ENABLED:
+        removed_at = models.DateTimeField(null=True, blank=True)
+        removed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
+        removed_was_enabled = models.BooleanField(null=True, blank=True)
     app_connection = models.ForeignKey(ReportApplicationConnection, null=True, blank=True, on_delete=models.PROTECT)
 
     catalog_kind = models.CharField(

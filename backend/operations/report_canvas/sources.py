@@ -1,3 +1,4 @@
+from operations.report_removal_compat import active_conditions
 from dataclasses import dataclass
 from copy import copy
 import hashlib
@@ -19,11 +20,11 @@ class Dataset:
 
 def resolve_report(owner, spec, *, reports_by_id=None):
     if reports_by_id is None:
-        child=ReportDefinition.objects.filter(pk=spec["report_id"],unit=owner.unit,reviewed=True,review_queue=False).select_related("connection","unit").first()
+        child=ReportDefinition.objects.filter(pk=spec["report_id"],unit=owner.unit,**active_conditions(),reviewed=True,review_queue=False).select_related("connection","unit").first()
     else:
         # Request-local catalog index: preserve every restriction of the DB lookup.
         child=reports_by_id.get(spec["report_id"])
-        if child and (child.unit_id != owner.unit_id or not child.reviewed or child.review_queue):
+        if child and (child.unit_id != owner.unit_id or getattr(child, "removed_at", None) is not None or not child.reviewed or child.review_queue):
             child=None
         if child:
             child=copy(child)
