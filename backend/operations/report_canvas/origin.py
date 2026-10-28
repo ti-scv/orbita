@@ -24,7 +24,7 @@ def column_origin(view, request):
     if not child: fail("Fonte de outra unidade ou não encontrada.")
     from .native import datasets
     if datasets(child):
-        return Response({"source": name, "report": child.name, "column": column, "database": "Definida pela rotina nativa; pode combinar bancos", "query": "", "expression": "Rotina " + child.handler + " · conjunto " + source.get("dataset", "rows")})
+        return Response({"source": name, "report": child.name, "column": column, "database": "Definida pela rotina nativa; pode combinar bancos", "query": "", "expression": "Dados preparados pelo relatório de origem."})
     query = child.query_sql if child.source == "sql" else ""
     connection = child.connection if child.connection_id else None
     if connection:
