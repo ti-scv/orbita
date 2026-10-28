@@ -14,7 +14,8 @@ import {
 } from "recharts";
 import { AlertCircle, Database } from "lucide-react";
 import type { CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
-import { BLOCK_LABELS } from "../model";
+import { BLOCK_LABELS, clamp } from "../model";
+import { displayCanvasValue } from "../common/displayValue";
 import { GroupingError, groupByCategorical, groupByDate, parseNumericValue } from "../stage/dataGrouping";
 
 import { resolveSeriesPalette } from "./chartPalette";
@@ -40,13 +41,13 @@ export default function ChartPreview({
   showSampleData,
 }: ChartPreviewProps) {
   const opt = block.options || {};
+  const sourceLabel = catalog
+    ? `${catalog.name} (${catalog.code})`
+    : (source as any).label || (source.type === "report" ? `Relatório #${source.report_id}` : source.id);
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
-    const sourceLabel = catalog
-      ? `${catalog.name} (${catalog.code})`
-      : `Relatório #${source.report_id}`;
     return (
-      <div className="cv-block-inner">
+      <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge" style={{ color: primaryColor }}>
@@ -78,12 +79,13 @@ export default function ChartPreview({
 
   if (xIdx < 0 || yCols.length === 0 || dataset.rows.length === 0) {
     return (
-      <div className="cv-block-inner">
+      <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge">
             {BLOCK_LABELS[block.type]} · {source.id}
           </span>
+          <span className="cv-sql-meta">{sourceLabel}</span>
           <span className="cv-sql-meta">
             {dataset.rows.length === 0
               ? source.type === "goals"
@@ -130,7 +132,7 @@ export default function ChartPreview({
         );
       }
       processedRows = dataset.rows.map((r) => [
-        String(r[xIdx] ?? ""),
+        displayCanvasValue(r[xIdx]),
         ...yIndices.map((yi, idx) =>
           parseNumericValue(r[yi], yCols[idx], block.title || block.id),
         ),
@@ -148,13 +150,28 @@ export default function ChartPreview({
     }
   } catch (err) {
     return (
-      <div className="cv-block-inner">
+      <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-block-error-card">
           <AlertCircle size={16} aria-hidden="true" />
           <p className="cv-block-error-text">
             {(err as Error).message || "Erro nos dados do gráfico."}
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (processedRows.length === 0) {
+    return (
+      <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
+        {block.title && <div className="cv-block-title">{block.title}</div>}
+        <div className="cv-sql-placeholder">
+          <span className="cv-sql-badge">
+            {BLOCK_LABELS[block.type]} · {source.id}
+          </span>
+          <span className="cv-sql-meta">{sourceLabel}</span>
+          <span className="cv-sql-meta">Nenhum dado para exibir neste período.</span>
         </div>
       </div>
     );
@@ -174,8 +191,35 @@ export default function ChartPreview({
   const chartH = Math.max(54, Math.floor(block.height - (block.title ? 44 : 20)));
   const palette = resolveSeriesPalette(opt.color, opt.series_colors, block.type);
 
+  const precision =
+    typeof opt.precision === "number" ? Math.round(clamp(opt.precision, 0, 4)) : undefined;
+
+  const formatTooltipValue = (val: unknown): string => {
+    if (typeof val !== "number" || !Number.isFinite(val)) return String(val ?? "—");
+    return precision !== undefined
+      ? val.toLocaleString("pt-BR", {
+          minimumFractionDigits: precision,
+          maximumFractionDigits: precision,
+        })
+      : val.toLocaleString("pt-BR");
+  };
+
+  const isDark = axisColor === "#bdbdbd";
+  const tooltipContentStyle = {
+    backgroundColor: isDark ? "#1e293b" : "#ffffff",
+    borderColor: gridColor,
+    color: isDark ? "#f1f5f9" : "#1e293b",
+    fontSize: "11px",
+    borderRadius: "6px",
+    padding: "4px 8px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  };
+  const tooltipItemStyle = {
+    color: isDark ? "#f1f5f9" : "#1e293b",
+  };
+
   return (
-    <div className="cv-block-inner">
+    <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
       {block.title && <div className="cv-block-title">{block.title}</div>}
       <div style={{ width: chartW, height: chartH, overflow: "hidden" }}>
         {block.type === "bar" && (
@@ -197,9 +241,22 @@ export default function ChartPreview({
               axisLine={false}
               tickLine={false}
               width={44}
+              tickFormatter={(v: any) =>
+                typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
+              }
             />
-            <Tooltip />
-            {yCols.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
+            <Tooltip
+              formatter={(val: any, name: any) => [formatTooltipValue(val), name]}
+              labelFormatter={(label: any) => displayCanvasValue(label)}
+              contentStyle={tooltipContentStyle}
+              itemStyle={tooltipItemStyle}
+            />
+            {yCols.length > 1 && (
+              <Legend
+                wrapperStyle={{ fontSize: 10, color: axisColor }}
+                formatter={(val: any) => <span style={{ color: axisColor }}>{val}</span>}
+              />
+            )}
             {yCols.map((yc, i) => (
               <Bar
                 key={yc}
@@ -231,9 +288,22 @@ export default function ChartPreview({
               axisLine={false}
               tickLine={false}
               width={44}
+              tickFormatter={(v: any) =>
+                typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
+              }
             />
-            <Tooltip />
-            {yCols.length > 1 && <Legend wrapperStyle={{ fontSize: 10 }} />}
+            <Tooltip
+              formatter={(val: any, name: any) => [formatTooltipValue(val), name]}
+              labelFormatter={(label: any) => displayCanvasValue(label)}
+              contentStyle={tooltipContentStyle}
+              itemStyle={tooltipItemStyle}
+            />
+            {yCols.length > 1 && (
+              <Legend
+                wrapperStyle={{ fontSize: 10, color: axisColor }}
+                formatter={(val: any) => <span style={{ color: axisColor }}>{val}</span>}
+              />
+            )}
             {yCols.map((yc, i) => (
               <Line
                 key={yc}
@@ -253,6 +323,19 @@ export default function ChartPreview({
             const pieData = chartData.filter(
               (d) => typeof d[yCols[0]] === "number" && Number(d[yCols[0]]) >= 0,
             );
+            if (pieData.length === 0 || pieData.every((d) => Number(d[yCols[0]]) === 0)) {
+              return (
+                <div className="cv-sql-placeholder">
+                  <span className="cv-sql-badge">
+                    {BLOCK_LABELS[block.type]} · {source.id}
+                  </span>
+                  <span className="cv-sql-meta">{sourceLabel}</span>
+                  <span className="cv-sql-meta">
+                    Sem valores numéricos maiores que zero para exibir no gráfico de pizza.
+                  </span>
+                </div>
+              );
+            }
             return (
               <PieChart width={chartW} height={chartH}>
                 <Pie
@@ -268,8 +351,20 @@ export default function ChartPreview({
                     <Cell key={i} fill={palette[i % palette.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <Tooltip
+                  formatter={(val: any, name: any) => [
+                    formatTooltipValue(val),
+                    displayCanvasValue(name),
+                  ]}
+                  contentStyle={tooltipContentStyle}
+                  itemStyle={tooltipItemStyle}
+                />
+                <Legend
+                  wrapperStyle={{ fontSize: 10, color: axisColor }}
+                  formatter={(val: any) => (
+                    <span style={{ color: axisColor }}>{displayCanvasValue(val)}</span>
+                  )}
+                />
               </PieChart>
             );
           })()}

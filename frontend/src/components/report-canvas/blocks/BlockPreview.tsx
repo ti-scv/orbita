@@ -68,7 +68,11 @@ function BlockPreview({
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge">{BLOCK_LABELS[block.type]}</span>
-          <span className="cv-sql-meta">Selecione uma fonte de dados no inspetor à direita.</span>
+          <span className="cv-sql-meta">
+            {block.source_id
+              ? `Fonte "${block.source_id}" não encontrada neste relatório.`
+              : "Selecione uma fonte de dados no inspetor à direita."}
+          </span>
         </div>
       </div>
     );
