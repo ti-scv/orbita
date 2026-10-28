@@ -25,3 +25,20 @@ def test_unavailable_routes_with_unit_and_pagination(setup, settings):
         assert result.status_code == 200
         assert result.data["remocao_disponivel"] is False
         assert result.data["results"] == []
+
+
+def test_pdf_and_full_spreadsheet_format_semantic_columns():
+    import io
+    from pypdf import PdfReader
+    from openpyxl import load_workbook
+    from operations.report_canvas.pdf import PDFExporter
+    from operations.report_canvas.xlsx import XLSXExporter
+    columns = ["Telefone", "Resposta", "Atendimento", "Responsável"]
+    table = {"id":"b", "type":"table", "x":10,"y":10,"width":780,"height":200,"options":{},"columns":columns,"rows":[["5517991279767","pending","open",None]]}
+    doc = {"name":"QA", "page":{"width":800,"height":500,"columns":24,"background":"#ffffff"},"pages":[{"id":"p","name":"QA","blocks":[table]}],"xlsx_mode":"table"}
+    text = " ".join(page.extract_text() for page in PdfReader(io.BytesIO(PDFExporter().render(doc))).pages)
+    for value in ("+55 (17) 99127-9767", "Pendente", "Aberto"):
+        assert value in text
+    assert "pending" not in text and "open" not in text
+    book = load_workbook(io.BytesIO(XLSXExporter().render(doc)))
+    assert list(book.active.values)[1][:3] == ("+55 (17) 99127-9767", "Pendente", "Aberto")
