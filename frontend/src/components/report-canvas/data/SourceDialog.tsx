@@ -415,7 +415,7 @@ export default function SourceDialog({
   return (
     <InlineDialog
       title={isCreate ? "Adicionar fonte de dados" : "Editar fonte de dados"}
-      subtitle="Confirmar aplica a fonte ao rascunho. Cancelar descarta esta edição. O relatório só é gravado ao salvar o Canvas."
+      subtitle="Confirmar aplica a fonte ao rascunho. Cancelar descarta esta edição. O relatório só é gravado ao salvar o relatório."
       className="cv-subdialog cv-root"
       onClose={onClose}
       footer={

@@ -153,7 +153,7 @@ export function validateLayoutBeforeSend(
   const clean = sanitizeLayoutForApi(layout);
   const totalBlocks = clean.pages.reduce((acc, p) => acc + p.blocks.length, 0);
   if (requireAtLeastOneBlock && totalBlocks === 0) {
-    return { ok: false, error: "Adicione ao menos um bloco ao Canvas." };
+    return { ok: false, error: "Adicione ao menos um bloco ao relatório." };
   }
   const sourceIds = new Set(clean.sources.map((s) => s.id));
   for (const p of clean.pages) {

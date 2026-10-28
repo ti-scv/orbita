@@ -263,7 +263,7 @@ export function parseSourceModalState(
       try {
         const raw = JSON.parse(sourceModal.parametersJson);
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-          throw new Error("Parâmetros devem ser um objeto JSON.");
+          throw new Error("Parâmetros devem conter um código com nomes e valores.");
         }
         const entries = Object.entries(raw);
         if (entries.length > 30) throw new Error("Máximo de 30 parâmetros na fonte.");
@@ -315,7 +315,7 @@ export function parseSourceModalState(
         parsedCols.length > 100 ||
         parsedCols.some((c) => typeof c !== "string" || !c.trim() || c.length > 100)
       ) {
-        throw new Error("Colunas devem ser uma lista JSON de nomes não vazios.");
+        throw new Error("Informe uma lista de nomes de colunas não vazios no código.");
       }
       cols = parsedCols.map((c: string) => c.trim().slice(0, 60));
       if (new Set(cols).size !== cols.length) {
@@ -324,13 +324,13 @@ export function parseSourceModalState(
     } catch (err) {
       return {
         ok: false,
-        error: err instanceof SyntaxError ? "JSON de colunas inválido." : (err as Error).message,
+        error: err instanceof SyntaxError ? "Código das colunas inválido." : (err as Error).message,
       };
     }
     try {
       const parsedRows = JSON.parse(sourceModal.rowsJson);
       if (!Array.isArray(parsedRows) || parsedRows.length > 2000) {
-        throw new Error("Linhas devem ser uma lista JSON (até 2000 linhas).");
+        throw new Error("Informe uma lista de linhas no código (até 2000 linhas).");
       }
       for (let i = 0; i < parsedRows.length; i++) {
         const r = parsedRows[i];
@@ -352,7 +352,7 @@ export function parseSourceModalState(
     } catch (err) {
       return {
         ok: false,
-        error: err instanceof SyntaxError ? "JSON de linhas inválido." : (err as Error).message,
+        error: err instanceof SyntaxError ? "Código das linhas inválido." : (err as Error).message,
       };
     }
     return {

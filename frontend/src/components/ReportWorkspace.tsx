@@ -394,7 +394,7 @@ export default function ReportWorkspace({
     setGrantRecipientFilter("");
     setPermissionFilter("");
     setRecipientKindFilter("");
-    setScheduleFilters({search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
+    setScheduleFilters(previous => Object.values(previous).every(value => !value) ? previous : {search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
   }, [unit, tab]);
   useEffect(() => {
     let alive = true;
@@ -1329,7 +1329,7 @@ export default function ReportWorkspace({
                         >
                           <option value="pdf">PDF</option>
                           <option value="csv">CSV</option>
-                          <option value="xlsx">XLSX</option>
+                          <option value="xlsx">Excel (XLSX)</option>
                           <option value="text">Texto</option>
                         </Select>
                       </Field>

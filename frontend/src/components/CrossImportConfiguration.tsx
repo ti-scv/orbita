@@ -290,7 +290,7 @@ export function CrossLayoutEditor({
                 setFields(null);
               }}
             >
-              <option value="table">CSV / XLSX</option>
+              <option value="table">Planilha Excel (XLSX) ou texto (CSV)</option>
               <option value="absence_html">Ausentes HTML (.xls)</option>
               <option value="cross_demand_csv">
                 Demanda por recurso CROSS (.csv)
@@ -528,7 +528,7 @@ export function CrossImportForm({
   const formatLayoutType = (fmt?: string) => {
     switch (fmt) {
       case "table":
-        return "Tabela (CSV / XLSX)";
+        return "Tabela (Planilha Excel (XLSX) ou texto (CSV))";
       case "absence_html":
         return "Ausentes HTML (.xls)";
       case "cross_demand_csv":

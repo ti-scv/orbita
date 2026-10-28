@@ -1,4 +1,4 @@
-export function WorkspaceSkeleton({ label = "Carregando estrutura do Canvas…" }: { label?: string }) {
+export function WorkspaceSkeleton({ label = "Carregando estrutura do relatório…" }: { label?: string }) {
   return (
     <div className="cv-skel-workspace" role="status" aria-label={label}>
       <div className="cv-skel-rail" aria-hidden="true">

@@ -120,13 +120,13 @@ export function PublishPopover({
           </button>
           <button
             type="button"
-            aria-label="Formato XLSX"
+            aria-label="Formato Excel (XLSX)"
             aria-pressed={outputFormat === "xlsx"}
             disabled={disabled}
             className={`cv-seg-btn ${outputFormat === "xlsx" ? "is-active" : ""}`.trim()}
             onClick={() => onChangeOutputFormat("xlsx")}
           >
-            XLSX
+            Excel (XLSX)
           </button>
         </div>
       </div>
@@ -335,7 +335,7 @@ export function ConfirmEnableCanvasDialog({
       }
     >
       <p className="cv-dialog-text">
-        Ao salvar o relatório, as próximas execuções e envios passarão a ser gerados por este Canvas no formato{" "}
+        Ao salvar o relatório, as próximas execuções e envios passarão a ser gerados por este modelo do relatório no formato{" "}
         <strong>{outputFormat.toUpperCase()}</strong>.
       </p>
     </InlineDialog>

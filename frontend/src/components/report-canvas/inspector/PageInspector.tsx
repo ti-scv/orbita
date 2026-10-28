@@ -47,7 +47,7 @@ const PAGE_BG_SWATCHES = [
 
 const OUTPUT_FORMAT_OPTIONS = [
   { value: "pdf" as const, label: "PDF" },
-  { value: "xlsx" as const, label: "XLSX" },
+  { value: "xlsx" as const, label: "Excel (XLSX)" },
 ];
 
 const XLSX_MODE_OPTIONS = [
@@ -210,7 +210,7 @@ export default function PageInspector({
           </div>
 
           <div className="cv-field">
-            <span className="cv-label">Modo de planilha (XLSX)</span>
+            <span className="cv-label">Modo de planilha Excel (XLSX)</span>
             <SegmentedControl
               ariaLabel="Modo de planilha"
               options={XLSX_MODE_OPTIONS}
@@ -218,7 +218,7 @@ export default function PageInspector({
               disabled={!onChangeXlsxMode || outputFormat === "pdf"}
               disabledReason={
                 outputFormat === "pdf"
-                  ? "Modo de planilha só está disponível na exportação em XLSX."
+                  ? "Modo de planilha só está disponível na exportação em Excel (XLSX)."
                   : undefined
               }
               onChange={(mode) => onChangeXlsxMode?.(mode)}

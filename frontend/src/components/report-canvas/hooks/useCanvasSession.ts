@@ -125,7 +125,7 @@ export function useCanvasSession({
         setSelectedBlockId(null);
         columnWidthsErrorRef.current = null;
         if (isReload) {
-          setBanner({ tone: "ok", text: "Canvas recarregado com a versão atual." });
+          setBanner({ tone: "ok", text: "Relatório recarregado com a versão atual." });
         }
         requestAnimationFrame(() => fitRef.current(normalizedLayout.page.width));
       } catch (e) {
@@ -193,12 +193,12 @@ export function useCanvasSession({
       }
       setBanner({
         tone: "ok",
-        text: savedEnabled ? "Canvas salvo e ativado para este relatório." : "Rascunho salvo.",
+        text: savedEnabled ? "Modelo salvo e ativado para este relatório." : "Rascunho salvo.",
       });
       onSaved?.();
     } catch (e) {
       const isConflict = e instanceof CanvasSaveError && e.isConflict;
-      const rawMsg = (e as Error).message || "Falha ao salvar o Canvas.";
+      const rawMsg = (e as Error).message || "Falha ao salvar o relatório.";
       const blockMatch = rawMsg.match(/Bloco\s+"([^"]+)"|Gráfico\s+"([^"]+)"/);
       if (blockMatch) {
         const blkId = blockMatch[1] || blockMatch[2];

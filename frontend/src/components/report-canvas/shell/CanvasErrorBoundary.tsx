@@ -58,7 +58,7 @@ export default class CanvasErrorBoundary extends Component<
             <h1>Algo deu errado nesta tela. Seus dados não foram perdidos.</h1>
             <p>
               {this.props.preservesEditor
-                ? "As alterações do Canvas continuam nesta sessão. Tente de novo para retomar a edição."
+                ? "As alterações do relatório continuam nesta sessão. Tente de novo para retomar a edição."
                 : "Os dados salvos continuam no servidor. Reabrir pode descartar alterações ainda não salvas; confirme antes de continuar."}
             </p>
             <div className="cv-route-error-actions">
