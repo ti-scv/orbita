@@ -42,7 +42,7 @@ export function collectTestParameters(fields: TestParameter[], values: Record<st
       if((field.minimum!=null && number<field.minimum)||(field.maximum!=null && number>field.maximum))throw new Error(`${field.label}: valor fora do intervalo permitido.`);
       result[field.name]=number;
     }else result[field.name]=/^(unidade|unit)$/i.test(field.name) && value.toLocaleLowerCase("pt-BR") === "ame votuporanga" ? "ame" : field.name === "tipo_envio" && value === "Agendamento" ? "appointment" : value;
-    if(field.options && !field.options.some(o=>o.value===value))throw new Error(`Selecione uma opção válida em ${field.label.toLowerCase()}.`);
+    if(field.options && !field.options.some(o=>o.value===value || o.value===String(result[field.name])))throw new Error(`Escolha ${field.label.toLowerCase()} para ver a prévia.`);
   }
   for(const field of fields){
     if(field.not_before && result[field.name] && result[field.not_before] && String(result[field.name])<String(result[field.not_before]))throw new Error(`${field.label} deve ser igual ou posterior a ${fields.find(f=>f.name===field.not_before)?.label.toLowerCase() || field.not_before}.`);

@@ -29,6 +29,11 @@ describe("Tarefa 11: padrões temporários", () => {
     expect(missing.values.unidade).toBe("");
     expect(() => collectTestParameters(missing.fields, missing.values)).toThrow(/unidade/i);
   });
+  it("aceita opções de data e unidade após converter o valor exibido", () => {
+    const result = previewParameters({...source, parameters:{start:"2026-10-01", unidade:"ame"}},
+      {start:{type:"date",choices:["2026-10-01"]}, unidade:{type:"string",choices:["ame"]}}, {}, "ame", now);
+    expect(collectTestParameters(result.fields,result.values)).toEqual({start:"2026-10-01",unidade:"ame"});
+  });
   it("atravessa mês e ano corretamente e mantém filtro obrigatório desconhecido pendente", () => {
     const result=previewParameters(source,{start:"date",end:"date",doctor:{type:"string"}},{},"ame",new Date(2026,0,10,12));
     expect(result.values.start).toBe("11/12/2025");

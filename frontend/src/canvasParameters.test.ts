@@ -18,7 +18,7 @@ describe("Canvas parameter form",()=>{
  it("rejects invalid options and numeric constraints before requesting preview",()=>{
   const fields=testParameters({unit:{type:"integer",minimum:1,maximum:3},kind:{type:"string",enum:["A","B"]}});
   expect(()=>collectTestParameters(fields,{unit:"4",kind:"A"})).toThrow("intervalo");
-  expect(()=>collectTestParameters(fields,{unit:"2",kind:"C"})).toThrow("opção");
+  expect(()=>collectTestParameters(fields,{unit:"2",kind:"C"})).toThrow("Escolha");
   expect(()=>collectTestParameters(fields,{unit:"2.5",kind:"A"})).toThrow("número");
   expect(()=>collectTestParameters(fields,{unit:"",kind:"A"})).toThrow("Informe");
  });

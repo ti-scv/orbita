@@ -31,7 +31,7 @@ import { findSourceUsages } from "./sourceOps";
 
 export interface DataPanelProps {
   stagePreviewStates?: Record<string, SourcePreviewEntry>;
-  onLoadStagePreview?: (sourceId: string) => Promise<void>;
+  onLoadStagePreview?: (sourceId: string, retry?: boolean) => Promise<void>;
   active: boolean;
   sources: CanvasSource[];
   availableSources: CatalogSqlSource[];
@@ -93,7 +93,7 @@ export default function DataPanel({
   const handleLoadPreview = useCallback(
     async (src: CanvasSource, bypassCache = false) => {
       if (src.type === "report" && onLoadStagePreview) {
-        await onLoadStagePreview(src.id);
+        await onLoadStagePreview(src.id, bypassCache);
         return;
       }
       if (!bypassCache) {

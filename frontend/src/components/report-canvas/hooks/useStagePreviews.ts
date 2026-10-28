@@ -117,7 +117,13 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
         return;
       }
       // Only this request receives resolved values; never change the layout/store.
-      const resolved = {...source, parameters: {...source.parameters, ...collectTestParameters(fields, values)}} as typeof source;
+      let selected: Record<string, unknown>;
+      try { selected = collectTestParameters(fields, values); }
+      catch (error: any) {
+        put({status: "idle", data: null, error: error.message, loadedAt: null, fields, values});
+        return;
+      }
+      const resolved = {...source, parameters: {...source.parameters, ...selected}} as typeof source;
       const data = await fetchSourcePreviewRequest(snapshot.reportId, snapshot.unit, resolved,
         {}, 50, controller.signal);
       put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, changedParameters, assumed: !parameters });
@@ -125,7 +131,9 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
       put({ status: "error", data: null, loadedAt: null, fields, values, changedParameters,
         httpStatus: typeof err?.status === "number" ? err.status : undefined,
         elapsedMs: Math.round(performance.now() - startedAt),
-        error: `Não foi possível carregar a prévia. ${previewError(err?.message)}` });
+        error: typeof err?.status === "number" && err.status >= 500
+          ? "O servidor está temporariamente indisponível. Tente de novo em instantes."
+          : `Não foi possível carregar a prévia. ${previewError(err?.message)}` });
     } finally { if (pending.current.get(key) === controller) pending.current.delete(key); }
   }, []);
   useEffect(() => {
