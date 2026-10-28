@@ -49,8 +49,8 @@ it("formata exemplos no painel de colunas em português e conserva zero", () => 
   render(<DataPanel active sources={[source]} availableSources={[]} stagePreviewStates={{s:{status:"ready",data:preview,error:null,loadedAt:null}}} onCreateSource={vi.fn()} onEditSource={vi.fn()} onRemoveSource={vi.fn()}/>);
   fireEvent.click(screen.getByRole("button",{expanded:false}));
   const samples=Array.from(document.querySelectorAll(".cv-column-sample"));
-  expect(samples.map(e=>e.textContent)).toEqual(["21/09/2026","21/09/2026 14:35","0"]);
-  expect(samples.map(e=>e.getAttribute("title"))).toEqual(samples.map(e=>e.textContent));
+  expect(samples.map(e=>e.textContent)).toEqual(["Exemplo: 21/09/2026","Exemplo: 21/09/2026 14:35","Exemplo: 0"]);
+  expect(samples.map(e=>e.getAttribute("title"))).toEqual(samples.map(e=>e.textContent?.replace("Exemplo: ", "")));
 });
 it("formata datas também nas opções do seletor de colunas", () => {
   render(<ColumnSelect value="" columns={preview.columns} onChange={vi.fn()}/>);

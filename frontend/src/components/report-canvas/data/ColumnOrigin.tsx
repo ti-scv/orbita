@@ -27,13 +27,13 @@ export default function ColumnOrigin({ source, column, type = "unknown", loadedA
     return () => { current = false; };
   }, [open, source, column, reportId, unit]);
   return <>
-    <span className="cv-origin-text">{source?.type === "report" ? `${friendlySource} › ${friendlyDataset} › ${column}` : source?.type === "inline" ? `Fixa › ${column}` : `Calculada › ${column}`}</span>
+    <span className="cv-origin-text" title={`${friendlySource} › ${friendlyDataset}`}>{source?.type === "report" ? `${friendlySource} › ${friendlyDataset}` : source?.type === "inline" ? `Fixa › ${column}` : `Calculada › ${column}`}</span>
     <button type="button" className="cv-btn-compact" title="Ver detalhes e consulta da origem" aria-label={`Origem da coluna ${column}`} disabled={!source} onClick={event => {event.stopPropagation(); setOpen(true);}}>Origem</button>
     {open && <InlineDialog title={`Origem da coluna ${column}`} subtitle="Somente leitura" onClose={() => setOpen(false)} className="cv-root" footer={<button type="button" className="cv-btn-compact" disabled={!data?.query} onClick={async () => { try { await navigator.clipboard.writeText(data?.query || ""); setCopyStatus("Consulta copiada"); } catch { setCopyStatus("Não foi possível copiar a consulta"); } }}>Copiar consulta</button>}>
       {error && <p role="alert">{error}</p>}
       {!data && !error && <p role="status">Carregando origem…</p>}
       {data && <>
-        <dl><dt>Fonte</dt><dd>{data.source}{data.report ? ` · ${data.report}` : ""}</dd><dt>Coluna</dt><dd>{column}</dd><dt>Tipo</dt><dd>{({number:"Número", string:"Texto", date:"Data", datetime:"Data e hora", boolean:"Sim/não", unknown:"Não identificado"} as Record<string,string>)[type] || type}</dd><dt>Banco de origem</dt><dd>{data.database}</dd><dt>Última leitura da prévia</dt><dd>{readAt ? new Date(readAt).toLocaleString("pt-BR", { hour12: false }) : "Não registrada"}</dd></dl>
+        <dl className="cv-origin-details"><dt>Fonte</dt><dd>{source?.type === "report" ? `${friendlySource} › ${friendlyDataset}` : friendlySource}</dd><dt>Coluna</dt><dd>{column}</dd><dt>Tipo</dt><dd>{({number:"Número", text:"Texto", string:"Texto", date:"Data", datetime:"Data e hora", boolean:"Sim/não", unknown:"Não identificado"} as Record<string,string>)[type] || type}</dd><dt>Banco de origem</dt><dd>{data.database}</dd><dt>Última leitura da prévia</dt><dd>{readAt ? new Date(readAt).toLocaleString("pt-BR", { hour12: false }) : "Não registrada"}</dd></dl>
         {data.expression && <p>{data.expression}</p>}
         {data.query && <pre style={{whiteSpace:"pre-wrap", overflowWrap:"anywhere", maxHeight:"40vh", overflow:"auto"}} aria-label="Consulta da coluna">{highlightColumn(data.query, column)}</pre>}
       </>}

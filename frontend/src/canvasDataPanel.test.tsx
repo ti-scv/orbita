@@ -79,7 +79,7 @@ describe("Componente DataPanel (painel de fontes e colunas)", () => {
 
     const boolHtml = renderToStaticMarkup(<ColumnBadge type="boolean" />);
     expect(boolHtml).toContain("✓/✗");
-    expect(boolHtml).toContain('aria-label="Tipo de dado: Booleano"');
+    expect(boolHtml).toContain('aria-label="Tipo de dado: Sim/Não"');
 
     const textHtml = renderToStaticMarkup(<ColumnBadge type="text" />);
     expect(textHtml).toContain("Aa");

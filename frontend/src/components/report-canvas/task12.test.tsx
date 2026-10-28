@@ -27,6 +27,6 @@ describe("Tarefa 12: origem e valores na Prévia",()=>{
  it("mapeia colunas pelo nome mesmo reordenadas, preserva valores e explicita vazios",()=>{
   const html=renderToStaticMarkup(<TablePreview block={{...props.block,type:"table",options:{columns:["Responsável","Data","Resultado"]}}} source={{id:"s",type:"report",report_id:6}} dataset={{columns:["Data","Resultado","Responsável"],rows:[["2026-09-28T00:00:00",null,""],["2026-09-29T13:00:00","confirmed","Operador QA"]]}} fontSize={10} primaryColor="#075b94" axisColor="#526980" showSampleData={false}/>);
   expect(html).toContain("<td>—</td><td>28/09/2026</td><td>—</td>");
-  expect(html).toContain("<td>Operador QA</td><td>29/09/2026 13:00</td><td>confirmed</td>");
+  expect(html).toContain("<td>Operador QA</td><td>29/09/2026 13:00</td><td>Confirmado</td>");
  });
 });

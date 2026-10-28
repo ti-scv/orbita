@@ -23,7 +23,7 @@ import type {
 } from "../model";
 import ColumnOrigin from "./ColumnOrigin";
 import ColumnBadge from "./ColumnBadge";
-import { formatCellValue } from "./columnTypes";
+import { formatCellValue, formatColumnTypeLabel } from "./columnTypes";
 import DataDrawer from "./DataDrawer";
 import EmptyState from "../common/EmptyState";
 import { findSourceUsages } from "./sourceOps";
@@ -341,7 +341,7 @@ export default function DataPanel({
                   className="cv-source-row"
                 >
                   <div className="cv-source-main">
-                    <button type="button" className="cv-source-title-line cv-btn-compact" onClick={() => toggleExpand(src)} aria-expanded={isExpanded} aria-label={`Colunas de ${src.label || src.id}`}>
+                    <button type="button" className="cv-source-title-line cv-btn-compact" onClick={() => toggleExpand(src)} aria-expanded={isExpanded} aria-label={`Colunas de ${displayName}`}>
                       <ChevronRight
                         size={14}
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}
@@ -383,7 +383,7 @@ export default function DataPanel({
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
                         <span className="cv-chip ready">
-                          {formatRowCount(previewData.rows.length, previewData)}
+                          {formatRowCount(previewData.rows.length, previewData)} (com os parâmetros atuais)
                           {previewState?.loadedAt && (
                             <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}
@@ -417,7 +417,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Ver dados reais da fonte"
-                      aria-label={`Ver dados de ${src.label || src.id}`}
+                      aria-label={`Ver dados de ${displayName}`}
                       onClick={() => handleOpenDrawer(src)}
                     >
                       <Eye size={13} />
@@ -426,7 +426,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Atualizar prévia de dados"
-                      aria-label={`Atualizar prévia de ${src.label || src.id}`}
+                      aria-label={`Atualizar prévia de ${displayName}`}
                       disabled={previewState?.status === "loading"}
                       onClick={() => handleLoadPreview(src, true)}
                     >
@@ -436,7 +436,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Editar fonte de dados"
-                      aria-label={`Editar fonte ${src.label || src.id}`}
+                      aria-label={`Editar fonte ${displayName}`}
                       onClick={() => onEditSource(src)}
                     >
                       <Edit3 size={13} />
@@ -445,7 +445,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn danger"
                       title="Remover fonte"
-                      aria-label={`Remover fonte ${src.label || src.id}`}
+                      aria-label={`Remover fonte ${displayName}`}
                       onClick={() => setSourceToDelete(src)}
                     >
                       <Trash2 size={13} />
@@ -455,8 +455,8 @@ export default function DataPanel({
 
                 {isExpanded && previewState?.status === "error" && (
                   <div role="alert">
-                    <p>Fonte: {src.label || src.id}. {previewState.error || "Não foi possível carregar a prévia."}</p>
-                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${src.label || src.id}\n${previewState.error}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
+                    <p>Fonte: {displayName}. {(previewState.error || "Não foi possível carregar a prévia.").replaceAll(`Fonte "${src.id}"`, `Fonte "${displayName}"`)}</p>
+                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${displayName}\n${previewState.error}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
                     <p>{previewState.httpStatus != null ? `HTTP ${previewState.httpStatus}` : "HTTP indisponível"} · {previewState.elapsedMs != null ? `${previewState.elapsedMs} ms` : "tempo indisponível"}</p>
                     <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>
                   </div>
@@ -504,12 +504,12 @@ export default function DataPanel({
                                   type={hasPreview ? col.type : "unknown"}
                                   looksLike={col.looks_like}
                                 />
-                                <span className="cv-column-name">{col.name}</span>
+                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{formatColumnTypeLabel(col.type)}</span>
                               </div>
 
                               {sampleVal && (
                                 <span className="cv-column-sample" title={sampleVal}>
-                                  {sampleVal}
+                                  Exemplo: {sampleVal}
                                 </span>
                               )}
 

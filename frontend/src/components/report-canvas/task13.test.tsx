@@ -64,7 +64,7 @@ describe("Tarefa 13: transições reais do canvas", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Dados" }));
     for (let n = 0; n < 2; n++) {
       fireEvent.click(
-        await screen.findByRole("button", { name: "Editar fonte dados" }),
+        await screen.findByRole("button", { name: /Editar fonte / }),
       );
       expect(
         await screen.findByRole("dialog", { name: "Editar fonte de dados" }),

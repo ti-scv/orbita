@@ -68,6 +68,7 @@ export default function SourceDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchCatalog, setSearchCatalog] = useState("");
+  const testAbort = useRef<AbortController | null>(null);
   const latestPreviewSpec = useRef("");
   latestPreviewSpec.current = JSON.stringify([sourceModal?.parametersJson, sourceModal?.reportId, sourceModal?.dataset]);
   const [testing, setTesting] = useState(false);
@@ -375,6 +376,10 @@ export default function SourceDialog({
 
   // Test and load preview
   const handleTestPreview = async () => {
+    testAbort.current?.abort();
+    const controller = new AbortController();
+    testAbort.current = controller;
+    performance.mark("canvas-teste-fonte-inicio");
     setTesting(true);
     const testedSpec = latestPreviewSpec.current;
     onChange({ ...sourceModal, testError: null, testPreview: null });
@@ -386,13 +391,20 @@ export default function SourceDialog({
         draft,
         {},
         10,
+        controller.signal,
       );
       if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testPreview: preview, testError: null });
     } catch (err: any) {
-      const msg = err?.message || "Falha ao carregar prévia.";
+      if (controller.signal.aborted) return;
+      const friendlyName = selectedCatalog ? `${selectedCatalog.name} › ${selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}` : sourceModal.label || "Fonte";
+      const msg = (err?.message || "Falha ao carregar prévia.").replaceAll(`Fonte "${sourceModal.id}"`, `Fonte "${friendlyName}"`);
       if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testError: msg, testPreview: null });
     } finally {
-      setTesting(false);
+      if (testAbort.current === controller) {
+        performance.mark("canvas-teste-fonte-fim");
+        performance.measure("canvas-teste-fonte", "canvas-teste-fonte-inicio", "canvas-teste-fonte-fim");
+        setTesting(false);
+      }
     }
   };
 
@@ -878,7 +890,7 @@ export default function SourceDialog({
         {sourceModal.testError && (
           <div className="cv-test-preview" style={{ borderColor: sourceModal.testError.startsWith("Parâmetros alterados.") ? "var(--cv-line)" : "var(--cv-danger-line)" }}>
             <p className={sourceModal.testError.startsWith("Parâmetros alterados.") ? undefined : "inline-error"} style={{ margin: 0 }}>
-              <AlertCircle size={14} />
+              <AlertCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
               {sourceModal.testError}
             </p>
           </div>
@@ -889,7 +901,7 @@ export default function SourceDialog({
             <div className="cv-test-preview-head">
               <span>
                 <strong>Prévia confirmada:</strong> {sourceModal.testPreview.columns.length} colunas ·{" "}
-                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)}{" "}
+                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)} (com os parâmetros configurados; valores padrão quando omitidos){" "}
                 {sourceModal.testPreview.elapsed_ms != null ? `(${sourceModal.testPreview.elapsed_ms} ms)` : ""}
               </span>
               <span className="cv-chip ready">

@@ -7,7 +7,7 @@ export const COLUMN_TYPE_LABELS: Record<ColumnDataType, string> = {
   number: "Número",
   date: "Data",
   datetime: "Data e hora",
-  boolean: "Booleano",
+  boolean: "Sim/Não",
   text: "Texto",
   unknown: "Tipo não detectado",
 };
@@ -84,8 +84,8 @@ export function formatCellValue(val: unknown, type?: ColumnDataType): string {
     if (val === false || val === "false") return "Não";
   }
 
-  const states: Record<string, string> = { pending: "Pendente", open: "Aberto", closed: "Fechado", completed: "Concluído", cancelled: "Cancelado", canceled: "Cancelado", sent: "Enviado", failed: "Falhou" };
-  return typeof val === "string" ? states[val.trim().toLowerCase()] || val : String(val);
+  const states: Record<string, string> = { answered: "Respondido", confirmed: "Confirmado", scheduled: "Agendado", done: "Concluído", delivered: "Entregue", read: "Lido", no_answer: "Sem resposta", no_response: "Sem resposta", unanswered: "Sem resposta", not_answered: "Não atendido", declined: "Recusado", review: "Em revisão", assigned: "Em atendimento", waiting_external: "Aguardando ação externa", pending_external: "Aguardando ação externa", preview: "Somente análise", queued: "Na fila", sending: "Enviando", accepted: "Aceito", uncertain: "Resultado incerto", blocked: "Bloqueado", expired: "Vencido", running: "Em execução", ready: "Pronto", missed: "Perdido", draft: "Rascunho", pending: "Pendente", open: "Aberto", closed: "Fechado", completed: "Concluído", cancelled: "Cancelado", canceled: "Cancelado", sent: "Enviado", failed: "Falhou" };
+  return typeof val === "string" ? states[val.trim().toLowerCase()] || (val.includes("_") ? val.replaceAll("_", " ").replace(/^./, c => c.toLocaleUpperCase("pt-BR")) : val) : String(val);
 }
 
 export function formatColumnTypeLabel(type?: ColumnDataType, looksLike?: string): string {

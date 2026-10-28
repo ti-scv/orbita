@@ -885,3 +885,13 @@
 
 .cv-column-metadata td:last-child { white-space: normal; min-width: 180px; }
 .cv-column-metadata .cv-origin-text { display: block; margin-bottom: 4px; }
+
+/* Colunas permanecem legíveis no painel estreito. */
+.cv-root .cv-column-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-width: 0; }
+.cv-root .cv-column-left { min-width: 0; grid-column: 1 / -1; display: flex; gap: 5px; }
+.cv-root .cv-column-name, .cv-root .cv-column-sample, .cv-root .cv-origin-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-root .cv-column-sample { grid-column: 1 / -1; max-width: 100%; }
+.cv-root .cv-column-row .cv-origin-text { grid-column: 1; overflow-wrap: normal; }
+.cv-root .cv-column-type { font-size: 11px; color: var(--cv-text-2); flex-shrink: 0; }
+.cv-origin-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
+.cv-origin-details dd { margin: 0; overflow-wrap: anywhere; }

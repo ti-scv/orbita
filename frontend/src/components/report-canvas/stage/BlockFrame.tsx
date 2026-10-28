@@ -207,7 +207,7 @@ function BlockFrameComponent({
       {/* Origin Chip (Top-Left) */}
       <div
         className={`cv-origin-chip is-${originState}`}
-        title={previewState?.data?.truncated && !showSampleData ? `${lineage || "Prévia"} · amostra limitada a ${previewState.data.rows.length} de ${previewState.data.total_rows} linhas` : lineage || (hasMissingSource ? "Nenhuma fonte associada ao bloco" : undefined)}
+        title={previewState?.data?.truncated && !showSampleData ? `${lineage || "Prévia"} · amostra limitada a ${previewState.data.rows.length.toLocaleString("pt-BR")} de ${previewState.data.total_rows.toLocaleString("pt-BR")} linhas (com os parâmetros atuais)` : lineage || (hasMissingSource ? "Nenhuma fonte associada ao bloco" : undefined)}
       >
         <span>{originLabel}</span>
         {canLoadPreview && blockSourceId && onLoadSourcePreview && (
