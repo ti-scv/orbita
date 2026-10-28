@@ -1,0 +1,25 @@
+# Tarefa 20 - QA parcial
+
+## Parametros
+
+Na edicao da fonte, o botao de remocao ja existia para vinculos em `source.parameters`. A rotina reconstruia todos os valores ao remover um so vinculo, convertendo valores `null` de outros vinculos em texto vazio. A remocao agora pede confirmacao e apaga apenas a chave escolhida no rascunho; salvar a fonte e depois o relatorio continuam necessarios. Teste: abra uma fonte com dois vinculos, remova um, cancele ou confirme e confira o outro. O teste automatizado usa `null`, cancela e confirma sem salvar.
+
+A auditoria tambem descreve declaracoes historicas em `legacy.parameters` e o contrato `parameter_schema`, que nao sao a mesma lista de vinculos da fonte. Faltam acesso e exclusao dessas declaracoes, selos, locais de uso, exclusao em lote, confirmacao especifica e sugestao de renomeacao. A auditoria e uma fotografia por versao; nao se deve apresenta-la como classificacao atual sem verificar identidade e versao. Renomear metadados historicos nao demonstra correcao do contrato atual.
+
+## Erro da previa
+
+Pendente: diagnostico seguro, codigo HTTP, tempo, copia e repeticao. `request` descarta o codigo HTTP e pode receber mensagem generica do servidor. A implementacao de backend esta sob `backend/operations/`, cuja alteracao foi proibida; nao foi modificada.
+
+## JSON
+
+Pendente: edicao, validacao compartilhada com o backend, confirmacao e desfazer. Nao ha mudanca no fluxo de salvar.
+
+## Origem das colunas
+
+Pendente: painel nas duas listas, consulta, banco, destaque e data da leitura. A origem real nao deve ser inferida apenas pelo nome da coluna.
+
+## Verificacao
+
+Nao foram criados ou salvos relatorios. Node 18 do host nao atende ao Vitest do projeto; a verificacao oficial usa Node 24 em conteiner. A alteracao nao constitui a entrega completa da tarefa.
+
+O teste especifico passou em Node 24. `canvas-check.sh` ficou parado em `npm ci` e o build de staging ficou parado em `npm run build`; ambos foram interrompidos sem resultado. Staging nao foi validado visualmente.

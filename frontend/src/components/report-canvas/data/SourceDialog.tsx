@@ -230,8 +230,11 @@ export default function SourceDialog({
   };
 
   const handleRemoveParam = (index: number) => {
-    const next = paramItems.filter((_, idx) => idx !== index);
-    updateParameterJson(next);
+    const item = paramItems[index];
+    if (!item || !window.confirm(`Remover o vínculo do parâmetro "${item.key}" desta fonte? A consulta pode passar a usar o valor padrão ou falhar. A alteração só será gravada ao salvar o relatório.`)) return;
+    const next = { ...currentParamsMap };
+    delete next[item.key];
+    onChange({ ...sourceModal, parametersJson: JSON.stringify(next, null, 2) });
   };
 
   const handleParamChange = (index: number, patch: Partial<ParsedParamItem>) => {
