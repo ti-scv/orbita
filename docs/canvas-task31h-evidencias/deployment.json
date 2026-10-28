@@ -1,7 +1,9 @@
 {
-  "bundle": "/assets/index-BFRcd5FR.js",
+  "bundle": "/assets/index-Bs1nxz3-.js",
   "http": 200,
-  "sha256": "cc76b4e62bd423a47d53d8d1c1676b309db1a4091e1bbfa5b20f859582b557a7",
+  "sha256": "991f0a578efa77092d57d08f16f2a96bf06053dca6620a48223ca341fd5f36e8",
   "matchesContainer": true,
-  "fontHeaders": "HTTP/1.1 200 OK\r\nServer: nginx/1.31.8\r\nDate: Wed, 28 Oct 2026 17:54:48 GMT\r\nContent-Type: font/ttf\r\nLast-Modified: Wed, 28 Oct 2026 17:53:59 GMT\r\nConnection: keep-alive\r\nVary: Accept-Encoding\r\nETag: W/\"6ae236b7-bc98\"\r\nExpires: Thu, 28 Oct 2027 17:54:48 GMT\r\nCache-Control: max-age=31536000\r\nCache-Control: public, immutable\r\nContent-Encoding: gzip\r\n\r\n"
+  "fontHeaders": "HTTP/1.1 200 OK\r\nServer: nginx/1.31.8\r\nDate: Wed, 28 Oct 2026 17:58:54 GMT\r\nContent-Type: font/ttf\r\nLast-Modified: Wed, 28 Oct 2026 17:51:46 GMT\r\nConnection: keep-alive\r\nVary: Accept-Encoding\r\nETag: W/\"6ae23632-bc98\"\r\nExpires: Thu, 28 Oct 2027 17:58:54 GMT\r\nCache-Control: max-age=31536000\r\nCache-Control: public, immutable\r\nContent-Encoding: gzip\r\n\r\n",
+  "frontendTree": "bf6577c183cfd8ce2ce1c1434fa5e9290824e41c",
+  "sourceCommit": "bc860f73a41a1eb3037491977cb9734c8fee21aa"
 }

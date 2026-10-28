@@ -20,7 +20,7 @@ Trabalho remoto em /opt/orbita, branch feature/canvas-redesign, com commits loca
 - Backend: suíte completa com --nomigrations em PostgreSQL descartável orbita-31h-test-db, credenciais/chaves sintéticas e diretório de arquivos montado somente para leitura: 1.012 aprovados e um ignorado. O teste de vocabulário novo foi executado separadamente e passou (um teste); ele foi adicionado após a coleta inicial da suíte. Primeira tentativa: 1.011 aprovados, um ignorado e um erro por falta da montagem /report_files; repetição completa corrigiu essa configuração.
 - Matriz: 80%, 100%, 125% e 150%, temas claro e escuro, oito casos aprovados. Capturas de lista, conexões e editor e matriz.json em canvas-task31h-evidencias/matriz/. Chromium lançado com --force-device-scale-factor e viewport proporcional. Essa técnica reproduz o espaço útil/escala; os atalhos são eventos canceláveis verificados por preventDefault, sem automatizar a interface de zoom do navegador.
 - Staging reconstruído de frontend limpo no worktree da tarefa, com API_UPSTREAM=orbita-canvas-task26-api:8000. Container da API reiniciado após a integração. nginx -t aprovado.
-- Bundle index-BFRcd5FR.js obtido por curl com HTTP 200. SHA-256 da resposta descomprimida e do arquivo dentro do container: cc76b4e62bd423a47d53d8d1c1676b309db1a4091e1bbfa5b20f859582b557a7.
+- Bundle da medição isolada 31h, index-BFRcd5FR.js, obtido por curl com HTTP 200. SHA-256 da resposta descomprimida e do arquivo dentro do container: cc76b4e62bd423a47d53d8d1c1676b309db1a4091e1bbfa5b20f859582b557a7.
 - curl confirmou font/ttf, Content-Encoding:gzip, Cache-Control:max-age=31536000 e public,immutable nas fontes com hash. A configuração de produção foi alterada no repositório; somente o staging foi reconstruído.
 
 ## Primeira carga: método e limites
@@ -157,3 +157,70 @@ O cache longo ajuda visitas com cache habilitado; sua presença foi verificada p
 | 125% | dark | Aprovado; 18 verificações |
 | 150% | light | Aprovado; 18 verificações |
 | 150% | dark | Aprovado; 18 verificações |
+
+## Fechamento conjunto com a tarefa 31i
+
+Durante o fechamento, a tarefa paralela de ícones foi integrada até 9ad3048. Os commits de documentação da 31h foram reaplicados sobre ela, sem modificar seus ícones. Os dados “antes/depois” acima isolam a 31h; este fechamento adicional confirma o estado conjunto que ficou em 8091.
+
+- scripts/canvas-check.sh repetido na versão conjunta: hooks, tipos, 611 testes e build aprovados. Log frontend-check-integrado.log.
+- Matriz repetida: oito pares de zoom/tema aprovados, com dados reais e somente GETs. Capturas e resultados em matriz-integrada/.
+- Backend permaneceu idêntico ao já testado na 31h; resultado mantido: 1.012 testes aprovados e um ignorado, mais o teste de vocabulário aprovado separadamente.
+- Staging reconstruído do worktree limpo já contendo as duas tarefas; API reiniciada. A inicialização da API teve respostas transitórias 502 no health check; a verificação aguardou HTTP 200 antes de iniciar o navegador. Nenhuma requisição do waterfall retornou erro.
+- Bundle final index-Bs1nxz3-.js, HTTP 200. SHA-256 conferido por curl e dentro do container: 991f0a578efa77092d57d08f16f2a96bf06053dca6620a48223ca341fd5f36e8.
+- A árvore frontend do build é bf6577c183cfd8ce2ce1c1434fa5e9290824e41c; deployment.json registra a identificação. deployment-31h-isolado.json preserva o registro anterior.
+
+| Página integrada | Eventos do navegador | Requisições de rede | Bytes | Tempo até aparecer |
+| --- | --- | --- | --- | --- |
+| lista | 20 | 19 | 3661516 | 553 ms |
+| editor | 19 | 19 | 1724422 | 1098 ms |
+
+A medição conjunta incorpora a divisão de chunks e os ícones da 31i; esses efeitos não são atribuídos à 31h. HARs sanitizados e waterfall.json em integrado/. Todos os arquivos de evidência permanecem locais, sem push.
+
+### Todas as requisições da versão integrada: lista
+
+| # | Requisição | Início ms | Duração ms | Bytes | HTTP | Sobreposição | Compressão |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | /relatorios?unit=ame | 0 | 5 | 1015 | 200 | Sem sobreposição anterior | gzip |
+| 2 | /fonts/canvas-fonts.css | 13 | 4 | 749 | 200 | Sem sobreposição anterior | gzip |
+| 3 | /assets/index-Bs1nxz3-.js | 13 | 39 | 170287 | 200 | Paralelo a 2 | gzip |
+| 4 | /assets/index-pXHMkmFH.js | 14 | 40 | 4909 | 200 | Paralelo a 2, 3 | gzip |
+| 5 | /assets/index-BlBOX8AH.css | 14 | 14 | 36334 | 200 | Paralelo a 2, 3, 4 | gzip |
+| 6 | /brand-envelope.png?v=fe94463a5107 | 139 | 10 | 1188280 | 200 | Sem sobreposição anterior | — |
+| 7 | /fonts/0569c822cab6c510.ttf | 159 | 5 | 26808 | 200 | Sem sobreposição anterior | gzip |
+| 8 | /api/v1/auth/csrf/ | 167 | 39 | 587 | 200 | Sem sobreposição anterior | — |
+| 9 | /api/v1/auth/session/ | 209 | 35 | 60126 | 200 | Sem sobreposição anterior | gzip |
+| 10 | /brand-envelope.png?v=fe94463a5107 | 292 | 11 | 1188280 | 200 | Sem sobreposição anterior | — |
+| 11 | /api/v1/report-app-connections/?unit=ame&page=1 | 297 | 24 | 436 | 200 | Paralelo a 10 | — |
+| 12 | /api/v1/reports/?unit=ame&page=1&section=reports | 303 | 101 | 4352 | 200 | Paralelo a 11 | gzip |
+| 13 | /api/v1/report-connections/?unit=ame&page=1 | 304 | 124 | 1127 | 200 | Paralelo a 11, 12 | — |
+| 14 | /api/v1/reports/inventory/?unit=ame | 305 | 154 | 538 | 200 | Paralelo a 11, 12, 13 | — |
+| 15 | /brand-wordmark.png?v=f6992461fbe9 | 310 | 10 | 854287 | 200 | Paralelo a 11, 12, 13, 14 | — |
+| 16 | data:[embedded] | 310 | 1 | 0 | 200 | Paralelo a 11, 12, 13, 14, 15 | — |
+| 17 | /fonts/8257aa2626c379cb.ttf | 322 | 13 | 26996 | 200 | Paralelo a 12, 13, 14 | gzip |
+| 18 | /fonts/18e69125ce1f964e.ttf | 323 | 10 | 26684 | 200 | Paralelo a 12, 13, 14, 17 | gzip |
+| 19 | /fonts/9bd8ba39c9d55e06.ttf | 323 | 9 | 27180 | 200 | Paralelo a 12, 13, 14, 17, 18 | gzip |
+| 20 | /fonts/b75124b8043e650f.ttf | 323 | 17 | 42541 | 200 | Paralelo a 12, 13, 14, 17, 18, 19 | gzip |
+
+### Todas as requisições da versão integrada: editor
+
+| # | Requisição | Início ms | Duração ms | Bytes | HTTP | Sobreposição | Compressão |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | /relatorios/1/canvas?unit=ame | 0 | 3 | 1015 | 200 | Sem sobreposição anterior | gzip |
+| 2 | /fonts/canvas-fonts.css | 9 | 4 | 749 | 200 | Sem sobreposição anterior | gzip |
+| 3 | /assets/index-Bs1nxz3-.js | 9 | 37 | 170287 | 200 | Paralelo a 2 | gzip |
+| 4 | /assets/index-pXHMkmFH.js | 9 | 38 | 4909 | 200 | Paralelo a 2, 3 | gzip |
+| 5 | /assets/index-BlBOX8AH.css | 9 | 11 | 36334 | 200 | Paralelo a 2, 3, 4 | gzip |
+| 6 | /brand-envelope.png?v=fe94463a5107 | 134 | 11 | 1188280 | 200 | Sem sobreposição anterior | — |
+| 7 | /fonts/0569c822cab6c510.ttf | 154 | 7 | 26808 | 200 | Sem sobreposição anterior | gzip |
+| 8 | /api/v1/auth/csrf/ | 162 | 10 | 587 | 200 | Sem sobreposição anterior | — |
+| 9 | /api/v1/auth/session/ | 199 | 28 | 60126 | 200 | Sem sobreposição anterior | gzip |
+| 10 | /assets/ReportCanvasPage-DdsdU1Kc.js | 238 | 9 | 2744 | 200 | Sem sobreposição anterior | gzip |
+| 11 | /assets/ReportCanvasPage-zk2t_boC.css | 240 | 8 | 5859 | 200 | Paralelo a 10 | gzip |
+| 12 | /assets/ReportCanvas-DQKrcCZH.js | 545 | 20 | 87967 | 200 | Sem sobreposição anterior | gzip |
+| 13 | /assets/ReportCanvas-DQDtmDqG.css | 546 | 24 | 11714 | 200 | Paralelo a 12 | gzip |
+| 14 | /api/v1/reports/1/?unit=ame | 547 | 68 | 2456 | 200 | Paralelo a 12, 13 | gzip |
+| 15 | /api/v1/reports/1/canvas/?unit=ame | 547 | 102 | 1203 | 200 | Paralelo a 12, 13, 14 | gzip |
+| 16 | /fonts/9bd8ba39c9d55e06.ttf | 958 | 17 | 27180 | 200 | Sem sobreposição anterior | gzip |
+| 17 | /fonts/beeb7fd59d9b2c10.ttf | 959 | 11 | 42524 | 200 | Paralelo a 16 | gzip |
+| 18 | /fonts/18e69125ce1f964e.ttf | 959 | 20 | 26684 | 200 | Paralelo a 16, 17 | gzip |
+| 19 | /fonts/8257aa2626c379cb.ttf | 1062 | 8 | 26996 | 200 | Sem sobreposição anterior | gzip |
