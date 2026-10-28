@@ -5895,3 +5895,16 @@ body:has([role="dialog"][aria-modal="true"]) {
 .lg .brand-image.brand-image-wordmark{width:120px;height:120px;}
 .sidebar-collapsed .sidebar-heading{align-items:center;}
 .sidebar-collapsed .sidebar-heading .sidebar-toggle{margin-top:0;}
+
+/* Novo estilo de ícones Órbita (duotone suave + contorno uniforme) */
+.orbita-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.orbita-icon-fill {
+  transition: fill 0.15s ease, fill-opacity 0.15s ease;
+}
+.orbita-icon-stroke {
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}

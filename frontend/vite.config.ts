@@ -1,8 +1,14 @@
 import { defineConfig } from "vite";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "lucide-react": fileURLToPath(new URL("./src/components/icons", import.meta.url)),
+    },
+  },
   plugins: [
     react(),
     {
