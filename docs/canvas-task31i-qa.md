@@ -10,3 +10,4 @@ A branch de ícones foi reaplicada sobre o redesenho, incluindo a 31h. O alias d
 - Capturas adicionais em `icones-evidencias/`: conexões, confirmação de remoção, editor com painéis, menu de ações do relatório, menu do componente e toast. Os cenários de cadastro e editor passaram nos testes visuais e de acessibilidade executados em 1440 × 900, zoom 100%, nos dois temas. As operações de remoção ocorreram apenas no navegador com respostas sintéticas.
 
 As imagens são evidências de cenários simulados; não substituem uma revisão visual com dados reais. A verificação do backend não foi executada: esta tarefa não altera o backend.
+- Uma execução concorrente falhou no teste de restauração porque o clique ocorreu enquanto o botão ainda estava desabilitado. O teste foi ajustado para aguardar a habilitação antes de clicar; a suíte foi repetida.
