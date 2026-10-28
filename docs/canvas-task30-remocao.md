@@ -22,3 +22,6 @@ FIM-DO-PROCESSO
 - O teste de interação usa dados sintéticos e cobriu remoção múltipla pelo menu, desfazer, Delete fora de campos editáveis e refazer. Passaram dois testes, TypeScript e lint de hooks. A versão instalada do Vitest não aceita `--poolOptions.forks.singleFork`; usou-se `--pool=forks --maxWorkers=1 --no-file-parallelism --testTimeout=120000`. Uma tentativa anterior expirou ao iniciar o worker e não executou testes.
 - Ainda faltam remoção e restauração de relatórios e conexões, dependências, permissões, auditoria, testes desses fluxos, matriz visual e integração. Nenhuma migração foi criada ou aplicada; não se alterou o banco real.
 
+
+A matriz sintética do componente foi executada em servidor de desenvolvimento isolado, sem gravações na API: menu e aviso com Desfazer em 1440, 1280 e 1100 px, nos temas claro e escuro (12 capturas `t30-*`). O teste restaurou o componente em todos os seis cenários. Não detectou erros de página, rolagem horizontal, botões sem nome, sobreposições entre botões ou cortes não identificados; essa verificação não substitui uma revisão visual completa. A primeira execução encontrou o menu atrás do painel lateral; sua posição foi corrigida e a matriz repetida. Os diálogos de relatórios e conexões ainda não existem e não foram capturados.
+

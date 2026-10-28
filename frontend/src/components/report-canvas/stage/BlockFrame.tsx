@@ -2,7 +2,8 @@ import { formatRowCount } from "../data/rowCount";
 import { previewPeriod, expandedPreviewParameters } from "../hooks/useStagePreviews";
 import PreviewParameters from "../blocks/PreviewParameters";
 import type { StagePreviewState as SourcePreviewState } from "../hooks/useStagePreviews";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import BlockPreview from "../blocks/BlockPreview";
 import type {
@@ -84,7 +85,16 @@ function BlockFrameComponent({
   selectedCount = 1,
   onKeyboardResize,
 }: BlockFrameProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const openMenu = (element: HTMLElement, x: number, y: number) => {
+    const stage = element.closest(".cv-stage")?.getBoundingClientRect();
+    const left = stage?.left ?? 0;
+    const right = stage?.right ?? window.innerWidth;
+    const top = stage?.top ?? 0;
+    const bottom = stage?.bottom ?? window.innerHeight;
+    setMenuPosition({ x: Math.max(left, Math.min(x, right - 220)), y: Math.max(top, Math.min(y, bottom - 70)) });
+  };
   const currentX = tempGeometry ? tempGeometry.x : block.x;
   const currentY = tempGeometry ? tempGeometry.y : block.y;
   const currentW = tempGeometry ? tempGeometry.width : block.width;
@@ -190,6 +200,7 @@ function BlockFrameComponent({
 
   return (
     <div
+      ref={frameRef}
       data-block-id={block.id}
       role="group"
       tabIndex={0}
@@ -211,14 +222,21 @@ function BlockFrameComponent({
         onStartDrag(e, block);
       }}
       onFocus={(e) => { if (e.target === e.currentTarget && !isSelected) onFocusBlock(block.id); }}
-      onContextMenu={(e) => { if (!onRemoveBlock) return; e.preventDefault(); if (!isSelected) onFocusBlock(block.id); setMenuOpen(true); }}
+      onContextMenu={(e) => { if (!onRemoveBlock) return; e.preventDefault(); if (!isSelected) onFocusBlock(block.id); openMenu(e.currentTarget, e.clientX, e.clientY); }}
       onKeyDown={(e) => {
-        if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && onRemoveBlock) { e.preventDefault(); setMenuOpen(true); }
+        if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && onRemoveBlock) { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); openMenu(e.currentTarget, r.left, r.top); }
         if (e.shiftKey && e.key === " " && onToggleBlock && e.target === e.currentTarget) { e.preventDefault(); e.stopPropagation(); onToggleBlock(block.id); }
-        if (e.key === "Escape" && menuOpen) { e.stopPropagation(); setMenuOpen(false); e.currentTarget.focus(); }
+        if (e.key === "Escape" && menuPosition) { e.stopPropagation(); setMenuPosition(null); frameRef.current?.focus(); }
       }}
     >
-      {menuOpen && onRemoveBlock && <div role="menu" className="cv-block-context-menu"><button type="button" role="menuitem" autoFocus onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onRemoveBlock(block.id); }}>{isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`}</button><button type="button" role="menuitem" onClick={(e) => { const frame = e.currentTarget.closest<HTMLElement>(".cv-block"); setMenuOpen(false); frame?.focus(); }}>Cancelar</button></div>}
+      {menuPosition && onRemoveBlock && frameRef.current?.closest(".cv-root") && createPortal(
+        <div role="menu" className="cv-block-context-menu" style={{ left: menuPosition.x, top: menuPosition.y }}>
+          <button type="button" role="menuitem" title={isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`} autoFocus onClick={(e) => { e.stopPropagation(); setMenuPosition(null); onRemoveBlock(block.id); }}>
+            {isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`}
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setMenuPosition(null); frameRef.current?.focus(); }}>Cancelar</button>
+        </div>, frameRef.current.closest(".cv-root")!
+      )}
       {overlapping && isSelected && !isDragging && <span className="cv-overlap-warning" role="status">Sobreposição com outro bloco · mova ou redimensione</span>}
       {/* Origin Chip (Top-Left) */}
       <div

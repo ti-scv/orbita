@@ -945,6 +945,6 @@
 
 /* Cabeçalhos longos devem quebrar dentro da coluna, sem cobrir a próxima. */
 .cv-table-preview th {overflow-wrap:anywhere; white-space:normal;}
-.cv-block-context-menu { position: absolute; z-index: 100; top: 0; left: 0; display: flex; flex-direction: column; padding: 4px; background: var(--cv-surface, white); border: 1px solid var(--cv-line); border-radius: 4px; box-shadow: 0 4px 12px #0003; }
-.cv-block-context-menu button { text-align: left; white-space: nowrap; background: var(--cv-surface); color: var(--cv-text); border: 0; padding: 6px 8px; cursor: pointer; }
+.cv-block-context-menu { position: fixed; z-index: 100; display: flex; flex-direction: column; padding: 4px; background: var(--cv-surface, white); border: 1px solid var(--cv-line); border-radius: 4px; box-shadow: 0 4px 12px #0003; }
+.cv-block-context-menu button { text-align: left; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; background: var(--cv-surface); color: var(--cv-text); border: 0; padding: 6px 8px; cursor: pointer; }
 .cv-block-context-menu button:hover, .cv-block-context-menu button:focus-visible { background: var(--cv-surface-3); outline: 2px solid var(--cv-focus); }
