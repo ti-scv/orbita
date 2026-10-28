@@ -21,3 +21,18 @@ A tarefa não está concluída. Faltam sessão real e linha do tempo de rede com
 
 FIM-TAREFA-29 — execução parcial; pendências acima.
 FIM-DO-PROCESSO
+
+## Continuação 29b — execução parcial
+
+- A apresentação remove o sufixo “› Dados” dos nomes de fonte e dos erros tratados pelo helper; a gaveta usa o nome amigável e a origem mostra o nome curto. Foram adicionadas explicações acionáveis por teclado para as contagens no painel e na gaveta.
+- Na prévia de fonte, os parâmetros conhecidos recebem rótulos e valores legíveis, incluindo data final sem limite. O editor de parâmetros usa rótulos amigáveis em parte de suas ações. Datas brasileiras são reconhecidas na inferência; a lista de colunas utiliza a amostra para corrigir tipo desconhecido ou data pura classificada como data e hora.
+- A auditoria completa de identificadores não terminou: o formulário da fonte ainda expõe nomes técnicos nos campos de vínculo e há outros caminhos de erro não auditados. Não foi implementado o resumo de alterações de parâmetros, nem a mensagem completa de parâmetro inexistente. A aparência e acessibilidade das novas explicações precisam de inspeção adicional.
+- Sessão temporária autenticada, usuário existente, staging 8091, sem salvar relatórios. Chromium em 28/10/2026: abertura até a área do editor, sem cache / após navegação de aquecimento, respectivamente: relatório 1 1093/974 ms; relatório 2 1051/1096 ms; relatório 6 1154/873 ms. Em seguida foi acionado “Dados reais”; as prévias responderam 200 em 136/38, 152/44 e 155/39 ms respectivamente. São amostras únicas, feitas antes da reconstrução final, e não medem até a conclusão visual de todos os blocos. Requisições registradas em /tmp/canvas29b-real-warm.json; a maior espera de API nessa amostra foi 165 ms (CSRF, relatório 6 sem cache). A diferença até a abertura inclui carregamento e execução do frontend, não se isolou a etapa dominante. Não houve timeout de 20 s do relatório 2 na amostra.
+- No relatório 6, a prévia enviou source report_id 6, unidade ame, período 2026-09-28 a 2026-10-28, parâmetros de execução vazios, limite 50 e offset 0; respondeu 200. Não houve chamadas de validação nessa abertura. Não foram reproduzidos os 400 nem o 502 relatados, e os logs disponíveis não permitem determinar suas causas exatas. Não se alterou a configuração de workers. É necessário reproduzir os erros e correlacionar os horários antes de propor alteração para produção.
+- scripts/canvas-check.sh: 50 arquivos de testes passaram, hooks, TypeScript e build passaram (/tmp/canvas29b-check-verified.log). Backend: 42 testes em SQLite isolado passaram (/tmp/canvas29b-backend.log). Staging reconstruído com API_UPSTREAM solicitado; curl confirmou ReportCanvas-BLkEWOFt.js, HTTP 200, diferente de DDmcrE_t.
+- Pendências adicionais: medição do esqueleto da origem, colagens das três datas no navegador, investigação completa de desempenho, erros e logs, auditoria dos identificadores em todas as telas e matriz visual integral. A matriz sintética não substitui dados reais. Não houve push, migração, gravação de relatórios ou mudança em produção; Login.tsx e a auditoria preexistente não foram incluídos nos commits.
+
+- Matriz sintética t29b: 18 cenários (relatórios 1, 2 e 6, 1100/1280/1440, claro e escuro), 90 capturas de dados, parâmetros expandidos, gaveta, origem e editor de fonte. Detector: zero erros, rolagem horizontal, sobreposições visíveis ou cortes não intencionais. Não cobre o diálogo de parâmetros completo nem substitui inspeção humana. Resultados: docs/canvas-qa-prints/t29b-resultados.json.
+
+FIM-TAREFA-29B — execução parcial; pendências acima.
+FIM-DO-PROCESSO
