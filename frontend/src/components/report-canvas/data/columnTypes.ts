@@ -109,9 +109,13 @@ export function formatTableCell(value: unknown, column: string): string {
     const digits = String(value).replace(/\D/g, "");
     const local = digits.length === 12 || digits.length === 13 ? (digits.startsWith("55") ? digits.slice(2) : "") : digits;
     if (local.length === 10 || local.length === 11) {
-      const prefix = digits.length > 11 ? "+55 " : "";
+      const prefix = "+55 ";
       return `${prefix}(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}`;
     }
+  }
+  if (/(resposta|atendimento|resultado|situação|situacao|status|state|outcome)/i.test(column)) {
+    const labels: Record<string, string> = {pending: "Pendente", open: "Aberto", closed: "Concluído", assigned: "Em atendimento", waiting_external: "Aguardando ação externa", confirmed: "Confirmado", declined: "Recusado", no_response: "Sem resposta", not_confirmed: "Não confirmado", not_sent: "Não enviado", answered: "Respondido", received: "Recebido", sent: "Enviado", failed: "Falhou", cancelled: "Cancelado", resolved: "Resolvido"};
+    if (labels[String(value)]) return labels[String(value)];
   }
   return formatCellValue(value);
 }

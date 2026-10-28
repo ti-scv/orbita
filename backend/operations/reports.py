@@ -79,6 +79,8 @@ def local_report_content(job):
         if job.report.handler not in HANDLERS or job.report.source != "local":
             raise ValidationError("Fonte externa ainda não homologada.")
         headers, rows = local_report_data(job.report, job.parameters)
+    from operations.report_canvas.formatting import export_cell
+    rows = [[export_cell(value, headers[i]) for i, value in enumerate(row)] for row in rows]
     if job.format == "pdf":
         from xml.sax.saxutils import escape
 

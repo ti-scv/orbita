@@ -13,7 +13,7 @@ from reportlab.graphics.charts.linecharts import HorizontalLineChart
 from reportlab.graphics.charts.piecharts import Pie
 from .registry import EXPORTERS, Registry
 from .schema import fail
-from .formatting import display
+from .formatting import display, display_cell
 
 RENDERERS=Registry()
 PALETTE=["#075b94","#14b4cb","#71bfa6","#7289ba","#af76b5","#db9d49"]
@@ -119,7 +119,7 @@ def chart(c,b,w,h):
 def table_parts(b,w,h):
     cols=b["columns"];rows=b["rows"]
     if not cols:return []
-    data=[[Paragraph(escape(display(v)),style(b,b["options"].get("font_size",10)*.75)) for v in row] for row in [cols,*rows]]
+    data=[[Paragraph(escape(display(v)),style(b,b["options"].get("font_size",10)*.75)) for v in row] for row in [cols,*[[display_cell(v, cols[i]) for i, v in enumerate(row)] for row in rows]]]
     weights=b["options"].get("column_widths") or [1]*len(cols)
     t=LongTable(data,colWidths=[w*v/sum(weights) for v in weights],repeatRows=1,hAlign="LEFT")
     t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#ededed")),("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.25,colors.HexColor("#d4d4d4")),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3)]))

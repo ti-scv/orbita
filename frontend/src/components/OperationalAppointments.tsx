@@ -1,3 +1,4 @@
+import { formatTableCell } from "./report-canvas/data/columnTypes";
 import FilterSelect from "./FilterSelect";
 import WhatsAppStatus from "./WhatsAppStatus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -911,7 +912,7 @@ export default function OperationalAppointments({
                             className="op-contact-delivery"
                             key={contact.phone || idx}
                           >
-                            <strong>{contact.phone || "Sem número"}</strong>
+                            <strong>{contact.phone ? formatTableCell(contact.phone, "Telefone") : "Sem número"}</strong>
                             <small>
                               {labels[contact.delivery] ||
                                 responseLabels[contact.delivery] ||
@@ -943,7 +944,7 @@ export default function OperationalAppointments({
                         ))
                       ) : item.phone ? (
                         <div className="op-contact-delivery">
-                          <strong>{item.phone}</strong>
+                          <strong>{formatTableCell(item.phone, "Telefone")}</strong>
                           <small>Sem envio</small>
                         </div>
                       ) : (

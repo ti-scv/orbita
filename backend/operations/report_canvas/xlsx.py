@@ -7,6 +7,7 @@ from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 from .registry import EXPORTERS, Registry
+from .formatting import export_cell
 
 RENDERERS=Registry()
 
@@ -25,7 +26,7 @@ def dataset_sheet(book,b,prefix):
     name=f"{prefix}{len(book.worksheets)} {title}"[:31]
     sheet=book.create_sheet(name)
     for ri,row in enumerate([b["columns"],*b["rows"]],1):
-        for ci,value in enumerate(row,1):cell(sheet,ri,ci,value)
+        for ci,value in enumerate(row,1):cell(sheet,ri,ci,export_cell(value, b["columns"][ci-1]) if ri > 1 else value)
     sheet.freeze_panes="A2";sheet.auto_filter.ref=sheet.dimensions
     for c in sheet[1]:c.font=Font(bold=True,color="262626");c.fill=PatternFill("solid",fgColor="EDEDED")
     weights=b["options"].get("column_widths")
@@ -59,7 +60,7 @@ def table(ctx,b,row,col,width,height):
     visible_columns=max(1,width)
     for ri,line in enumerate([b["columns"][:visible_columns],*[r[:visible_columns] for r in b["rows"][:available]]]):
         for ci,value in enumerate(line):
-            c=cell(ctx.sheet,start+ri,col+ci,value);c.alignment=Alignment(wrap_text=True,vertical="top")
+            c=cell(ctx.sheet,start+ri,col+ci,export_cell(value, b["columns"][ci]) if ri > 0 else value);c.alignment=Alignment(wrap_text=True,vertical="top")
             if ri==0:c.font=Font(bold=True,color="262626");c.fill=PatternFill("solid",fgColor="EDEDED")
     if len(b["rows"])>available or len(b["columns"])>visible_columns:
         data=dataset_sheet(ctx.book,b,"Dados ")
