@@ -55,6 +55,7 @@ export default function DataDrawer({
   const [sortCol, setSortCol] = useState<number | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const columns: import("../model").ColumnInfo[] =
     currentPreview?.columns ||
@@ -147,7 +148,7 @@ export default function DataDrawer({
   const countText = `Mostrando ${formatRowCount(displayRows.length, currentPreview || {total_rows: totalCount})} · a partir da ${(offset + 1).toLocaleString("pt-BR")}`;
 
   return (
-    <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${sourceName || friendlySourceName(source)}`}>
+    <div className={`cv-data-drawer cv-root ${expanded ? "is-expanded" : ""}`} role="dialog" aria-label={`Dados da fonte ${sourceName || friendlySourceName(source)}`}>
       <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
         <table className="cv-column-metadata"><thead><tr><th scope="col">Coluna</th><th scope="col">Exemplo</th><th scope="col">Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
       </details>
@@ -160,6 +161,7 @@ export default function DataDrawer({
           {loading && <span className="cv-chip loading">Atualizando…</span>}
         </div>
         <div className="cv-drawer-controls">
+          <button type="button" className="cv-btn-compact" onClick={() => setExpanded(!expanded)} aria-expanded={expanded}>{expanded ? "Recolher" : "Expandir"}</button>
           <input
             type="search"
             className="cv-search-input"
@@ -209,6 +211,7 @@ export default function DataDrawer({
         <label>Linhas por página <select value={pageSize} disabled={loading || pageLoading} onChange={event => void loadPage(0, Number(event.target.value))}>{[25, 50, 100, 200].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
         {pageLoading && <span role="status">Carregando página…</span>}
       </div>
+      <p className="cv-drawer-scroll-hint">Role horizontalmente para ver as demais colunas.</p>
       <div className="cv-drawer-body" tabIndex={0} role="region" aria-label="Linhas da prévia" aria-busy={loading || pageLoading}>
         {loading ? (
           <div className="cv-drawer-loading" role="status">Carregando dados…</div>
@@ -226,7 +229,7 @@ export default function DataDrawer({
                 {columns.map((col, idx) => (
                   <th scope="col" role="columnheader" key={col.name || idx} tabIndex={0} aria-sort={sortCol === idx ? (sortDir === "asc" ? "ascending" : "descending") : "none"} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSort(idx); } }} onClick={() => toggleSort(idx)} title={`Ordenar por ${col.name}`}>
                     <div className="cv-table-th-content">
-                      <ColumnBadge type={col.type} looksLike={col.looks_like} />
+                      {currentPreview && rawRows.length > 0 && rawRows.every(row => row[idx] == null || String(row[idx]).trim() === "") ? <span title="Sem valores" aria-label="Sem valores">Sem valores</span> : <ColumnBadge type={col.type} looksLike={col.looks_like} />}
                       <span>{col.name}</span>
                       {(
 

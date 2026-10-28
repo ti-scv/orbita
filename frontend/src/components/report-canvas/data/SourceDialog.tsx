@@ -1,4 +1,4 @@
-import { friendlyParameterName, friendlyParameterValue, collectTestParameters } from "../parameters";
+import { friendlyParameterName, friendlyParameterValue, collectTestParameters, unitOptionLabel } from "../parameters";
 import { previewParameters } from "../hooks/useStagePreviews";
 import { query, request } from "../../../api";
 import { friendlySourceError, friendlySourceName } from "./sourceName";
@@ -196,6 +196,7 @@ export default function SourceDialog({
       ...sourceModal,
       type: nextType,
       id: nextId,
+      label: isCreate ? (nextType === "report" ? (selectedCatalog?.name.slice(0, 60) || "") : nextType === "goals" ? "Metas mensais" : "Tabela manual") : sourceModal.label,
       testPreview: null,
       testError: null,
       error: "",
@@ -417,6 +418,8 @@ export default function SourceDialog({
 
   const invalidDate = paramItems.some(param => !param.isBinding && isDateParameter(param.key, param.type) && param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)));
   const draftSource = constructDraftSource();
+  const sourceColumns = selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns || selectedCatalog?.columns || [];
+  const columnLabels = sourceColumns.map(c => friendlyParameterName(c));
 
   return (
     <InlineDialog
@@ -433,8 +436,8 @@ export default function SourceDialog({
             type="button"
             className="cv-btn-compact"
             onClick={handleTestPreview}
-            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "report" && (!sourceModal.reportId || schemaStatus !== "ready"))}
-            title="Executar consulta e verificar dados retornados"
+            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "goals" && !monthlyGoals.length) || (sourceModal.type === "report" && (!sourceModal.reportId || schemaStatus !== "ready"))}
+            title={sourceModal.type === "goals" && !monthlyGoals.length ? "Cadastre metas mensais antes de testar esta fonte." : "Executar consulta e verificar dados retornados"}
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
             {testing ? "Testando…" : "Testar e carregar prévia"}
@@ -517,11 +520,8 @@ export default function SourceDialog({
         </div>
 
         {sourceModal.type === "report" && selectedCatalog && (
-          <p className="cv-source-sub" title={selectedCatalog.name}>
-            Origem: {selectedCatalog?.name || `Relatório #${sourceModal.reportId}`}. Colunas: {(
-              selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns
-              || selectedCatalog?.columns || []
-            ).join(", ") || "Use Testar e carregar prévia para consultar as colunas."}
+          <p className="cv-source-sub" title={`${selectedCatalog.name}. ${columnLabels.join(", ")}`}>
+            Origem: {selectedCatalog.name}. {columnLabels.length ? `${columnLabels.length} colunas: ${columnLabels.slice(0, 3).join(", ")}${columnLabels.length > 3 ? ` e mais ${columnLabels.length - 3}` : ""}` : "Use Testar e carregar prévia para consultar as colunas."}
           </p>
         )}
 
@@ -533,14 +533,14 @@ export default function SourceDialog({
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <Select required value={sourceModal.reportId} onChange={e => {
+                <Select className="cv-report-select" required value={sourceModal.reportId} onChange={e => {
                   const chosen = availableSources.find(item => item.id === Number(e.target.value));
                   onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
                     label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
                     parametersJson: "{}", testPreview: null, testError: null});
                 }}>
                   <option value="">Escolha um relatório</option>
-                  {filteredCatalog.map(s => <option key={s.id} value={s.id}>{s.name}{s.available === false ? " · Pendente" : ""}</option>)}
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id}>{s.name} · {s.code || `#${s.id}`} · #{s.id}{s.available === false ? " · Pendente" : ""}</option>)}
                 </Select>
               </label>
 
@@ -572,7 +572,7 @@ export default function SourceDialog({
                   <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
                   {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
                   {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
-                    <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
                   </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
                 </label>)}
               </div> : <p className="cv-hint">Este relatório não exige valores adicionais.</p>;
@@ -892,7 +892,7 @@ export default function SourceDialog({
 
             {sourceModal.testPreview.effective_parameters != null && <div>
               <strong>Parâmetros aplicados:</strong>{" "}
-              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label ? unitOptionLabel(p.name, String(p.value), previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || "") : friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
             </div>}
             {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 

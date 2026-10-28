@@ -35,7 +35,7 @@ it("item 11: escolha inicial usa o nome do relatório", () => {
   mount();
   Element.prototype.scrollIntoView = vi.fn();
   fireEvent.click(screen.getByRole("combobox"));
-  fireEvent.click(screen.getByRole("option", {name: "Agenda"}));
+  fireEvent.click(screen.getByRole("option", {name: /^Agenda/}));
   expect((screen.getByLabelText("Nome da fonte") as HTMLInputElement).value).toBe("Agenda");
 });
 it("item 12: setas movem foco e apenas a aba selecionada recebe tab stop", () => {

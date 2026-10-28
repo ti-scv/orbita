@@ -91,3 +91,27 @@ Capturas novas em `canvas-task32e-evidencias/`: `canvas1.png` mostra o painel co
 O frontend completo passou: 67 arquivos, 622 testes, hooks, tipos e build. O build emitiu aviso de tamanho de pacote. O staging 8091 foi reconstruído com `orbita-canvas-task26-api:8000` e a API de staging foi reiniciada; página e saúde responderam 200. Não houve implantação em produção.
 
 Também foram feitas capturas de relatório e tabela manual nos dois temas e zoom real de 100% e 150% (largura 1440 e DPR 1; largura 960 e DPR 1,5, respectivamente). O arquivo de tabela manual escuro a 100% era idêntico ao da 32d e foi removido. As capturas restantes estão na mesma pasta.
+
+## Continuação 32f — correções parciais
+
+O cadastro de relatórios é filtrado no backend por `ReportDefinition.unit`, mas isso não identifica o estabelecimento importado do legado. Por exemplo, os 14 registros chamados “GRAFICO FICHAS SEM CPF” são todos formalmente da unidade `scv`, têm IDs e códigos diferentes e contêm estabelecimentos diferentes nos metadados legados. Exibir apenas relatórios cujo nome contenha SCV descartaria relatórios válidos e não seria um filtro confiável. O contrato atual de execução também procura a origem na unidade do canvas; oferecer outras unidades como se fossem executáveis exigiria definir permissões e resolução entre unidades. O item 1 permanece aberto. O seletor agora diferencia os registros por código e ID, ordena por nome e deixa o texto quebrar; não se afirma que isso resolve o filtro.
+
+Na gaveta, uma coluna cujas linhas da página são todas vazias apresenta texto, título e rótulo acessível “Sem valores”. A altura padrão é limitada a 40% da janela, com botão Expandir/Recolher, região rolável e aviso de rolagem horizontal. As abas receberam fundo e borda de destaque. Ao trocar o tipo de fonte nova, o nome sugerido acompanha o tipo. Metas vazias impedem também o teste da prévia. Os nomes de unidades conhecidas usam o mesmo mapeamento de valor na seleção e no resumo dos parâmetros; colunas têm rótulos legíveis, resumo limitado e título completo.
+
+| Item | Teste ou evidência | Estado |
+|---|---|---|
+| 1 | Consulta de metadados do catálogo e códigos; `task32f.test.tsx` identifica relatório | Parcial: falta filtro por estabelecimento e opção de outras unidades com contrato de segurança. |
+| 2 | `task32f.test.tsx`: coluna vazia na gaveta | Teste de componente; falta confirmação com prévia real no navegador. |
+| 3 | `task32f.test.tsx`: expandir e recolher | Falta medir geometria e rolagem no zoom real. |
+| 4 | CSS de aba ativa | Falta medir contraste renderizado e captura final. |
+| 5–6 | `task32f.test.tsx`: troca de nome e bloqueio de metas | Teste de componente. |
+| 7 | Mapeamento em `parameters.ts` | Falta teste específico com os dois relatórios. |
+| 8 | `task32f.test.tsx`: resumo de colunas | Teste de componente; falta verificar rótulos reais no staging. |
+| 9 | `curl` local em 8091, três medições abaixo | Não reproduz os 30 s; não comprova a causa no túnel. |
+| 10 | Indicação obrigatória existente em `SourceDialog`; `ThemeToggle` usa SVG Lucide | Falta teste de componente do obrigatório e inspeção visual do SVG renderizado. |
+
+Medições locais antes da reconstrução final: página 0,0021/0,0012/0,0013 s; pacote principal de 601.018 bytes 0,0045/0,0022/0,0044 s; pacote Canvas de 300.599 bytes 0,0025/0,0028/0,0022 s. GET autenticado da definição 0,608/0,897/0,620 s e do Canvas 0,531/0,492/0,734 s. Essas medições não incluem o trabalho do navegador nem o túnel; portanto não identificam a causa dos 30 s.
+
+A classificação anterior permanece: em PostgreSQL descartável com remoção desligada, cinco testes de remoção falham por exigirem remoção habilitada na inicialização; em SQLite, 12 falhas e 17 erros foram reproduzidos no código anterior à 32e e classificados como preexistentes na comparação documentada acima. O backend não foi alterado nesta rodada; sua suíte não foi repetida aqui. Não houve deploy em produção.
+
+Frontend final: `scripts/canvas-check.sh` passou com 68 arquivos e 624 testes, hooks, TypeScript e build; o Vite manteve o aviso de pacote grande. Staging 8091 foi reconstruído com API `orbita-canvas-task26-api:8000`, sem alteração de backend. Em `canvas-task32f-evidencias/`, quatro capturas mostram formulário inválido e abas a 100%, seletor e metas a 150%, com DPR 1 e 1,5 respectivamente. O navegador bloqueou todas as requisições que não fossem GET e os diálogos foram cancelados. As imagens não cobrem a gaveta ou o filtro ausente.
