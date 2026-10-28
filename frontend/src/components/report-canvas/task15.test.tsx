@@ -42,7 +42,7 @@ it("não consulta de novo o relatório quando a fonte é o próprio relatório",
 });
 it("a lâmpada explica o próximo tema ao clicar",()=>{
  render(<ThemeProvider><ThemeToggle/></ThemeProvider>);
- expect(screen.getByRole("button",{name:/Tema:/}).title).toMatch(/Clique para alternar para/);
+ expect(screen.getByRole("button",{name:/Mudar para tema (claro|escuro)/}).title).toMatch(/Mudar para tema/);
 });
 it("Publicação explica a abertura e o salvamento",()=>{
  const text=topbarSource;

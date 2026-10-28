@@ -85,6 +85,7 @@ const engines: Record<string, string> = {
   postgres: "PostgreSQL",
 };
 const sources: Record<string, string> = {
+  oracle: "Oracle (estoque)",
   app: "Dados do app",
   sql: "Consulta SQL",
   composite: "Composição",
@@ -802,7 +803,7 @@ export default function ReportWorkspace({
         <div className="report-list-heading">
           <div>
             <h2>{names[tab]}</h2>
-            <span>{count} registros</span>
+            <span>{!loading && loadedScope === `${unit}:${tab}` ? `${count} ${count === 1 ? "registro" : "registros"}` : "Carregando…"}</span>
           </div>
           <div className="report-actions">
             <button
@@ -898,8 +899,7 @@ export default function ReportWorkspace({
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}
                       <small>
-                        {r.code ||
-                          (r.engine &&
+                        {(r.engine &&
                             (r.legacy?.source_config
                               ? `Destino: ${engines[r.engine]}`
                               : engines[r.engine])) ||
@@ -917,7 +917,7 @@ export default function ReportWorkspace({
                     <td>
                       {isReports ? (
                         <>
-                          <span>{sources[r.source] || r.source}</span>
+                          <span>{sources[r.source] || "Outra origem"}</span>
                           <small>{r.connection_name || "—"}</small>
                           {tab === "components" && (
                             <small className="report-component-parents">
@@ -932,7 +932,7 @@ export default function ReportWorkspace({
                           {r.engine === "sqlite"
                             ? "Arquivo local"
                             : r.host || "Destino pendente"}
-                          <small>{r.database || "Destino pendente"}</small>
+                          <small>{r.engine === "postgres" && r.database === "orbita" ? "PostgreSQL do Orbita" : r.database ? "Banco configurado" : "Destino pendente"}</small>
                         </>
                       ) : tab === "recipients" || tab === "grants" ? (
                         <span className="report-address">{r.address}</span>
@@ -1086,7 +1086,7 @@ export default function ReportWorkspace({
         )}
         <div className="op-pager">
           <span>
-            Página {page} · {count} registros
+            Página {page}{!loading && loadedScope === `${unit}:${tab}` && ` · ${count} ${count === 1 ? "registro" : "registros"}`}
           </span>
           <button
             className="button"
