@@ -202,6 +202,7 @@ describe("Renderização estática dos módulos extraídos (preservação estrut
           reportName="Relatório Assistencial"
           version={7}
           enabled
+          reportActive
           outputFormat="pdf"
           dirty
           loading={false}

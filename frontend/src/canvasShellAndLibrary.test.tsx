@@ -28,7 +28,8 @@ describe("Shell do editor — TopBar, LeftRail, painéis, StatusBar e Banner", (
       <TopBar
         reportName="Produção Ambulatorial"
         version={3}
-        enabled={false}
+        enabled={true}
+        reportActive={false}
         outputFormat="pdf"
         dirty={false}
         loading={false}
