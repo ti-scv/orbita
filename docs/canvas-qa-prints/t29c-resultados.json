@@ -1,0 +1,1154 @@
+[
+  {
+    "id": 1,
+    "width": 1440,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1530,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 487,
+      "canvas-definicao-pronta": 536,
+      "canvas-fontes-prontas": 551,
+      "canvas-primeira-renderizacao": 1085
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1440,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1206,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 355,
+      "canvas-definicao-pronta": 380,
+      "canvas-fontes-prontas": 391,
+      "canvas-primeira-renderizacao": 833
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1280,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1286,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 293,
+      "canvas-definicao-pronta": 480,
+      "canvas-fontes-prontas": 480,
+      "canvas-primeira-renderizacao": 1022
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1280,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1044,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 205,
+      "canvas-definicao-pronta": 238,
+      "canvas-fontes-prontas": 239,
+      "canvas-primeira-renderizacao": 671
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1100,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1133,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 246,
+      "canvas-definicao-pronta": 276,
+      "canvas-fontes-prontas": 277,
+      "canvas-primeira-renderizacao": 723
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 1,
+    "width": 1100,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1228,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 261,
+      "canvas-definicao-pronta": 308,
+      "canvas-fontes-prontas": 308,
+      "canvas-primeira-renderizacao": 791
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 2,
+    "width": 1440,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1006,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 183,
+      "canvas-definicao-pronta": 198,
+      "canvas-fontes-prontas": 200,
+      "canvas-primeira-renderizacao": 623
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 2,
+    "width": 1440,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 995,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 188,
+      "canvas-definicao-pronta": 197,
+      "canvas-fontes-prontas": 202,
+      "canvas-primeira-renderizacao": 628
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 2,
+    "width": 1280,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 999,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 182,
+      "canvas-definicao-pronta": 205,
+      "canvas-fontes-prontas": 208,
+      "canvas-primeira-renderizacao": 635
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 2,
+    "width": 1280,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 953,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 155,
+      "canvas-definicao-pronta": 163,
+      "canvas-fontes-prontas": 163,
+      "canvas-primeira-renderizacao": 587
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 2,
+    "width": 1100,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1169,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 221,
+      "canvas-definicao-pronta": 244,
+      "canvas-fontes-prontas": 244,
+      "canvas-primeira-renderizacao": 719
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 2,
+    "width": 1100,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1081,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 246,
+      "canvas-definicao-pronta": 273,
+      "canvas-fontes-prontas": 273,
+      "canvas-primeira-renderizacao": 721
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1000,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 186,
+      "canvas-definicao-pronta": 197,
+      "canvas-fontes-prontas": 197,
+      "canvas-primeira-renderizacao": 636
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1011,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 187,
+      "canvas-definicao-pronta": 203,
+      "canvas-fontes-prontas": 207,
+      "canvas-primeira-renderizacao": 646
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1280,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1042,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 213,
+      "canvas-definicao-pronta": 231,
+      "canvas-fontes-prontas": 237,
+      "canvas-primeira-renderizacao": 686
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1280,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1001,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 192,
+      "canvas-definicao-pronta": 203,
+      "canvas-fontes-prontas": 204,
+      "canvas-primeira-renderizacao": 619
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1100,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 974,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 156,
+      "canvas-definicao-pronta": 164,
+      "canvas-fontes-prontas": 169,
+      "canvas-primeira-renderizacao": 595
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 6,
+    "width": 1100,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "origem",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "dialogo-parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1005,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 195,
+      "canvas-definicao-pronta": 206,
+      "canvas-fontes-prontas": 212,
+      "canvas-primeira-renderizacao": 649
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  }
+]
