@@ -105,7 +105,11 @@ def test_reversal_restores_only_mapping_and_rejects_later_edits(five):
     from operations.management.commands.map_legacy_five_canvases import revert_plan
     approved = plan(five)
     apply_plan(approved)
-    assert set(revert_plan(approved)) == set(IDS)
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    with CaptureQueriesContext(connection) as captured:
+        assert set(revert_plan(approved)) == set(IDS)
+    assert not any('FOR UPDATE' in q['sql'] for q in captured.captured_queries)
     assert ReportDefinition.objects.exclude(canvas_layout={}).count() == 5
     assert set(revert_plan(approved, apply=True)) == set(IDS)
     assert not ReportDefinition.objects.exclude(canvas_layout={}).exists()

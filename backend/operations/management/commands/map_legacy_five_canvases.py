@@ -143,7 +143,10 @@ def revert_plan(plan, *, apply=False):
     changed = []
     with transaction.atomic():
         for row in plan['reports']:
-            r = ReportDefinition.objects.select_for_update(of=("self",)).select_related('connection').get(pk=row['id'])
+            records = ReportDefinition.objects.select_related('connection')
+            if apply:
+                records = records.select_for_update(of=("self",))
+            r = records.get(pk=row['id'])
             eligible(r)
             saved = r.legacy.get(KEY, {})
             if (saved.get('plan_sha256') != sha(row)
