@@ -1,3 +1,4 @@
+import ReportDataPreview from "./ReportDataPreview";
 import ReportAppConnections from "./ReportAppConnections";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
@@ -432,10 +433,10 @@ export default function ReportWorkspace({
     if (tab === "snapshots" || tab === "appSources") return;
     let alive = true;
     const tasks = [
-      tab === "recipients" || tab === "grants" ? Promise.resolve([]) : all("reports", unit),
-      admin ? all("report-connections", unit) : Promise.resolve([]),
-      all("report-recipients", unit),
-      admin
+      modal || tab === "grants" || tab === "automations" ? all("reports", unit) : Promise.resolve([]),
+      admin && (isReports || modal?.kind === "edit") ? all("report-connections", unit) : Promise.resolve([]),
+      modal || tab === "grants" || tab === "automations" ? all("report-recipients", unit) : Promise.resolve([]),
+      admin && modal?.kind === "edit"
         ? request<Row[]>(query("report-recipients/users", { unit }))
         : Promise.resolve([]),
     ];
@@ -454,7 +455,7 @@ export default function ReportWorkspace({
     return () => {
       alive = false;
     };
-  }, [unit, admin, tab, revision]);
+  }, [unit, admin, tab, revision, modal?.kind, isReports]);
   useEffect(() => {
     if (!admin) {
       setInventory(null);
@@ -774,7 +775,7 @@ export default function ReportWorkspace({
             >
               <Icon size={15} aria-hidden="true" />
               {names[t]}
-              {t === "components" && inventory && <span className="report-tab-count">{inventory.components || 0}</span>}
+              {t === "components" && inventory && <span className="report-tab-count" title="Fontes auxiliares cadastradas; blocos do editor são contados dentro do relatório" aria-label={`${inventory.components || 0} fontes auxiliares cadastradas`}>{inventory.components || 0}</span>}
             </button>;
           })}
       </div>
@@ -997,13 +998,10 @@ export default function ReportWorkspace({
                           {r.pending_items?.length ||
                           (tab === "connections" && !r.validated) ||
                           (tab === "recipients" && !r.verified_at) ? (
-                            <span
-                              className="report-warning"
-                              title={(r.pending_items || []).join("\n")}
-                            >
-                              <AlertTriangle size={15} />
-                              <span className="sr-only">{r.pending_items?.length ? `${r.pending_items.length} pendência(s)` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</span>
-                            </span>
+                            <details className="report-pending-details">
+                              <summary><AlertTriangle size={15} aria-hidden="true" /> {r.pending_items?.length ? `${r.pending_items.length} pendências` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</summary>
+                              <ul>{(r.pending_items?.length ? r.pending_items : [tab === "connections" ? "Valide a conexão antes de ativar." : "Verifique o destinatário antes de ativar."]).map((item: string) => <li key={item}>{item}</li>)}</ul>
+                            </details>
                           ) : (
                             <span className="report-ok" title="Revisado">
                               <Check size={14} aria-hidden="true" />
@@ -1262,13 +1260,7 @@ export default function ReportWorkspace({
                 {preview && (
                   <div className="report-preview">
                     <strong>{preview.total} linhas · prévia de até 20</strong>
-                    <pre>
-                      {JSON.stringify(
-                        { colunas: preview.columns, linhas: preview.rows },
-                        null,
-                        2,
-                      )}
-                    </pre>
+                    <ReportDataPreview columns={preview.columns} rows={preview.rows} />
                   </div>
                 )}
               </>

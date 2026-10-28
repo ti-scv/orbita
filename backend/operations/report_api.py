@@ -672,7 +672,7 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
         from operations.report_canvas.api import assets
         return assets(self, request)
 
-    queryset = m.ReportDefinition.objects.select_related("connection", "unit").order_by(
+    queryset = m.ReportDefinition.objects.select_related("connection", "app_connection", "unit").order_by(
         "name"
     )
     serializer_class = CatalogSerializer
