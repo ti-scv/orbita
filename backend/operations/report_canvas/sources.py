@@ -126,12 +126,16 @@ class ReportSource:
         cols,rows=run_query(child,vals,session=context.sessions[child.connection_id],typed=True,**({"preview_limit":preview_limit,"preview_offset":preview_offset,"timings":getattr(context,"timings",None)} if preview_limit is not None and child.connection.engine == "postgres" else {}))
         total = None
         if preview_limit is not None and child.connection.engine == "postgres":
-            try:
-                _, count_rows = run_query(child, vals, session=context.sessions[child.connection_id], typed=True, preview_limit=1, preview_count=True)
-                total = int(count_rows[0][0])
-            except Exception:
-                # Keep the sample usable when a bounded count times out or is unsupported.
-                pass
+            if preview_offset == 0 and len(rows) < preview_limit:
+                # The first page includes a lookahead row, so a short page is the full result.
+                total = len(rows)
+            else:
+                try:
+                    _, count_rows = run_query(child, vals, session=context.sessions[child.connection_id], typed=True, preview_limit=1, preview_count=True)
+                    total = int(count_rows[0][0])
+                except Exception:
+                    # Keep the sample usable when a bounded count times out or is unsupported.
+                    pass
         return Dataset(cols,rows,total)
 
 SOURCES.register("inline",InlineSource())

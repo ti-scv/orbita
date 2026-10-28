@@ -52,3 +52,42 @@ A tarefa permanece parcial: testar individualmente as 310 fontes em modo de leit
 - Ainda falta medir antes e depois o tempo real da prévia em banco isolado, investigar se a consulta em si pode ser acelerada e validar o canvas 1 com dados reais. Faltam capturas dos estados carregando, zero linhas e sucesso em ambiente isolado, testes específicos para cada item e validação completa das abas e do Enter. Não se deve concluir que os 13 itens estejam completamente verificados.
 - Frontend: suíte completa com 66 arquivos e 616 testes aprovados, hooks, tipos e build; o Vite informou o aviso de tamanho do pacote. Após essa suíte foi feito apenas um ajuste no título de ajuda de coluna, com verificação focada repetida. Uma primeira execução do backend foi descartada por preparo incorreto: não tinha chave sintética nem os arquivos corretos montados; apresentou 2 falhas e 7 erros por esse ambiente, além de 1.006 aprovados e um ignorado. A execução com preparo corrigido é registrada abaixo.
 - Backend com PostgreSQL descartável e rede interna, arquivos de relatórios em leitura e chaves sintéticas: 1.015 aprovados e um ignorado em 234,09 s. O único aviso foi a impossibilidade de gravar o cache do pytest na montagem somente leitura. O banco e a rede descartáveis foram removidos. A verificação focada do frontend após o ajuste final também passou. Staging 8091 reconstruído e API de staging reiniciada; página respondeu 200.
+
+## Continuação 32e — desempenho e verificação
+
+A cópia `before-canvas2-20261028-1804.dump` foi restaurada em PostgreSQL descartável, em rede sem saída. As origens foram executadas diretamente com usuário SELECT, transação somente leitura e os mesmos parâmetros resolvidos para cada versão, sem HTTP ou auditoria. Os tempos incluem resolução, conexão, amostra e contagem, não medem carregamento da página. Cada coluna abaixo contém três execuções em segundos; não são comparações controladas de latência de navegador e a carga do servidor variou.
+
+| Canvas | 27ef2cc | bb0e719 | 32e com otimização |
+|---|---|---|---|
+| 1 | 0,317; 0,114; 0,138 | 0,193; 0,091; 0,091 | 0,251; 0,109; 0,098 |
+| 57 | 0,488; 0,704; 0,693 | 0,495; 0,372; 0,427 | 0,562; 0,299; 0,279 |
+
+No HEAD, uma execução separada mediu amostra/contagem respectivamente em 0,037/0,023 s para o canvas 1 e 0,203/0,166 s para o 57, incluindo o processamento Python de cada chamada. A consulta SQL de amostra registrada pelo driver foi 21 ms e 104 ms, respectivamente. O custo evitável era a segunda consulta de contagem, mesmo quando a primeira página com linha extra já continha o resultado completo. Agora ela é dispensada nesse caso; páginas cheias e páginas posteriores ainda usam contagem limitada. Não foi criado índice. Os números não explicam nem reproduzem os mais de sete segundos observados no navegador.
+
+Na cópia, o canvas 1 retornou 3 linhas e 8 colunas. Nas três linhas, Responsável é uma string vazia; Resposta contém `answered` e Resultado `confirmed`. O teste de interface com essas amostras mostra “Sem valores”, “Respondido” e “Confirmado”. Isso comprova o comportamento com esses dados no teste de componente, mas não comprova a apresentação de uma prévia real no navegador.
+
+O SQLite em `27ef2cc`, com a mesma configuração da execução antiga, repetiu os mesmos 12 testes falhos e 17 erros (974 aprovados, 11 ignorados): são anteriores à 32e. Os 17 erros de concorrência Oracle exigem PostgreSQL; cinco falhas de remoção decorrem da opção desligada; as outras falhas abrangem chave ausente, montagem de arquivos ou concorrência incompatível com SQLite. A suíte de PostgreSQL usa chave sintética válida, `/report_files` em leitura e remoção desligada no ambiente. A suíte inteira terminou com 1.012 aprovados e cinco falhas dos testes de remoção (277,61 s). Tentou-se ativar a opção apenas nesses testes, mas os campos dos modelos são definidos na inicialização com a opção desligada; a tentativa não resolveu e foi removida. Com a opção desligada, esses testes exigem uma configuração incompatível; por isso não se declara a suíte verde.
+
+| Item | Correção existente ou nova | Teste identificado | Print | Resultado e limite |
+|---|---|---|---|---|
+| 1 | Seleção inicial vazia; unidade válida | `task32d: não escolhe um relatório arbitrariamente` e `prefere a unidade atual somente para fonte nova e quando é aceita` | 32d: `light-100-Relatório-existente.png` | Testes passam; falta nova evidência completa. |
+| 2 | Catálogo por unidade e seletor pesquisável ordenado | `test_source_preview_unit_isolation` cobre isolamento da prévia, não a lista | 32d: modal | Falta teste específico do catálogo e busca. |
+| 3 | Aviso para zero e rótulos legíveis | `task32e: item 3: zero linhas é aviso, não sucesso`; backend `test_source_preview_reports_effective_values_and_defaults` | nenhum novo | Aviso testado em componente; falta captura e teste dos rótulos. |
+| 4 | Pré-busca e cache; contagem dispensada em primeira página curta | `test_short_first_page_avoids_count_but_full_and_later_pages_count` | nenhum novo | Medições registradas; falta teste específico de cancelamento e captura do carregamento. |
+| 5 | 404 em português e ações | `test_wrong_unit_returns_friendly_404` | 32d: `unidade-incorreta.png` | Backend coberto; falta teste da tela e novo print. |
+| 6 | Coluna vazia identificada e amostras formatadas | `task32e: item 6: amostras reais de resposta e resultado são apresentadas e responsável vazio é identificado`; `test_infer_column_metadata_types` | nenhum novo | Dados conferidos na cópia; falta navegador com prévia real. |
+| 7 | Nome completo no título, texto quebrado e metas traduzidas | sem teste específico | 32d: modal | Pendente. |
+| 8 | Metas vazias e nome vazio bloqueiam ação | `task32e: item 8: metas vazias bloqueiam adicionar e explicam` | nenhum novo | Coberta ausência de metas; falta caso de nome vazio. |
+| 9 | Campos obrigatórios identificados | sem teste específico | nenhum novo | Pendente. |
+| 10 | Destaque da aba selecionada | sem teste específico de geometria | 32d: quatro combinações de tema e zoom | Falta nova matriz visual. |
+| 11 | Nome inicial deriva do relatório escolhido | `task32e: item 11: escolha inicial usa o nome do relatório` | nenhum novo | Coberto em componente. |
+| 12 | Setas movem foco; Enter/Espaço ativam | `task32e: item 12: setas movem foco e apenas a aba selecionada recebe tab stop` | nenhum novo | Foco e tab stop cobertos; falta testar ativação por teclado. |
+| 13 | Validação antes de confirmar | `task32e: item 13: submissão inválida não confirma e foca relatório` | nenhum novo | Submissão simulada coberta; falta Enter real no navegador e caso válido. |
+
+A matriz de testes e prints permanece incompleta. Não considerar os itens pendentes como validados apenas pelos testes de componente.
+
+Capturas novas em `canvas-task32e-evidencias/`: `canvas1.png` mostra o painel com a prévia bloqueada; `zero-simulado.png`, `sucesso-simulado.png` e `carregando-simulado.png` mostram os três estados com respostas simuladas interceptadas no navegador. Nenhum POST foi enviado ao staging. Essas respostas sintéticas verificam a interface, não o resultado real da API. A captura do erro de unidade feita nesta rodada era idêntica à anterior e foi removida. Faltam capturas novas dos demais estados e combinações de tema e zoom.
+
+O frontend completo passou: 67 arquivos, 622 testes, hooks, tipos e build. O build emitiu aviso de tamanho de pacote. O staging 8091 foi reconstruído com `orbita-canvas-task26-api:8000` e a API de staging foi reiniciada; página e saúde responderam 200. Não houve implantação em produção.
+
+Também foram feitas capturas de relatório e tabela manual nos dois temas e zoom real de 100% e 150% (largura 1440 e DPR 1; largura 960 e DPR 1,5, respectivamente). O arquivo de tabela manual escuro a 100% era idêntico ao da 32d e foi removido. As capturas restantes estão na mesma pasta.

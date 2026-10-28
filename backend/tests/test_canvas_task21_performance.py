@@ -150,3 +150,39 @@ def test_postgres_pagination_timeout_and_revoked_source(sample, monkeypatch):
     response=client.post(url,payload,format="json")
     assert response.status_code==400
     assert response.data["code"]=="source_query_timeout"
+
+
+def test_short_first_page_avoids_count_but_full_and_later_pages_count(sample, monkeypatch):
+    from contextlib import nullcontext
+    from operations.models import ReportConnection
+    from operations.report_canvas import sources
+    client, report = sample
+    conn = ReportConnection.objects.create(unit=report.unit, name="PG curta", engine="postgres", host="db", database="orbita", enabled=True, validated=True)
+    report.source = "sql"
+    report.query_sql = "SELECT 1 AS n"
+    report.connection = conn
+    report.save()
+    monkeypatch.setattr(report_engine, "connect", lambda c: nullcontext(object()))
+    calls = []
+    size = [2]
+    def run(child, vals, **kw):
+        calls.append(kw)
+        if kw.get("preview_count"):
+            return ["count"], [[size[0]]]
+        offset = kw["preview_offset"]
+        return ["n"], [[i] for i in range(offset, min(offset + kw["preview_limit"], size[0]))]
+    monkeypatch.setattr(sources, "run_query", run)
+    url = f"/api/v1/reports/{report.pk}/canvas-source-preview/?unit=ame"
+    payload = {"source": {"id": "curta", "type": "report", "report_id": report.pk}, "limit": 3}
+    first = client.post(url, payload, format="json")
+    assert first.data["total_rows"] == 2 and first.data["total_rows_exact"] is True
+    assert len(calls) == 1
+    size[0] = 5
+    payload["source"]["parameters"] = {}
+    # Bypass the preview cache by requesting another page size.
+    full = client.post(url, {**payload, "limit": 4}, format="json")
+    assert full.data["total_rows"] == 5 and full.data["has_more"] is True
+    assert calls[-1].get("preview_count") is True
+    later = client.post(url, {**payload, "limit": 4, "offset": 4}, format="json")
+    assert later.data["total_rows"] == 5 and later.data["total_rows_exact"] is True
+    assert calls[-1].get("preview_count") is True
