@@ -175,7 +175,7 @@
 
 [data-theme="dark"] .cv-root .cv-seg-btn:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.45;
+  opacity: 1;
   cursor: not-allowed;
   pointer-events: auto;
 }
@@ -656,7 +656,7 @@
   letter-spacing: -0.01em;
   line-height: 12px;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -946,6 +946,7 @@
 
 .cv-root .cv-save-indicator { display: inline-block; width: 142px; flex: 0 0 142px; white-space: nowrap; }
 .cv-root .cv-save-btn { min-width: 100px; }
+.cv-root .cv-topbar .cv-btn-primary { height: var(--cv-h-control); min-height: var(--cv-h-control); padding: 0 var(--cv-sp-2); font-size: var(--cv-fs-sm); }
 .cv-root .cv-panel-action-btn:disabled { color: var(--cv-text-2); opacity: 1; background: var(--cv-surface-3); border-style: dashed; cursor: not-allowed; }
 .cv-root .cv-status-problems { min-height: 24px; color: var(--cv-text-2); background: transparent; border: 1px solid var(--cv-line-strong); border-radius: var(--cv-r-sm); cursor: pointer; white-space: nowrap; font-size: var(--cv-fs-xs); }
 .cv-root .cv-status-problems:focus-visible { outline: 2px solid var(--cv-focus); }

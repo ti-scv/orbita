@@ -13,12 +13,17 @@
 }
 
 .cv-data-head {
+  flex: 0 0 36px;
+  height: 36px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--cv-sp-3) var(--cv-sp-3);
+  gap: 4px;
+  padding: 0 6px 0 10px;
   border-bottom: 1px solid var(--cv-line);
   background: var(--cv-surface);
+  min-width: 0;
 }
 
 .cv-data-head-left {
@@ -279,6 +284,17 @@
   background: var(--cv-danger-bg);
   color: var(--cv-danger);
   border-color: var(--cv-danger-line);
+}
+
+.cv-icon-btn:focus-visible {
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
+}
+
+.cv-icon-btn:disabled {
+  color: var(--cv-text-disabled);
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Badges de tipo de dado (20x20) */
@@ -631,10 +647,12 @@
   border-radius: 2px;
 }
 
-.cv-grid-input:focus {
+.cv-grid-input:focus,
+.cv-grid-input:focus-visible {
   border-color: var(--cv-focus);
   background: var(--cv-surface);
-  outline: none;
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
 }
 
 /* Área de Prévia dentro do Diálogo */
@@ -716,9 +734,11 @@
   min-width: 180px;
 }
 
-.cv-search-input:focus {
+.cv-search-input:focus,
+.cv-search-input:focus-visible {
   border-color: var(--cv-focus);
-  outline: none;
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
 }
 
 .cv-drawer-body {

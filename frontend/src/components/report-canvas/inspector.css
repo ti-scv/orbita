@@ -621,7 +621,7 @@
 
 [data-theme="dark"] .cv-root .cv-seg-item:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.45;
+  opacity: 1;
   cursor: not-allowed;
   pointer-events: auto;
 }
@@ -1201,6 +1201,17 @@
 .cv-root .cv-align-btn:hover {
   background: var(--cv-surface-3);
   color: var(--cv-text);
+}
+
+.cv-root .cv-align-btn:focus-visible {
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
+}
+
+.cv-root .cv-align-btn:disabled {
+  color: var(--cv-text-disabled);
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .cv-root .cv-asset-card {

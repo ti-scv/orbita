@@ -261,10 +261,18 @@
   align-items: center;
   gap: 12px;
   color: var(--text-muted);
-  padding: 12px 0;
+  padding: 12px 20px;
 }
 .op-pager > span {
   margin-right: auto;
+}
+.op-pager .button:focus-visible {
+  outline: 2px solid var(--brand-cyan, #14b4cb);
+  outline-offset: 2px;
+}
+.op-pager .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .op-muted {
   color: var(--text-muted);

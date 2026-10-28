@@ -154,7 +154,7 @@
 
 .cv-root .cv-panel-icon-btn:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -315,7 +315,7 @@
   justify-content: space-between;
   gap: var(--cv-sp-1);
   min-height: 30px;
-  padding: 2px 4px 2px var(--cv-sp-2);
+  padding: 2px var(--cv-sp-2);
   border-radius: var(--cv-r-sm);
   background: transparent;
   min-width: 0;
