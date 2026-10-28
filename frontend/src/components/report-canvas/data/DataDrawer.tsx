@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useRef, useState } from "react";
 import { Copy, Check, RefreshCw, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { CanvasSource, SourcePreview } from "../model";
-import ColumnOrigin from "./ColumnOrigin";
+import ColumnOrigin, { OriginContext } from "./ColumnOrigin";
+import { fetchSourcePreviewRequest } from "../api/useSourcePreview";
 import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
 import { formatCellValue } from "./columnTypes";
 
 export interface DataDrawerProps {
   source: CanvasSource | null;
+  sourceName?: string;
   preview: SourcePreview | null;
   loadedAt?: Date | null;
   loading?: boolean;
@@ -17,19 +19,39 @@ export interface DataDrawerProps {
 
 export default function DataDrawer({
   source,
+  sourceName,
   preview,
   loadedAt,
   loading = false,
   onClose,
   onRefresh,
 }: DataDrawerProps) {
+  const { reportId, unit } = useContext(OriginContext);
+  const [pagePreview, setPagePreview] = useState<SourcePreview | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [pageSize, setPageSize] = useState(50);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const pageRequest = useRef(0);
+  const currentPreview = pagePreview || preview;
+  async function loadPage(nextOffset: number, size = pageSize) {
+    if (!source) return;
+    const requestId = ++pageRequest.current;
+    setPageLoading(true); setPageError("");
+    try {
+      const result = await fetchSourcePreviewRequest(reportId, unit, source, source.type === "report" ? source.parameters || {} : {}, size, undefined, nextOffset);
+      if (requestId !== pageRequest.current) return;
+      setPagePreview(result); setOffset(nextOffset); setPageSize(size); setSearch("");
+    } catch (error) { if (requestId === pageRequest.current) setPageError((error as Error).message); }
+    finally { if (requestId === pageRequest.current) setPageLoading(false); }
+  }
   const [search, setSearch] = useState("");
   const [sortCol, setSortCol] = useState<number | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [copied, setCopied] = useState(false);
 
   const columns: import("../model").ColumnInfo[] =
-    preview?.columns ||
+    currentPreview?.columns ||
     (source?.type === "inline"
       ? source.columns.map((c) => ({
           name: c,
@@ -38,7 +60,7 @@ export default function DataDrawer({
           null_count: 0,
         }))
       : []);
-  const rawRows = preview?.rows || (source?.type === "inline" ? source.rows : []);
+  const rawRows = currentPreview?.rows || (source?.type === "inline" ? source.rows : []);
 
   // Filter rows locally
   const filteredRows = useMemo(() => {
@@ -75,7 +97,7 @@ export default function DataDrawer({
 
   if (!source) return null;
 
-  const displayRows = sortedRows.slice(0, 50);
+  const displayRows = sortedRows.slice(0, pageSize);
 
   const toggleSort = (colIdx: number) => {
     if (sortCol === colIdx) {
@@ -103,16 +125,18 @@ export default function DataDrawer({
     }
   };
 
-  const totalCount = preview?.total_rows ?? rawRows.length;
-  const countText = `${displayRows.length} de ${totalCount.toLocaleString("pt-BR")} linhas`;
+  const totalCount = currentPreview?.total_rows ?? rawRows.length;
+  const countText = `${displayRows.length} de ${currentPreview?.total_rows_exact === false ? "pelo menos " : ""}${totalCount.toLocaleString("pt-BR")} linhas · a partir da ${offset + 1}`;
 
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>
-      <details className="cv-column-origins"><summary>Origem das colunas</summary>{columns.map(col => <div key={col.name}><span>{col.name} </span><ColumnOrigin source={source} column={col.name} type={col.type} loadedAt={loadedAt} /></div>)}</details>
+      <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
+        <table className="cv-column-metadata"><thead><tr><th>Coluna</th><th>Exemplo</th><th>Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
+      </details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
           <h3 className="cv-drawer-title" title={`Dados: ${source.label || source.id}`}>
-            Dados: {source.label || source.id}
+            Dados: {sourceName || source.label || source.id}
           </h3>
           {!loading && <span className="cv-drawer-count">{countText}</span>}
           {loading && <span className="cv-chip loading">Atualizando…</span>}
@@ -140,7 +164,7 @@ export default function DataDrawer({
             <button
               type="button"
               className="cv-icon-btn"
-              onClick={onRefresh}
+              onClick={() => { if (offset || pagePreview) void loadPage(offset); else onRefresh?.(); }}
               title="Atualizar prévia da fonte"
               disabled={loading}
               aria-label="Atualizar prévia"
@@ -160,7 +184,14 @@ export default function DataDrawer({
         </div>
       </div>
 
-      <div className="cv-drawer-body" aria-busy={loading}>
+      {pageError && <p role="alert">{pageError}</p>}
+      <div className="cv-drawer-pagination">
+        <button className="cv-btn-compact" type="button" disabled={loading || pageLoading || offset === 0} onClick={() => void loadPage(Math.max(0, offset - pageSize))}>Anterior</button>
+        <button className="cv-btn-compact" type="button" disabled={loading || pageLoading || !(currentPreview?.has_more ?? (offset + rawRows.length < totalCount || currentPreview?.truncated))} onClick={() => void loadPage(currentPreview?.next_offset ?? offset + pageSize)}>Próxima</button>
+        <label>Linhas por página <select value={pageSize} disabled={loading || pageLoading} onChange={event => void loadPage(0, Number(event.target.value))}>{[25, 50, 100, 200].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
+        {pageLoading && <span role="status">Carregando página…</span>}
+      </div>
+      <div className="cv-drawer-body" aria-busy={loading || pageLoading}>
         {loading ? (
           <div className="cv-drawer-loading" role="status">Carregando dados…</div>
         ) : columns.length === 0 ? (
@@ -179,9 +210,10 @@ export default function DataDrawer({
                     <div className="cv-table-th-content">
                       <ColumnBadge type={col.type} looksLike={col.looks_like} />
                       <span>{col.name}</span>
-                      {col.null_count !== undefined && (
-                        <span className="cv-table-null-count" title={`${col.null_count} valores nulos`}>
-                          ({col.null_count} nulos)
+                      {(
+
+                        <span className="cv-table-null-count" title={`${rawRows.filter(row => row[idx] == null || String(row[idx]).trim() === "").length} valores vazios`}>
+                          ({rawRows.filter(row => row[idx] == null || String(row[idx]).trim() === "").length} vazios)
                         </span>
                       )}
                       {sortCol === idx ? (
@@ -212,10 +244,10 @@ export default function DataDrawer({
               ) : (
                 displayRows.map((row, rIdx) => (
                   <tr key={rIdx}>
-                    <td style={{ textAlign: "center", color: "var(--cv-text-disabled)" }}>{rIdx + 1}</td>
+                    <td style={{ textAlign: "center", color: "var(--cv-text-disabled)" }}>{offset + rIdx + 1}</td>
                     {columns.map((col, cIdx) => {
                       const cellVal = row[cIdx];
-                      const isNull = cellVal === null || cellVal === undefined;
+                      const isNull = cellVal == null || String(cellVal).trim() === "";
                       const formatted = formatCellValue(cellVal, col.type);
                       const isNum = col.type === "number" || typeof cellVal === "number";
 

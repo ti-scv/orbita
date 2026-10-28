@@ -117,6 +117,7 @@ export async function fetchSourcePreviewRequest(
   parameters: Record<string, unknown> = {},
   limit = 50,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<SourcePreview> {
   if (signal?.aborted) {
     throw new DOMException("Aborted", "AbortError");
@@ -127,6 +128,7 @@ export async function fetchSourcePreviewRequest(
     source,
     parameters,
     limit,
+    offset,
   });
 
   const res = signal
@@ -156,6 +158,9 @@ export async function fetchSourcePreviewRequest(
     rows: Array.isArray(res.rows) ? res.rows : [],
     total_rows: typeof res.total_rows === "number" ? res.total_rows : (res.rows?.length || 0),
     truncated: Boolean(res.truncated),
+    has_more: res.has_more,
+    next_offset: res.next_offset,
+    total_rows_exact: res.total_rows_exact,
     elapsed_ms: res.elapsed_ms,
     loaded_at: new Date().toISOString(),
   };

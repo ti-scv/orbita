@@ -386,9 +386,9 @@ export default function DataPanel({
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
                         <span className="cv-chip ready">
-                          {previewData.total_rows} linhas
+                          {previewData.rows.length} de {previewData.total_rows_exact === false ? "pelo menos " : ""}{previewData.total_rows} linhas
                           {previewState?.loadedAt && (
-                            <> · {previewState.loadedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>
+                            <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}
                         </span>
                       )}
@@ -602,7 +602,9 @@ export default function DataPanel({
         <DataDrawer
           key={drawerSource.id}
           source={drawerSource}
+          sourceName={drawerSource.label && drawerSource.label.toLowerCase() !== "dados" ? drawerSource.label : availableSources.find(item => drawerSource.type === "report" && item.id === drawerSource.report_id)?.name || drawerSource.label || "Dados"}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
+          loadedAt={previews[drawerSource.id]?.loadedAt}
           loading={previews[drawerSource.id]?.status === "loading"}
           onClose={() => setDrawerSource(null)}
           onRefresh={() => handleLoadPreview(drawerSource, true)}

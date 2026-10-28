@@ -59,7 +59,7 @@ export function inferColumnType(values: unknown[]): ColumnDataType {
 }
 
 export function formatCellValue(val: unknown, type?: ColumnDataType): string {
-  if (val === null || val === undefined || val === "") return "—";
+  if (val == null || (typeof val === "string" && !val.trim())) return "—";
 
   if (type === "number" || (type === undefined && typeof val === "number")) {
     const num = typeof val === "number" ? val : Number(val);
@@ -84,7 +84,8 @@ export function formatCellValue(val: unknown, type?: ColumnDataType): string {
     if (val === false || val === "false") return "Não";
   }
 
-  return String(val);
+  const states: Record<string, string> = { pending: "Pendente", open: "Aberto", closed: "Fechado", completed: "Concluído", cancelled: "Cancelado", canceled: "Cancelado", sent: "Enviado", failed: "Falhou" };
+  return typeof val === "string" ? states[val.trim().toLowerCase()] || val : String(val);
 }
 
 export function formatColumnTypeLabel(type?: ColumnDataType, looksLike?: string): string {

@@ -72,6 +72,9 @@ export interface SourcePreview {
   rows: Array<Array<string | number | boolean | null>>;
   total_rows: number;
   truncated: boolean;
+  has_more?: boolean;
+  next_offset?: number | null;
+  total_rows_exact?: boolean;
   elapsed_ms?: number;
   loaded_at?: string;
 }

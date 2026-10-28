@@ -20,6 +20,7 @@ export interface ReportCanvasPageProps {
 export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPageProps) {
   const [report, setReport] = useState<ReportSummary | null>(null);
   const [initialCanvas, setInitialCanvas] = useState<CanvasGetResponse | undefined>();
+  const [loadingStep, setLoadingStep] = useState("Carregando dados e estrutura do relatório…");
   const [error, setError] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -39,10 +40,11 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     setReport(null);
     setInitialCanvas(undefined);
     setError("");
+    setLoadingStep("Carregando dados e estrutura do relatório…");
     if (admin) {
       void loadReportCanvas().catch(() => {});
       Promise.all([
-        request<ReportSummary>(query(`reports/${id}`, { unit })),
+        request<ReportSummary>(query(`reports/${id}`, { unit })).then(value => { if (alive) setLoadingStep("Dados recebidos. Carregando estrutura do Canvas…"); return value; }),
         request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })),
       ])
         .then(([res, canvas]) => {
@@ -120,7 +122,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
   }
 
   if (!report) {
-    return <ShellSkeleton label="Carregando relatório…" />;
+    return <ShellSkeleton label={loadingStep} />;
   }
 
   return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} initialCanvas={initialCanvas} onClose={back} /></Suspense></CanvasErrorBoundary>;
