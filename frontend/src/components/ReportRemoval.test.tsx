@@ -36,7 +36,9 @@ it("lista e restaura um relatório removido", async () => {
   details.open = true;
   fireEvent(details, new Event("toggle"));
   expect(await screen.findByText("Vendas")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", {name:"Restaurar relatório Vendas"}));
+  const restore = screen.getByRole("button", {name:"Restaurar relatório Vendas"}) as HTMLButtonElement;
+  await waitFor(() => expect(restore.disabled).toBe(false));
+  fireEvent.click(restore);
   await waitFor(() => expect(changed).toHaveBeenCalled());
 });
 
