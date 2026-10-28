@@ -1,0 +1,114 @@
+[
+  {
+    "width": 1440,
+    "zoom": 0.8,
+    "theme": "light",
+    "errors": [],
+    "timings": {
+      "relatorios": 3047
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 0.8,
+    "theme": "dark",
+    "errors": [],
+    "timings": {
+      "relatorios": 1175
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1,
+    "theme": "light",
+    "errors": [],
+    "timings": {
+      "relatorios": 938
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1,
+    "theme": "dark",
+    "errors": [],
+    "timings": {
+      "relatorios": 1375
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1.25,
+    "theme": "light",
+    "errors": [],
+    "timings": {
+      "relatorios": 698
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1.25,
+    "theme": "dark",
+    "errors": [],
+    "timings": {
+      "relatorios": 775
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1.5,
+    "theme": "light",
+    "errors": [],
+    "timings": {
+      "relatorios": 894
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "zoom": 1.5,
+    "theme": "dark",
+    "errors": [],
+    "timings": {
+      "relatorios": 1036
+    },
+    "relatorios": [],
+    "dialogoRelatorio": [],
+    "conexoes": [],
+    "dialogoConexao": [],
+    "horizontal": false
+  }
+]

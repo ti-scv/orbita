@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Delete",
+    "passed": true
+  },
+  {
+    "name": "Backspace",
+    "passed": true
+  },
+  {
+    "name": "botao",
+    "passed": true
+  },
+  {
+    "name": "Shift",
+    "passed": true
+  },
+  {
+    "name": "Control",
+    "passed": true
+  },
+  {
+    "name": "ativo",
+    "passed": true
+  }
+]

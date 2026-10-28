@@ -1,0 +1,466 @@
+[
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 0.8,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1738,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 773,
+      "canvas-definicao-pronta": 878,
+      "canvas-fontes-prontas": 879,
+      "canvas-primeira-renderizacao": 1587
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 0.8,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1469,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 426,
+      "canvas-definicao-pronta": 585,
+      "canvas-fontes-prontas": 602,
+      "canvas-primeira-renderizacao": 1270
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1067,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 234,
+      "canvas-definicao-pronta": 257,
+      "canvas-fontes-prontas": 262,
+      "canvas-primeira-renderizacao": 695
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1153,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 276,
+      "canvas-definicao-pronta": 321,
+      "canvas-fontes-prontas": 337,
+      "canvas-primeira-renderizacao": 816
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1.25,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1215,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 350,
+      "canvas-definicao-pronta": 394,
+      "canvas-fontes-prontas": 406,
+      "canvas-primeira-renderizacao": 904
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1.25,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1120,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 265,
+      "canvas-definicao-pronta": 285,
+      "canvas-fontes-prontas": 303,
+      "canvas-primeira-renderizacao": 855
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1.5,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1222,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 261,
+      "canvas-definicao-pronta": 306,
+      "canvas-fontes-prontas": 307,
+      "canvas-primeira-renderizacao": 844
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "browserZoom": 1.5,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "editor",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "previa",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "testar",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "menu",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      },
+      {
+        "panel": "desfazer",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1015,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 191,
+      "canvas-definicao-pronta": 207,
+      "canvas-fontes-prontas": 207,
+      "canvas-primeira-renderizacao": 645
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "axeEditor": [],
+    "axeTestar": []
+  }
+]
