@@ -42,19 +42,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1738,
+    "open_ms": 1268,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 773,
-      "canvas-definicao-pronta": 878,
-      "canvas-fontes-prontas": 879,
-      "canvas-primeira-renderizacao": 1587
+      "canvas-abertura-inicio": 381,
+      "canvas-definicao-pronta": 447,
+      "canvas-fontes-prontas": 448,
+      "canvas-primeira-renderizacao": 1030
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -100,19 +101,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1469,
+    "open_ms": 1032,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 426,
-      "canvas-definicao-pronta": 585,
-      "canvas-fontes-prontas": 602,
-      "canvas-primeira-renderizacao": 1270
+      "canvas-abertura-inicio": 214,
+      "canvas-definicao-pronta": 234,
+      "canvas-fontes-prontas": 236,
+      "canvas-primeira-renderizacao": 729
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -158,19 +160,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1067,
+    "open_ms": 1102,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 234,
-      "canvas-definicao-pronta": 257,
-      "canvas-fontes-prontas": 262,
-      "canvas-primeira-renderizacao": 695
+      "canvas-abertura-inicio": 247,
+      "canvas-definicao-pronta": 281,
+      "canvas-fontes-prontas": 284,
+      "canvas-primeira-renderizacao": 772
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -216,19 +219,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1153,
+    "open_ms": 1170,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 276,
-      "canvas-definicao-pronta": 321,
-      "canvas-fontes-prontas": 337,
-      "canvas-primeira-renderizacao": 816
+      "canvas-abertura-inicio": 288,
+      "canvas-definicao-pronta": 358,
+      "canvas-fontes-prontas": 359,
+      "canvas-primeira-renderizacao": 940
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -274,19 +278,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1215,
+    "open_ms": 1351,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 350,
-      "canvas-definicao-pronta": 394,
-      "canvas-fontes-prontas": 406,
-      "canvas-primeira-renderizacao": 904
+      "canvas-abertura-inicio": 358,
+      "canvas-definicao-pronta": 378,
+      "canvas-fontes-prontas": 378,
+      "canvas-primeira-renderizacao": 929
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -332,19 +337,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1120,
+    "open_ms": 1168,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 265,
-      "canvas-definicao-pronta": 285,
-      "canvas-fontes-prontas": 303,
-      "canvas-primeira-renderizacao": 855
+      "canvas-abertura-inicio": 333,
+      "canvas-definicao-pronta": 385,
+      "canvas-fontes-prontas": 386,
+      "canvas-primeira-renderizacao": 848
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -390,19 +396,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1222,
+    "open_ms": 1189,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 261,
-      "canvas-definicao-pronta": 306,
-      "canvas-fontes-prontas": 307,
-      "canvas-primeira-renderizacao": 844
+      "canvas-abertura-inicio": 333,
+      "canvas-definicao-pronta": 364,
+      "canvas-fontes-prontas": 369,
+      "canvas-primeira-renderizacao": 957
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   },
   {
@@ -448,19 +455,20 @@
       }
     ],
     "errors": [],
-    "open_ms": 1015,
+    "open_ms": 1262,
     "draftDiscarded": true,
     "marks": {
-      "canvas-abertura-inicio": 191,
-      "canvas-definicao-pronta": 207,
-      "canvas-fontes-prontas": 207,
-      "canvas-primeira-renderizacao": 645
+      "canvas-abertura-inicio": 352,
+      "canvas-definicao-pronta": 439,
+      "canvas-fontes-prontas": 440,
+      "canvas-primeira-renderizacao": 959
     },
     "zoom": {
       "label": "85 %",
       "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
     },
     "axeEditor": [],
+    "axePrevia": [],
     "axeTestar": []
   }
 ]

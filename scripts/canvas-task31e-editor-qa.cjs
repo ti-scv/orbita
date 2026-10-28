@@ -65,9 +65,10 @@ const path = require('node:path');
         for(let n=0;n<3 && await page.locator('html').getAttribute('data-theme')!==theme;n++) await page.locator('.cv-theme-toggle').click();
         if (await page.locator('html').getAttribute('data-theme')!==theme) throw new Error('Tema solicitado não foi aplicado');
         await capture('editor');
+        record.axeEditor = (await new AxeBuilder({page}).analyze()).violations.map(v=>({id:v.id,impact:v.impact,count:v.nodes.length}));
         await page.getByRole('button',{name:'Dados reais',exact:true}).click();
         await page.waitForTimeout(500); await capture('previa');
-        record.axeEditor = (await new AxeBuilder({page}).analyze()).violations.map(v=>({id:v.id,impact:v.impact,count:v.nodes.length}));
+        record.axePrevia = (await new AxeBuilder({page}).analyze()).violations.map(v=>({id:v.id,impact:v.impact,count:v.nodes.length}));
         await page.getByRole('button',{name:'Testar relatório',exact:true}).click();
         await page.getByRole('dialog',{name:'Testar relatório'}).waitFor();
         await capture('testar');
@@ -95,5 +96,5 @@ const path = require('node:path');
     }
   } finally { await browser.close(); }
   console.log(JSON.stringify(results,null,2));
-  if (results.some(r => r.errors.length || r.panels.some(p => p.horizontal || p.unnamed.length || p.clipped.some(c=>!c.intentional) || p.overlaps.length) || [r.axeEditor,r.axeTestar].some(a => a?.some(v => ['serious','critical'].includes(v.impact))))) process.exitCode=1;
+  if (results.some(r => r.errors.length || r.panels.some(p => p.horizontal || p.unnamed.length || p.clipped.some(c=>!c.intentional) || p.overlaps.length) || [r.axeEditor,r.axePrevia,r.axeTestar].some(a => a?.some(v => ['serious','critical'].includes(v.impact))))) process.exitCode=1;
 })().catch(error => { console.error(error.message); process.exitCode=1; });
