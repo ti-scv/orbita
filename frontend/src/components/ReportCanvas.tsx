@@ -91,6 +91,22 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [removalNotice, setRemovalNotice] = useState<{ revision: number; hasSource: boolean; count: number } | null>(null);
   const removalUndoRef = useRef<HTMLButtonElement>(null);
+  const reportActionsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      const menu = reportActionsRef.current;
+      if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+    };
+    const escape = (event: KeyboardEvent) => {
+      const menu = reportActionsRef.current;
+      if (event.key === "Escape" && menu?.open) {
+        event.preventDefault(); menu.open = false; menu.querySelector<HTMLElement>("summary")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", closeOutside); document.removeEventListener("keydown", escape); };
+  }, []);
   const [problemsPanelOpen, setProblemsPanelOpen] = useState(false);
   const [draftBanner, setDraftBanner] = useState<{
     text: string;
@@ -237,6 +253,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   });
 
   const removeBlock = useCallback((blockId: string, removeSelection = true) => {
+    if (report.enabled) return;
     const block = layout.pages.flatMap((page) => page.blocks).find((item) => item.id === blockId);
     if (!block) return;
     const ids = removeSelection && selectedBlockId && (blockId === selectedBlockId || extraSelectedIds.includes(blockId)) ? [selectedBlockId, ...extraSelectedIds] : [blockId];
@@ -246,14 +263,14 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     setExtraSelectedIds([]);
     setRemovalNotice({ revision: store.state.nextRevision, hasSource: removed.some((item) => Boolean(item.source_id)), count: removed.length });
     requestAnimationFrame(() => removalUndoRef.current?.focus());
-  }, [extraSelectedIds, layout.pages, selectedBlockId, store]);
+  }, [extraSelectedIds, layout.pages, selectedBlockId, store, report.enabled]);
 
   useEffect(() => {
     if (!removalNotice) return;
     const timer = window.setTimeout(() => {
       if (document.activeElement === removalUndoRef.current) stageRef.current?.focus();
       setRemovalNotice(null);
-    }, 5000);
+    }, 8000);
     return () => window.clearTimeout(timer);
   }, [removalNotice, stageRef]);
 
@@ -444,7 +461,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         <TopBar
           onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
-          reportActions={<details className="cv-report-actions"><summary aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} showLabel onChanged={onClose}/></div></details>}
+          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
           outputFormat={session.outputFormat}
@@ -507,7 +524,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
           </div>
         )}
         {removalNotice && store.state.revision === removalNotice.revision && (
-          <div className="cv-banner cv-banner-ok" role="status" aria-live="polite">
+          <div className="cv-removal-toast" role="status" aria-live="polite">
             <span>{removalNotice.count === 1 ? "Componente removido." : `${removalNotice.count} componentes removidos.`}{removalNotice.hasSource ? " As fontes continuam disponíveis." : ""}</span>
             <button ref={removalUndoRef} type="button" className="cv-btn" onClick={() => { store.undo(); setRemovalNotice(null); stageRef.current?.focus(); }}>Desfazer</button>
           </div>
@@ -626,7 +643,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 if (id === selectedBlockId) return;
                 setExtraSelectedIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
               }}
-              onRemoveBlock={removeBlock}
+              onRemoveBlock={report.enabled ? undefined : removeBlock}
               draggingBlockId={dragState?.blockId || null}
               onKeyboardResize={(id, dx, dy) => actions.updateBlock(id, "Redimensionar bloco pelo teclado", b => ({...b, width: Math.max(20, b.width + dx), height: Math.max(20, b.height + dy)}))}
               tempGeometries={activeDrag ? { [activeDrag.blockId]: activeDrag } : undefined}
@@ -665,7 +682,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 <PanelRightOpen size={16} aria-hidden="true" />
               </button>
             )}
-            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={(id) => removeBlock(id, false)} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
+            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={(id) => removeBlock(id, false)} removalDisabled={Boolean(report.enabled)} onUpdatePageConfig={report.enabled ? undefined : actions.updatePageConfig} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
           </div>
         )}
         <ProblemsPanel

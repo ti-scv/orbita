@@ -104,6 +104,7 @@ export default function Inspector({
           xlsxMode={xlsxMode}
           onSelectBlock={onSelectBlock}
           onRemoveBlock={onRemoveBlock}
+          removalDisabled={blockInspectorProps.removalDisabled}
           onUpdatePageConfig={onUpdatePageConfig}
           onRenameActivePage={onRenameActivePage}
           onChangeOutputFormat={onChangeOutputFormat}

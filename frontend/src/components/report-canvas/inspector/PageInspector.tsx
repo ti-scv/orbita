@@ -22,6 +22,7 @@ export interface PageInspectorProps {
   xlsxMode?: XlsxMode;
   onSelectBlock: (blockId: string) => void;
   onRemoveBlock: (blockId: string) => void;
+  removalDisabled?: boolean;
   onUpdatePageConfig?: (patch: Partial<CanvasPageConfig>, coalesceKey?: string) => void;
   onRenameActivePage?: (name: string) => void;
   onChangeOutputFormat?: (format: OutputFormat) => void;
@@ -69,6 +70,7 @@ export default function PageInspector({
   xlsxMode,
   onSelectBlock,
   onRemoveBlock,
+  removalDisabled = false,
   onUpdatePageConfig,
   onRenameActivePage,
   onChangeOutputFormat,
@@ -273,8 +275,9 @@ export default function PageInspector({
                     <button
                       type="button"
                       className="cv-well-btn is-danger"
+                      disabled={removalDisabled}
                       aria-label={`Remover ${b.title || BLOCK_LABELS[b.type]}`}
-                      title={`Remover ${b.title || BLOCK_LABELS[b.type]}`}
+                      title={removalDisabled ? "Relatório ativo: crie uma nova versão para editar." : `Remover ${b.title || BLOCK_LABELS[b.type]}`}
                       onClick={() => onRemoveBlock(b.id)}
                     >
                       <Trash2 size={12} aria-hidden="true" />

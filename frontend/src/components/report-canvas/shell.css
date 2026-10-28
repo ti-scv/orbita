@@ -967,3 +967,10 @@
 .cv-report-actions { position: relative; }
 .cv-report-actions summary { cursor: pointer; list-style: none; padding: 2px 6px; }
 .cv-report-actions-menu { position: absolute; top: 100%; left: 0; z-index: 60; padding: 4px; background: var(--cv-surface); border: 1px solid var(--cv-line); box-shadow: var(--cv-shadow-pop); }
+
+.cv-removal-toast {
+  position: fixed; right: 24px; bottom: 24px; z-index: 1000;
+  display: flex; align-items: center; gap: 12px; max-width: min(440px, calc(100vw - 48px));
+  padding: 10px 12px; border: 1px solid var(--cv-border, #aaa); border-radius: 8px;
+  background: var(--cv-surface, #fff); color: var(--cv-text, #222); box-shadow: 0 4px 16px #0003;
+}

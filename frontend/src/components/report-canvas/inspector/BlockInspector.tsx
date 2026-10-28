@@ -58,6 +58,7 @@ export interface BlockInspectorProps {
   onReorderLayer: (dir: -1 | 1) => void;
   onDuplicateBlock: () => void;
   onRemoveBlock: (blockId: string) => void;
+  removalDisabled?: boolean;
   onTriggerImageUpload: (blockId: string) => void;
   onOpenCreateSource: () => void;
   onColumnWidthsValidation: (blockId: string | null, errorMessage?: string) => void;
@@ -102,6 +103,7 @@ export default function BlockInspector({
   onReorderLayer,
   onDuplicateBlock,
   onRemoveBlock,
+  removalDisabled = false,
   onTriggerImageUpload,
   onOpenCreateSource,
   onColumnWidthsValidation,
@@ -381,8 +383,9 @@ export default function BlockInspector({
                 type="button"
                 role="menuitem"
                 className="cv-insp-menu-item is-danger"
+                disabled={removalDisabled}
                 aria-label={`Remover ${block.title || COMPONENT_NAMES[block.type]}`}
-                title={`Remover ${block.title || COMPONENT_NAMES[block.type]}`}
+                title={removalDisabled ? "Relatório ativo: crie uma nova versão para editar." : `Remover ${block.title || COMPONENT_NAMES[block.type]}`}
                 onClick={() => {
                   setMenuOpen(false);
                   onRemoveBlock(block.id);
