@@ -3,6 +3,7 @@ from copy import copy
 import hashlib
 import json
 import math
+import time
 from rest_framework.exceptions import ValidationError
 from operations.models import ReportDefinition
 from operations.report_engine import run_query, sql_contract
@@ -48,6 +49,15 @@ def signature(child):
     return hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
 
 
+def external_source(child):
+    if child.handler in {"lives_indicators_v1", "exams_per_attendance_v1"}:
+        return True
+    if not child.connection_id or child.connection.engine == "sqlite":
+        return False
+    from operations.operational_sql import is_internal
+    return not (is_internal(child.connection) or child.connection.engine == "postgres" and child.connection.host in {"db", "orbita-db-1", "localhost", "127.0.0.1", "172.16.0.59"})
+
+
 class InlineSource:
     def validate(self,s):
         cols=s.get("columns");rows=s.get("rows")
@@ -75,6 +85,9 @@ class ReportSource:
             child = resolve_report(context.report, s)
             return self._read(context, s, child)
         except Exception as exc:
+            if getattr(context, "preview_limit", None) is not None and (isinstance(exc, TimeoutError) or getattr(exc, "sqlstate", None) == "57014"):
+                from .schema import fail_at
+                fail_at("A origem excedeu o tempo de consulta da prévia. Reduza o período e tente novamente.", source_id=s.get("id"), code="source_query_timeout")
             from .diagnostics import source_failure
             raise source_failure(exc, s, child.connection if child and child.connection_id else None) from None
 
@@ -94,10 +107,19 @@ class ReportSource:
         vals={**defaults,**runtime}
         from .native import datasets,read
         if datasets(child):return read(context,child,s.get("dataset","rows"),vals)
+        preview_limit = getattr(context, "preview_limit", None)
+        preview_offset = getattr(context, "preview_offset", 0)
+        if preview_limit is not None and child.connection.engine == "postgres":
+            # A copy keeps the persisted connection and export timeout untouched.
+            child.connection = copy(child.connection)
+            child.connection.timeout_seconds = min(child.connection.timeout_seconds, 5)
         if child.connection_id not in context.sessions:
             from operations.report_engine import connect
+            connection_start = time.perf_counter()
             context.sessions[child.connection_id]=context.stack.enter_context(connect(child.connection))
-        cols,rows=run_query(child,vals,session=context.sessions[child.connection_id],typed=True)
+            if hasattr(context, "timings"):
+                context.timings["connection_ms"] = round((time.perf_counter() - connection_start) * 1000, 2)
+        cols,rows=run_query(child,vals,session=context.sessions[child.connection_id],typed=True,**({"preview_limit":preview_limit,"preview_offset":preview_offset,"timings":getattr(context,"timings",None)} if preview_limit is not None and child.connection.engine == "postgres" else {}))
         return Dataset(cols,rows)
 
 SOURCES.register("inline",InlineSource())
