@@ -1,0 +1,38 @@
+[
+  {
+    "width": 1440,
+    "theme": "light",
+    "errors": [],
+    "horizontal": false
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "errors": [],
+    "horizontal": false
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "errors": [],
+    "horizontal": false
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "errors": [],
+    "horizontal": false
+  },
+  {
+    "width": 1100,
+    "theme": "light",
+    "errors": [],
+    "horizontal": false
+  },
+  {
+    "width": 1100,
+    "theme": "dark",
+    "errors": [],
+    "horizontal": false
+  }
+]
