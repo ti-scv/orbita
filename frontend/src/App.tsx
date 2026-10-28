@@ -1,3 +1,4 @@
+import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import ReportCanvasPage from "./components/ReportCanvasPage";
 import BrandLogo from "./components/BrandLogo";
@@ -421,30 +422,28 @@ function Workspace({
   const periodFilter = (
     <div className="date-range">
       <CalendarDays size={15} />
-      <input
-        type="date"
+      <PtBrDateInput
         aria-label={
           page === "appointments"
             ? "Data inicial do período"
             : "Data inicial do agendamento"
         }
         value={start}
-        onChange={(e) => {
-          setStart(e.target.value);
+        onChange={(value) => {
+          setStart(value);
           setListPage(1);
         }}
       />
       <span>até</span>
-      <input
-        type="date"
+      <PtBrDateInput
         aria-label={
           page === "appointments"
             ? "Data final do período"
             : "Data final do agendamento"
         }
         value={end}
-        onChange={(e) => {
-          setEnd(e.target.value);
+        onChange={(value) => {
+          setEnd(value);
           setListPage(1);
         }}
       />
