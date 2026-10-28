@@ -11,7 +11,7 @@ server {
   gzip_comp_level 5;
   gzip_types text/css application/javascript application/json font/ttf font/woff font/woff2;
   # Content-addressed local fonts; stylesheet remains revalidated.
-  location ~ ^/fonts/[a-f0-9]{16}\.ttf$ {
+  location ~ "^/fonts/[a-f0-9]{16}\.ttf$" {
     types { font/ttf ttf; }
     expires 1y;
     add_header Cache-Control "public, immutable";
