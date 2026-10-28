@@ -55,7 +55,7 @@ describe("Tarefa 19: validação e correções de KPI, gráficos e imagem com da
       expect(screen.getByText("Total de Pacientes")).toBeTruthy();
       expect(screen.getByText("2.473")).toBeTruthy();
       expect(screen.getByText("Contagem")).toBeTruthy();
-      expect(screen.getByText("Acompanhamentos e contatos (contacts)")).toBeTruthy();
+      expect(screen.getByText("Acompanhamentos e contatos")).toBeTruthy();
     });
 
     it("mostra 0 na contagem quando a fonte real retorna 0 linhas", () => {
@@ -152,8 +152,8 @@ describe("Tarefa 19: validação e correções de KPI, gráficos e imagem com da
       );
 
       const inner = container.querySelector(".cv-block-inner");
-      expect(inner?.getAttribute("title")).toContain("Acompanhamentos e contatos (contacts)");
-      expect(screen.getAllByTitle("Acompanhamentos e contatos (contacts)").length).toBeGreaterThan(0);
+      expect(inner?.getAttribute("title")).toContain("Acompanhamentos e contatos");
+      expect(screen.getAllByTitle("Acompanhamentos e contatos").length).toBeGreaterThan(0);
     });
   });
 
@@ -265,7 +265,7 @@ describe("Tarefa 19: validação e correções de KPI, gráficos e imagem com da
       );
 
       const inner = container.querySelector(".cv-block-inner");
-      expect(inner?.getAttribute("title")).toContain("Acompanhamentos e contatos (contacts)");
+      expect(inner?.getAttribute("title")).toContain("Acompanhamentos e contatos");
       expect(screen.getByText("Atendimentos por Dia")).toBeTruthy();
     });
 
@@ -334,7 +334,7 @@ describe("Tarefa 19: validação e correções de KPI, gráficos e imagem com da
       );
 
       expect(screen.getByText("Fonte sem linhas para prévia.")).toBeTruthy();
-      expect(screen.getByText("Acompanhamentos e contatos (contacts)")).toBeTruthy();
+      expect(screen.getByText("Acompanhamentos e contatos")).toBeTruthy();
     });
   });
 });

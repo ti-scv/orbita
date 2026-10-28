@@ -51,7 +51,6 @@ export default function KpiPreview({
               {opt.aggregate === "count" ? "Contagem" : opt.value_field || "coluna padrão"}
             </span>
           </div>
-          <div className="cv-kpi-meta cv-kpi-sub" title={sourceLabel}>{sourceLabel}</div>
         </div>
       </div>
     );
@@ -110,11 +109,6 @@ export default function KpiPreview({
           <span className="cv-kpi-sep">·</span>
           <span className="cv-kpi-aggregation">{aggregationLabel}</span>
         </div>
-        {sourceLabel && (
-          <div className="cv-kpi-meta cv-kpi-sub" title={sourceLabel}>
-            {sourceLabel}
-          </div>
-        )}
       </div>
     </div>
   );
