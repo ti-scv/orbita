@@ -62,7 +62,7 @@ export function previewError(message = ""): string {
   if (/404|not found|não encontrad/i.test(message)) return "Fonte ou rota de prévia não encontrada. Verifique a fonte e tente de novo.";
   if (/403|forbidden|permission|permissão|permissões|CSRF/i.test(message)) return "Sem permissão para consultar esta fonte. Confira seu acesso e tente de novo.";
   if (/401|authentication|credentials/i.test(message)) return "Sua sessão expirou. Entre novamente para consultar a prévia.";
-  if (/failed to fetch|network|connection/i.test(message)) return "Falha de conexão. Tente de novo.";
+  if (/^(failed to fetch|network error)$/i.test(message)) return "Falha de conexão. Tente de novo.";
   return message || "Verifique a conexão e tente novamente.";
 }
 

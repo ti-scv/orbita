@@ -457,7 +457,8 @@ export default function DataPanel({
 
                 {isExpanded && previewState?.status === "error" && (
                   <div role="alert">
-                    <p>Fonte: {src.label || src.id}. Não foi possível carregar a prévia.</p>
+                    <p>Fonte: {src.label || src.id}. {previewState.error || "Não foi possível carregar a prévia."}</p>
+                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${src.label || src.id}\n${previewState.error}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
                     <p>{previewState.httpStatus != null ? `HTTP ${previewState.httpStatus}` : "HTTP indisponível"} · {previewState.elapsedMs != null ? `${previewState.elapsedMs} ms` : "tempo indisponível"}</p>
                     <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>
                   </div>

@@ -221,10 +221,11 @@ def preview(view, request):
         content, count = export(report, layout, values, report.monthly_goals, fmt)
     except ValidationError:
         raise
-    except Exception:
+    except Exception as exc:
+        from .diagnostics import safe_error
         logger.warning("Canvas preview failed unexpectedly (details suppressed)")
         fail_at(
-            "Não foi possível gerar a prévia. Verifique a fonte, os parâmetros e os blocos.",
+            "Não foi possível gerar a prévia: " + safe_error(exc),
             code="preview_failed",
         )
     Audit.objects.create(unit=report.unit, actor=request.user, action="report.canvas_previewed", object_id=str(report.pk), details={"format": fmt, "rows": count})
@@ -362,10 +363,11 @@ def source_preview(view, request):
             dataset = SOURCES[source_type].read(ctx, source)
         except ValidationError:
             raise
-        except Exception:
+        except Exception as exc:
+            from .diagnostics import safe_error
             logger.warning("Canvas source preview failed (details suppressed)")
             fail_at(
-                f'Fonte "{source_label(source)}": conexão indisponível. Verifique a conexão e os parâmetros e tente novamente.',
+                f'Fonte "{source_label(source)}": {safe_error(exc)}',
                 source_id=source.get("id"),
                 code="source_connection_failed",
             )

@@ -70,7 +70,15 @@ class ReportSource:
         if type(s.get("report_id")) is not int or s["report_id"]<1 or not isinstance(params,dict) or len(params)>30 or any(not isinstance(k,str) or len(k)>50 or (type(v) not in (str,int,float,bool,type(None)) and not (isinstance(v,dict) and set(v)=={"parameter"} and isinstance(v["parameter"],str) and len(v["parameter"])<=50)) for k,v in params.items()):
             fail("Fonte SQL ou parâmetros inválidos.")
     def read(self,context,s):
-        child=resolve_report(context.report,s)
+        child = None
+        try:
+            child = resolve_report(context.report, s)
+            return self._read(context, s, child)
+        except Exception as exc:
+            from .diagnostics import source_failure
+            raise source_failure(exc, s, child.connection if child and child.connection_id else None) from None
+
+    def _read(self,context,s,child):
         # Runtime recipient restrictions have precedence over per-source defaults.
         defaults={}
         for key,value in s.get("parameters",{}).items():

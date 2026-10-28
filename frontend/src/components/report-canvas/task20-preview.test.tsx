@@ -15,6 +15,8 @@ it("apresenta detalhes da previa e permite tentar novamente", () => {
   fireEvent.keyDown(screen.getByRole("button", {expanded: false}), {key: "Enter"});
   expect(screen.getByRole("alert").textContent).toContain("HTTP 400");
   expect(screen.getByRole("alert").textContent).toContain("42 ms");
+  expect(screen.getByRole("alert").textContent).toContain("Consulta invalida");
+  expect(screen.getByRole("button", {name: "Copiar detalhes"})).toBeTruthy();
   fireEvent.click(screen.getByRole("button", {name: "Tentar de novo"}));
   expect(retry).toHaveBeenCalledWith("dados");
 });

@@ -47,9 +47,9 @@ export async function request<T>(
   try {
     data = await response.json();
   } catch {
-    throw new Error(
+    throw Object.assign(new Error(
       `O servidor retornou uma resposta inválida (HTTP ${response.status}). Tente novamente.`,
-    );
+    ), { status: response.status });
   }
   if (!response.ok) {
     const error = new Error(

@@ -39,3 +39,8 @@ Verificacao final: canvas-check.sh concluiu hooks, TypeScript, 511 testes e buil
 
 ## Rodada 3 — item 1
 Editor de declarações em Dados: contrato atual e cadastro legado; uso real em SQL, fontes, blocos e contrato, duplicidades normalizadas e sugestões da fotografia CSV somente na mesma versão. Renomeação explícita limita-se aos nomes históricos sugeridos, sem reescrever SQL. Exclusão individual/em lote mostra resumo e consumidores; tudo fica pendente até Salvar. A causa era a interface editar apenas vínculos de fonte, não declarações. Nenhum relatório foi alterado por script. Backend: dois testes aprovados. Teste de interface cobre seleção e confirmação.
+
+## Rodada 3 — item 2
+A causa do diagnóstico perdido está em source_preview: qualquer exceção de driver era convertida em “conexão indisponível”, inclusive coluna/tabela inexistente e erro de SQL. O hook também substituía mensagens contendo “connection”. ReportSource agora preserva causa segura e ID/rótulo da fonte tanto na prévia de fonte quanto na exportação. Mensagens de PostgreSQL usam message_primary/SQLSTATE; URLs, DSN e segredos conhecidos são removidos antes da resposta. Painel mostra mensagem, HTTP, fonte, tempo, Copiar detalhes e Tentar de novo; HTTP também é preservado em resposta não JSON. Reprodução em fixture SQLite executa SELECT com coluna inexistente e verifica a mensagem real. Não há um único relatório com falha identificado no pedido; o diagnóstico individual passa a estar disponível na próxima prévia, sem alterar relatórios.
+
+Item 2: 9 testes de backend (incluindo prévias existentes e erro real SQLite) e 2 testes da interface aprovados.
