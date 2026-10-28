@@ -35,7 +35,15 @@ export function usePreviewDialog({
     setPreviewModal({
       format: outputFormat,
       values: Object.fromEntries(
-        previewFields.map((f) => [f.name, /^(unidade|unit|tipo_envio)$/i.test(f.name) && !f.options && f.default != null && f.default !== "" ? friendlyParameterValue(f.name, f.default) : displayParameter(f.default, f.type)]),
+        previewFields.map((f) => {
+          let value = f.default;
+          if ((value == null || value === "") && f.type === "date" && /^(start|end|start_date|end_date|data_inicial|data_final)$/i.test(f.name)) {
+            const date = new Date();
+            if (/start|inicial/i.test(f.name)) date.setDate(date.getDate() - 30);
+            value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          }
+          return [f.name, /^(unidade|unit|tipo_envio)$/i.test(f.name) && !f.options && value != null && value !== "" ? friendlyParameterValue(f.name, value) : displayParameter(value, f.type)];
+        }),
       ),
       busy: false,
       error: "",
