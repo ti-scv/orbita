@@ -26,3 +26,12 @@ def test_real_database_error_identifies_source(env):
     assert "missing_column" not in str(error.value.detail)
     assert "Referência:" in str(error.value.detail)
     assert error.value.detail["source_id"] == "dados"
+
+
+def test_mixed_snapshot_period_has_actionable_message():
+    from operations.bed_snapshots import SnapshotError
+    from operations.report_canvas.diagnostics import source_failure
+    error = source_failure(SnapshotError("mixed_sources", "detalhes internos"), {"id": "dados"})
+    assert error.detail["code"] == "source_period_mixed"
+    assert "Escolha um período" in str(error.detail["detail"])
+    assert "detalhes internos" not in str(error.detail)

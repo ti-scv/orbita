@@ -11,4 +11,7 @@ def safe_error(exc, connection=None):
 
 def source_failure(exc, source, connection=None):
     from .schema import source_label
+    from operations.bed_snapshots import SnapshotError
+    if isinstance(exc, SnapshotError) and exc.snapshot_code == "mixed_sources":
+        return ValidationError({"detail": "Escolha um período que não misture dados de homologação e de produção.", "source_id": source.get("id", ""), "code": "source_period_mixed"})
     return ValidationError({"detail": f'Fonte "{source_label(source)}": {safe_error(exc, connection)}', "source_id": source.get("id", ""), "code": "source_query_failed"})
