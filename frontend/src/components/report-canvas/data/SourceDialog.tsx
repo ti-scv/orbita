@@ -1,3 +1,4 @@
+import { formatCellValue } from "./columnTypes";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, FormEvent } from "react";
 import {
@@ -870,8 +871,8 @@ export default function SourceDialog({
         )}
 
         {sourceModal.testError && (
-          <div className="cv-test-preview" style={{ borderColor: "var(--cv-danger-line)" }}>
-            <p className="inline-error" style={{ margin: 0 }}>
+          <div className="cv-test-preview" style={{ borderColor: sourceModal.testError.startsWith("Parâmetros alterados.") ? "var(--cv-line)" : "var(--cv-danger-line)" }}>
+            <p className={sourceModal.testError.startsWith("Parâmetros alterados.") ? undefined : "inline-error"} style={{ margin: 0 }}>
               <AlertCircle size={14} />
               {sourceModal.testError}
             </p>
@@ -910,7 +911,7 @@ export default function SourceDialog({
                     <tr key={rIdx}>
                       {sourceModal.testPreview!.columns.map((col, cIdx) => (
                         <td key={cIdx} className={col.type === "number" ? "cell-number" : ""}>
-                          {row[cIdx] === null || row[cIdx] === undefined ? "—" : String(row[cIdx])}
+                          {formatCellValue(row[cIdx], col.type)}
                         </td>
                       ))}
                     </tr>
