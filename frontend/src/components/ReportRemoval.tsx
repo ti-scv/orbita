@@ -8,8 +8,8 @@ type Row = { id: number; name: string; version: number };
 type Page = { results: Row[]; next: string | null; remocao_disponivel?: boolean };
 type Kind = "relatório" | "conexão";
 
-export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = false, showLabel = false, onOpened, onDismiss }: {
-  unit: string; resource: string; row: Row; kind: Kind; onChanged: () => void; dirty?: boolean; showLabel?: boolean; onOpened?: () => void; onDismiss?: () => void;
+export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = false, showLabel = false, menuItem = false, onOpened, onDismiss }: {
+  unit: string; resource: string; row: Row; kind: Kind; onChanged: () => void; dirty?: boolean; showLabel?: boolean; menuItem?: boolean; onOpened?: () => void; onDismiss?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,7 +36,7 @@ export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = fa
     finally { setLoading(false); }
   }
   return <>
-    <button className="button" title={`Remover ${kind}: ${row.name}`} aria-label={`Remover ${kind} ${row.name}`} onClick={() => void show()}><Trash2 size={14}/>{showLabel && " Remover relatório"}</button>
+    <button role={menuItem ? "menuitem" : undefined} className="button" title={`Remover ${kind}: ${row.name}`} aria-label={`Remover ${kind} ${row.name}`} onClick={() => void show()}><Trash2 size={14}/>{showLabel && " Remover relatório"}</button>
     {open && <InlineDialog title={`Remover ${kind} “${row.name}”?`} subtitle="" busy={loading} onClose={() => { setOpen(false); onDismiss?.(); }} footer={<>
       <button className="button" onClick={() => { setOpen(false); onDismiss?.(); }}>Cancelar</button>
       <button className="button report-removal-danger" disabled={loading || !available || !!error || links.length > 0} onClick={() => void remove()}>Remover</button>

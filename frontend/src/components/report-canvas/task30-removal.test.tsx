@@ -89,3 +89,21 @@ it("Backspace não remove componente de relatório ativo", async () => {
   fireEvent.keyDown(first, { key: "Backspace" });
   expect(screen.getByRole("group", { name: /Primeiro/ })).toBeTruthy();
 });
+
+it("fecha o menu ao clicar no canvas mesmo com propagação interrompida, e com Esc", async () => {
+  render(<ReportCanvas unit="ame" report={{ id: 6, name: "QA", version: 1 }} onClose={() => {}} />);
+  const first = await screen.findByRole("group", { name: /Primeiro/ });
+  const trigger = screen.getByRole("button", { name: "Ações do relatório" });
+  const details = trigger.closest("details")!;
+  details.open = true;
+  expect(screen.getByRole("menu", {name: "Ações do relatório"})).toBeTruthy();
+  expect(screen.getByRole("menuitem", {name: /Remover relatório/})).toBeTruthy();
+  first.addEventListener("pointerdown", event => event.stopPropagation());
+  fireEvent.pointerDown(first);
+  expect(details.open).toBe(false);
+  expect(document.activeElement).toBe(trigger);
+  details.open = true;
+  fireEvent.keyDown(document, {key: "Escape"});
+  expect(details.open).toBe(false);
+  expect(document.activeElement).toBe(trigger);
+});

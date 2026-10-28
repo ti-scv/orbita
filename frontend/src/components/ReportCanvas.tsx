@@ -95,7 +95,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
       const menu = reportActionsRef.current;
-      if (menu?.open && !menu.contains(event.target as Node)) menu.open = false;
+      if (menu?.open && !menu.contains(event.target as Node)) { menu.open = false; menu.querySelector<HTMLElement>("summary")?.focus(); }
     };
     const escape = (event: KeyboardEvent) => {
       const menu = reportActionsRef.current;
@@ -103,9 +103,9 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         event.preventDefault(); menu.open = false; menu.querySelector<HTMLElement>("summary")?.focus();
       }
     };
-    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("pointerdown", closeOutside, true);
     document.addEventListener("keydown", escape);
-    return () => { document.removeEventListener("pointerdown", closeOutside); document.removeEventListener("keydown", escape); };
+    return () => { document.removeEventListener("pointerdown", closeOutside, true); document.removeEventListener("keydown", escape); };
   }, []);
   const [problemsPanelOpen, setProblemsPanelOpen] = useState(false);
   const [draftBanner, setDraftBanner] = useState<{
@@ -461,7 +461,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         <TopBar
           onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
-          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
+          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary role="button" aria-haspopup="menu" aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div role="menu" aria-label="Ações do relatório" className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} menuItem showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
           outputFormat={session.outputFormat}
