@@ -1,0 +1,1074 @@
+[
+  {
+    "id": 6,
+    "width": 1440,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1156,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 306,
+      "canvas-definicao-pronta": 362,
+      "canvas-fontes-prontas": 363,
+      "canvas-primeira-renderizacao": 826
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1440,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 965,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 161,
+      "canvas-definicao-pronta": 180,
+      "canvas-fontes-prontas": 181,
+      "canvas-primeira-renderizacao": 608
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1280,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 988,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 179,
+      "canvas-definicao-pronta": 207,
+      "canvas-fontes-prontas": 209,
+      "canvas-primeira-renderizacao": 611
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1280,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 955,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 155,
+      "canvas-definicao-pronta": 164,
+      "canvas-fontes-prontas": 164,
+      "canvas-primeira-renderizacao": 558
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 6,
+    "width": 1100,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1043,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 204,
+      "canvas-definicao-pronta": 242,
+      "canvas-fontes-prontas": 246,
+      "canvas-primeira-renderizacao": 660
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 6,
+    "width": 1100,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 945,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 151,
+      "canvas-definicao-pronta": 160,
+      "canvas-fontes-prontas": 164,
+      "canvas-primeira-renderizacao": 563
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 1,
+    "width": 1440,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 991,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 181,
+      "canvas-fontes-prontas": 212,
+      "canvas-definicao-pronta": 212,
+      "canvas-primeira-renderizacao": 622
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1440,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 936,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 141,
+      "canvas-definicao-pronta": 155,
+      "canvas-fontes-prontas": 157,
+      "canvas-primeira-renderizacao": 555
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1280,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 950,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 138,
+      "canvas-definicao-pronta": 150,
+      "canvas-fontes-prontas": 156,
+      "canvas-primeira-renderizacao": 552
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1280,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": [
+          [
+            "Origem da coluna Contato",
+            "Problemas · 0 erros · 0 avisos"
+          ]
+        ]
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1216,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 333,
+      "canvas-definicao-pronta": 359,
+      "canvas-fontes-prontas": 385,
+      "canvas-primeira-renderizacao": 901
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 247
+  },
+  {
+    "id": 1,
+    "width": 1100,
+    "theme": "light",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 993,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 182,
+      "canvas-definicao-pronta": 192,
+      "canvas-fontes-prontas": 192,
+      "canvas-primeira-renderizacao": 608
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  },
+  {
+    "id": 1,
+    "width": 1100,
+    "theme": "dark",
+    "panels": [
+      {
+        "panel": "dados",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "parametros",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "gaveta",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      },
+      {
+        "panel": "fonte",
+        "horizontal": false,
+        "unnamed": [],
+        "clipped": [
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados",
+          "Acompanhamentos e contatos › Dados"
+        ],
+        "overlaps": []
+      }
+    ],
+    "errors": [],
+    "open_ms": 1056,
+    "draftDiscarded": true,
+    "marks": {
+      "canvas-abertura-inicio": 236,
+      "canvas-definicao-pronta": 263,
+      "canvas-fontes-prontas": 264,
+      "canvas-primeira-renderizacao": 665
+    },
+    "zoom": {
+      "label": "85 %",
+      "transform": "matrix(0.85, 0, 0, 0.85, 0, 0)"
+    },
+    "times24": true,
+    "defaultPanelWidth": 215
+  }
+]
