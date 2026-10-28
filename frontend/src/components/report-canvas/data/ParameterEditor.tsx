@@ -18,7 +18,7 @@ export default function ParameterEditor({ items, edits, onChange, layout }: { la
       }
     }
     for (const page of layout.pages) for (const block of page.blocks) {
-      for (const match of (block.text || "").matchAll(/{{\s*([^}]+?)\s*}}/g)) if (match[1] === item.name) uses.push(`Bloco ${block.title || block.id}`);
+      for (const match of (block.text || "").matchAll(/{{\s*([^}]+?)\s*}}/g)) if (match[1] === item.name) uses.push(`Bloco ${block.title || "sem título"}`);
     }
     return {...item, uses, status: item.status === "Duplicado" || item.suggestion ? item.status : uses.length ? "Usado" : "Não usado"};
   });
@@ -29,6 +29,7 @@ export default function ParameterEditor({ items, edits, onChange, layout }: { la
   }
   return <section className="cv-parameter-editor" aria-label="Parâmetros do relatório">
     <button type="button" className="cv-btn-compact" aria-expanded={open} onClick={() => setOpen(!open)}>Editar parâmetros ({visible.length})</button>
+    {!open && <span className="cv-hint"> {items.length} {items.length === 1 ? "parâmetro" : "parâmetros"} · {edits.length} {edits.length === 1 ? "alterado" : "alterados"}</span>}
     {open && <div className="cv-parameter-body">
       {visible.some(i => !i.uses.length) && <button type="button" className="cv-btn-compact" onClick={() => setSelected(visible.filter(i => !i.uses.length).map(i => i.name))}>Selecionar não usados</button>}
       <p>{selected.length ? `${selected.length} selecionados: ${selected.map(friendlyParameterName).join(", ")}. ` : ""}Alterações serão gravadas ao salvar o relatório.</p>
@@ -38,9 +39,9 @@ export default function ParameterEditor({ items, edits, onChange, layout }: { la
         <strong>{friendlyParameterName(i.name)}</strong>
         <span className="cv-chip" title={i.uses.join("; ")}>{i.uses.length ? `Usado em ${i.uses.length} ${i.uses.length === 1 ? "local" : "locais"}` : "Não usado"}</span>
         {!i.uses.length && <button type="button" className="cv-btn-compact" title="Excluir parâmetro" aria-label={`Excluir parâmetro ${friendlyParameterName(i.name)}`} onClick={() => remove([i.name])}>✕</button>}
-        {i.suggestion && <button type="button" className="cv-btn-compact" onClick={() => { if (window.confirm(`Renomear ${i.name} para ${i.suggestion}? Isso altera apenas o cadastro legado; não reescreve consultas.`)) onChange([...edits, { name: i.name, rename: i.suggestion }]); }}>Renomear para {i.suggestion}</button>}
+        {i.suggestion && <button type="button" className="cv-btn-compact" onClick={() => { if (window.confirm(`Renomear ${friendlyParameterName(i.name)} para ${friendlyParameterName(i.suggestion)}? Isso altera apenas o cadastro legado; não reescreve consultas.`)) onChange([...edits, { name: i.name, rename: i.suggestion }]); }}>Renomear para {friendlyParameterName(i.suggestion)}</button>}
       </div>)}
-      {!!edits.length && <><p>Rascunho: {edits.map(e => e.rename ? `${e.name} → ${e.rename}` : `Excluir ${e.name}`).join("; ")}</p><button type="button" className="cv-btn-compact" onClick={() => onChange([])}>Desfazer alterações dos parâmetros</button></>}
+      {!!edits.length && <><p>Rascunho: {edits.map(e => e.rename ? `${friendlyParameterName(e.name)} → ${friendlyParameterName(e.rename)}` : `Excluir ${friendlyParameterName(e.name)}`).join("; ")}</p><button type="button" className="cv-btn-compact" onClick={() => onChange([])}>Desfazer alterações dos parâmetros</button></>}
     </div>}
   </section>;
 }

@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { maskFixedDate } from "../data/fixedDate";
 import type { FormEvent } from "react";
 import { AlertCircle, Check, Clock, Download } from "lucide-react";
 import InlineDialog from "../../InlineDialog";
@@ -198,7 +199,7 @@ export default function PreviewDialog({
                     onChange={(e) =>
                       onChange({
                         ...previewModal,
-                        values: { ...previewModal.values, [field.name]: e.target.value },
+                        values: { ...previewModal.values, [field.name]: field.type === "date" ? maskFixedDate(e.target.value) : e.target.value },
                         error: "",
                       })
                     }

@@ -27,3 +27,14 @@ it("impede selecionar ou excluir parâmetros em uso", () => {
  expect(screen.queryByRole("button",{name:"Selecionar não usados"})).toBeNull();
  expect(change).not.toHaveBeenCalled();
 });
+
+it("resume os parâmetros e as alterações com o editor recolhido", () => {
+  render(<ParameterEditor items={[
+    {name:"start", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"end", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"unidade", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"tipo_envio", status:"Usado", uses:[], suggestion:"", historical:false},
+  ]} edits={[{name:"end"}]} onChange={() => {}} />);
+  expect(screen.getByText("4 parâmetros · 1 alterado")).toBeTruthy();
+  expect(screen.getByRole("button", {name:/Editar parâmetros/}).getAttribute("aria-expanded")).toBe("false");
+});

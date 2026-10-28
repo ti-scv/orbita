@@ -449,7 +449,7 @@ export default function SourceDialog({
         {sourceModal.error && (
           <p className="inline-error" role="alert">
             <AlertCircle size={14} />
-            {sourceModal.error}
+            {friendlySourceError(sourceModal.error, constructDraftSource(), selectedCatalog)}
           </p>
         )}
 
@@ -607,14 +607,15 @@ export default function SourceDialog({
                   {paramItems.map((param, idx) => (
                     <div key={idx} className="cv-param-card">
                       <div className="cv-param-row">
+                        <details><summary>{friendlyParameterName(param.key) || "Novo parâmetro"}</summary><label>Identificador técnico (avançado)
                         <input
                           type="text"
-                          placeholder="Nome (ex.: start)"
+                          placeholder="Identificador técnico"
                           value={param.key}
                           onChange={(e) => handleParamChange(idx, { key: e.target.value })}
                           className="cv-font-mono"
                           style={{ height: "28px", fontSize: "12px" }}
-                        />
+                        /></label></details>
 
                         {param.isBinding ? (
                           <Select
@@ -625,13 +626,13 @@ export default function SourceDialog({
                             <option value="">Selecione parâmetro atual</option>
                             {Object.keys(currentReportParameters).map((pKey) => (
                               <option key={pKey} value={pKey}>
-                                Parâmetro do relatório: {pKey}
+                                Parâmetro do relatório: {friendlyParameterName(pKey)}
                               </option>
                             ))}
                           </Select>
                         ) : isDateParameter(param.key, param.type) ? (
                           <div>
-                            <input type="text" inputMode="numeric" aria-label={`Valor de ${param.key}`}
+                            <input type="text" inputMode="numeric" aria-label={`Valor de ${friendlyParameterName(param.key)}`}
                               aria-invalid={param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue))}
                               placeholder="DD/MM/AAAA" value={displayFixedDate(param.fixedValue)}
                               onChange={(e) => { const masked = maskFixedDate(e.target.value); handleParamChange(idx, { fixedValue: parseFixedDate(masked) || masked }); }}
@@ -639,7 +640,7 @@ export default function SourceDialog({
                             {param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)) && <span className="inline-error" role="alert">Informe uma data válida no formato DD/MM/AAAA.</span>}
                           </div>
                         ) : (
-                          <input type="text" aria-label={`Valor de ${param.key}`} title="Valor fixo" placeholder="Valor fixo"
+                          <input type="text" aria-label={`Valor de ${friendlyParameterName(param.key)}`} title="Valor fixo" placeholder="Valor fixo"
                             value={param.fixedValue} onChange={(e) => handleParamChange(idx, { fixedValue: e.target.value })}
                             style={{ height: "28px", fontSize: "12px" }} />
                         )}
