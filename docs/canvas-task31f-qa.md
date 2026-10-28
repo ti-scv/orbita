@@ -12,7 +12,7 @@ Integração inicial: `f23bfcd93f5bc13b73da6916680b1075b4451360`, com rebase sob
 | F | Delete em relatório ativo não explicava o bloqueio. | Aviso visível e teste de teclado na matriz. |
 | G | Período padrão não era explicado. | O diálogo mostra o período efetivo com “Padrão”. |
 | H | Botão JSON e mensagem duplicada; vínculos vazios pouco claros. | “Código do relatório”; mensagem única e texto para ausência de vínculos, com agendamento quando presente. |
-| I | Filtros e ações cortados a 150%; editor não conferido. | Filtros e ações responsivos; cabeçalho do editor passa a duas linhas em largura reduzida. Matriz em 80, 100, 125 e 150%, nos dois temas, com lista, editor, prévia e diálogos. |
+| I | Filtros e ações cortados a 150%; editor não conferido. | Filtros e ações responsivos; cabeçalho do editor passa a duas linhas em largura reduzida. Matriz nos espaços equivalentes a 80, 100, 125 e 150%, nos dois temas, com lista, editor, prévia e diálogos. O script ajusta viewport e escala de dispositivo; não altera o controle de zoom do navegador. |
 | J | Datas americanas; contador e pendências pouco claros. | Datas explícitas em português; explicação dos contadores e pendências. |
 | K | Parâmetro inexistente e muitas colunas não tinham cobertura manual. | Validação amigável antes de enviar a prévia; matriz com parâmetro inexistente e relatório de 24 colunas, incluindo PDF e editor. |
 
