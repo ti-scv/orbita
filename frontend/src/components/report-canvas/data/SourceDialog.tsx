@@ -162,6 +162,8 @@ export default function SourceDialog({
     (s) => s.id === Number(sourceModal.reportId),
   );
 
+  const friendlyDefault = selectedCatalog ? `${selectedCatalog.name} › ${selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}` : "";
+
   // Handle label change and auto slug
   const handleLabelChange = (val: string) => {
     const trimmed = val.slice(0, 60);
@@ -445,7 +447,7 @@ export default function SourceDialog({
               type="text"
               maxLength={60}
               placeholder="Ex.: Faturamento Mensal"
-              value={sourceModal.label || ""}
+              value={sourceModal.type === "report" && sourceModal.mode === "edit" && sourceModal.label === sourceModal.originalId && friendlyDefault ? friendlyDefault : sourceModal.label || ""}
               onChange={(e) => handleLabelChange(e.target.value)}
               autoFocus
             />
@@ -473,7 +475,8 @@ export default function SourceDialog({
             </span>
             <input
               type="text"
-              required
+              hidden={!showAdvancedId}
+              required={showAdvancedId}
               maxLength={50}
               className="cv-font-mono"
               placeholder="Ex.: faturamento_mensal"
