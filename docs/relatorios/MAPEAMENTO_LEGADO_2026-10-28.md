@@ -1,3 +1,111 @@
+# Lote A: cinco componentes legados — atualização de 28/10/2026
+
+Esta seção registra a execução de `task-legado.md` e prevalece sobre o inventário histórico abaixo para os cinco IDs. São fontes auxiliares da Santa Casa, administradas na unidade SCV (id 2), conexão Oracle 1; não são cinco novos relatórios finais. Não houve alteração de unidade nem criação de cadastros.
+
+## Resultado e limite de aceite
+
+Foram mapeados os cinco Canvas: três rascunhos existentes preservados com identificação da fonte e dois layouts novos para os pareceres. As consultas são byte a byte iguais a `legacy.original_sql`; nomes, filtros, períodos, classificação de convênio e tratamento de nulos foram preservados. Não foram executadas procedures ou sincronizadores.
+
+**Homologação e abertura automática com dados reais continuam pendentes.** O fechamento anterior condiciona o lote a amostra aceita por Danilo. Não foi localizada uma amostra aceita do cache Firebird com o mesmo recorte para estes cinco componentes. A leitura da consulta Oracle original confirma acesso, colunas e tipos; não prova equivalência numérica com o cache nem com as fórmulas dos consumidores. Assim, `reviewed`, `enabled` e `canvas_enabled` permanecem falsos. Não foram alteradas permissões, programações ou formato de saída.
+
+Os PDFs de amostra foram renderizados em memória com dados reais; nenhuma linha clínica foi salva no layout, documento ou evidência. O editor continua em modo de exemplo enquanto a fonte não estiver homologada. O requisito de abertura padrão com dados reais não foi declarado concluído.
+
+| Legado / ID Orbita | Componente | Existe | Canvas antes → depois | Fonte | Amostra / mais linhas | Leitura + PDF (s) | Link |
+|---|---|---|---|---|---|---|---|
+| 17 / 30 | LEITOS_SISTEMA | sim | sim → sim | Oracle responde; homologação pendente | 14 / não | 0.369 | [/relatorios/30/canvas?unit=scv](/relatorios/30/canvas?unit=scv) |
+| 30 / 42 | INTERNACAO_USUARIO | sim | sim → sim | Oracle responde; homologação pendente | 50 / sim | 2.525 | [/relatorios/42/canvas?unit=scv](/relatorios/42/canvas?unit=scv) |
+| 57 / 67 | CIRURGIAS | sim | sim → sim | Oracle responde; homologação pendente | 50 / sim | 1.594 | [/relatorios/67/canvas?unit=scv](/relatorios/67/canvas?unit=scv) |
+| 66 / 76 | PARECER | sim | não → sim | Oracle responde; homologação pendente | 50 / sim | 0.138 | [/relatorios/76/canvas?unit=scv](/relatorios/76/canvas?unit=scv) |
+| 67 / 77 | PARECER_ATENDIMENTOS | sim | não → sim | Oracle responde; homologação pendente | 50 / sim | 0.946 | [/relatorios/77/canvas?unit=scv](/relatorios/77/canvas?unit=scv) |
+
+O limite é de 50 linhas, com uma linha adicional para detectar continuação. Apenas leitos retornou o resultado completo (14 linhas). Os tempos **não** medem a consulta/exportação completa do histórico nem demonstram desempenho do editor. As demais fontes têm mais linhas; não devem ser tratadas como totais de 50.
+
+## Contratos, períodos e tipos
+
+- **LEITOS_SISTEMA:** `CD_UNID_INT`: NUMBER; `DS_UNID_INT`: VARCHAR; `QUANTIDADE`: NUMBER; `DATA`: DATE.
+- **INTERNACAO_USUARIO:** `Atendimento`: NUMBER; `Prestador`: VARCHAR; `DS_ESPECIALID`: VARCHAR; `Dias_Internado`: NUMBER; `Hora_Alta`: DATE; `Motivo_Alta`: VARCHAR; `Data_Alta_Medica`: VARCHAR; `Hora_Alta_Medica`: DATE; `Data_Alta_Hospitalar`: VARCHAR; `Hora_Alta_Hospitalar`: DATE; `TIPO_CONVENIO`: VARCHAR; `NM_USUARIO`: VARCHAR; `CD_PRESTADOR`: NUMBER; `Alta_Medica`: VARCHAR; `H_Alta_Medica`: VARCHAR.
+- **CIRURGIAS:** `ID`: NUMBER; `COMPETENCIA`: VARCHAR; `DIA`: VARCHAR; `Centro_Cirurgico`: NUMBER; `CONVENIO`: VARCHAR; `TP_CIRURGIAS`: VARCHAR.
+- **PARECER:** `CD_ATENDIMENTO`: NUMBER; `DT_SOLICITACAO`: DATE; `DS_ESPECIALID`: VARCHAR; `DT_PARECER`: DATE; `DATA`: VARCHAR.
+- **PARECER_ATENDIMENTOS:** `CD_ATENDIMENTO`: NUMBER; `Competencia`: VARCHAR; `Tipo_Atendimento`: VARCHAR.
+
+- Leitos: posição atual via SYSDATE, setores 11/12/17 excluídos; não substitui histórico diário.
+- Internações: altas médicas de 01/01/2022 até ontem, atendimentos I/H, empresa 1, sem atendimento pai; nulos e junções originais mantidos.
+- Cirurgias: realizadas desde 01/01/2023 até ontem, DISTINCT original; um aviso pode produzir mais de uma linha por convênio/tipo.
+- Pareceres: solicitações do ano atual/anterior, sem cancelamento; parecer/data podem ser nulos.
+- Parecer-atendimentos: urgência, empresa 1, ano atual/anterior.
+
+Não foi inventado um período padrão menor para mascarar custo do histórico. A introdução de filtros novos e a promoção para fonte homologada exigem comparar o mesmo recorte com o legado aceito, validar consumidores e medir consulta completa.
+
+## Aplicação, evidências e reversão
+
+- Branch: `feature/canvas-redesign`; commits locais, sem push.
+- Backup anterior à escrita: `/root/backup-legado-2026-10-28-lote-cinco.sql`, permissão 0600, marcador final conferido.
+- SHA256 do dump: `7cbb8c6539abc562758b27a106453f89ca0ea1b60e4d84dd39bbcfe6ae735632`.
+- Evidências privadas: `/opt/backups/orbita/legado-cinco-20261028/`. O plano contém somente layout, tipos, contagens limitadas e hashes; não contém linhas reais.
+- Comando: `map_legacy_five_canvases`. Padrão dry-run. Apply exige dump concluído e arquivo de simulação, trava os cinco registros e recusa qualquer divergência do estado.
+- Únicos IDs alterados: **30, 42, 67, 76, 77**. IDs criados: **nenhum**. A confirmação da aplicação e da repetição consta no registro de validação abaixo.
+- Migração 0030 já aplicada. **Nenhuma migração aplicada; 0031_report_removal não aplicada.**
+- Produção não reconstruída nem reiniciada; nenhum staging novo necessário. Login, arquivos alheios e worktrees preservados.
+
+Execução no servidor, com código de `/opt/orbita/backend` montado em `/app`, diretório privado em `/evidence` e dump somente leitura em `/backup.sql`:
+
+```sh
+python manage.py map_legacy_five_canvases --output /evidence/dry-run.json
+python manage.py map_legacy_five_canvases --apply --backup /backup.sql   --approved-plan /evidence/dry-run.json --output /evidence/apply.json
+# Repetir o segundo comando deve retornar changed: [].
+```
+
+Para reverter, concluir **novo pg_dump** e simular primeiro. Na shell Django do mesmo ambiente:
+
+```python
+import json
+from pathlib import Path
+from operations.management.commands.map_legacy_five_canvases import revert_plan
+plan = json.loads(Path('/evidence/dry-run.json').read_text())
+revert_plan(plan)              # dry-run
+revert_plan(plan, apply=True)  # somente após novo backup
+```
+
+A reversão restaura apenas layout/metadados anteriores, incrementa versão, gera auditoria e recusa edição posterior. Não restaurar o dump inteiro sobre produção.
+
+## Quinze conversões de procedures: fora deste escopo
+
+Todos continuam pendentes, sem execução, alteração de SQL ou homologação. Dependem de go do Danilo, reconstrução das regras/BLR e conferência numérica. A conexão placeholder Firebird não deve ser habilitada como Oracle.
+
+| ID SCV / legado | Nome | Dependência | legacy.original_sql |
+|---|---|---|---|
+| 31 / 18 | TAXA DE OCUPAÇÃO POR SETOR | Converter procedure Firebird para consulta direta no Oracle: PROC_RESUMO_ATENDIMENTOS | não |
+| 32 / 19 | PACIENTE DIA E TAXA DE OCUPAÇÃO - GERAL | Converter procedure Firebird para consulta direta no Oracle: PROC_RESUMO_ATENDIMENTOS | não |
+| 35 / 23 | GERAR_LEITOS_DISPONIVEIS | Converter procedure Firebird para consulta direta no Oracle: PROC_LEITOS_DISPONIVEIS | não |
+| 36 / 24 | PACIENTE DIA E TAXA DE OCUPAÇÃO - SUS | Converter procedure Firebird para consulta direta no Oracle: PROC_RESUMO_ATENDIMENTOS | não |
+| 37 / 25 | PACIENTE DIA E TAXA DE OCUPAÇÃO - CONVENIO | Converter procedure Firebird para consulta direta no Oracle: PROC_RESUMO_ATENDIMENTOS | não |
+| 52 / 42 | EXAMES POR ATENDIMENTO - GERAL | Converter procedure Firebird para consulta direta no Oracle: proc_exames_por_atendimento | não |
+| 61 / 51 | EXAMES POR ATENDIMENTO - TABELA | Converter procedure Firebird para consulta direta no Oracle: proc_exames_por_atendimento | não |
+| 62 / 52 | EXAMES POR ATENDIMENTO - DESEMPENHO INDIVIDUAL | Converter procedure Firebird para consulta direta no Oracle: proc_exames_por_atendimento | não |
+| 64 / 54 | TEMPO MEDIO PERMANENCIA - GERAL | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | sim |
+| 68 / 58 | MEDIA DE CIRURGIAS - TOTAL | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+| 72 / 62 | MEDIA ATENDIMENTOS | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+| 73 / 63 | TEMPO MEDIO PERMANENCIA - ESPECIALIDADES SUS | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+| 74 / 64 | MEDIA DE CIRURGIAS - ELETIVAS | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+| 75 / 65 | MEDIA DE CIRURGIAS - URGENCIA E EMERGENCIA | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+| 78 / 68 | PARECER MEDICO POR ESPECIALIDADE | Converter procedure Firebird para consulta direta no Oracle: PROC_ALTAS_ATE_AS_10 | não |
+
+## Registro de validação desta atualização
+
+- `dry-run.json`: cinco fontes lidas sem escrita no banco, colunas conferidas e PDFs reais preparados em memória.
+- `apply.json`: alterados somente 30/42/67/76/77; versões 2→3, 3→4, 3→4, 1→2 e 1→2, respectivamente.
+- `idempotency.json`: zero alterações na repetição.
+- `replanned.json`: novo dry-run após aplicar reproduziu o plano original (igualdade JSON); a aplicação desse novo plano também retornou zero alterações.
+- `verification.json`: cinco auditorias de mapeamento, cada Canvas vinculado ao próprio ID, SQL original preservado, flags desativadas e 0031 não aplicada. Simulação de reversão aprovada em transação somente leitura.
+- Backend focado final: **14 testes passaram** (sete novos para o lote e sete existentes). Cobrem dry-run sem escrita, backup incompleto, concorrência com rollback do lote inteiro, preservação de campos, reversão e idempotência inclusive após novo dry-run.
+- Frontend completo: **581 testes passaram**, 56 arquivos, Node 24; sem alterações no frontend.
+- Backend completo final: **988 passaram e 6 falharam** (994 testes, 308,54 s). As falhas fora do lote são `test_preview_exception_does_not_disclose_connection_or_data` (mensagem de exceção exposta pela prévia existente) e cinco testes de `test_report_removal.py` (HTTP 503 com remoção/restauração desabilitada enquanto 0031 está pendente). Nenhum desses arquivos de implementação foi alterado nesta entrega. Não foi aplicada migração para tornar os testes de remoção verdes.
+- Logs privados: `new-tests.log`, `frontend-tests.log`, `backend-tests-final.log`. Nenhum serviço de produção foi reconstruído/reiniciado e nenhuma mensagem ou programação foi criada pelo comando.
+
+---
+
+## Entrega anterior e inventário histórico (preservados)
+
 # Mapeamento do legado ? 28/10/2026
 
 ## Escopo e resultado
