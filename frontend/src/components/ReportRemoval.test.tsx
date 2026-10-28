@@ -40,3 +40,15 @@ it("lista e restaura um relatório removido", async () => {
   await waitFor(() => expect(changed).toHaveBeenCalled());
 });
 
+
+it("remove um relatório após confirmação", async () => {
+  const changed = vi.fn();
+  vi.mocked(request).mockResolvedValueOnce({dependencias: []}).mockResolvedValueOnce({name: "Vendas", version: 3});
+  render(<RemovalButton unit="ame" resource="reports" row={{id: 1, name: "Vendas", version: 2}} kind="relatório" onChanged={changed} />);
+  fireEvent.click(screen.getByRole("button", {name: "Remover relatório Vendas"}));
+  const confirm = await screen.findByRole("button", {name: /^Remover$/});
+  await waitFor(() => expect((confirm as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(confirm);
+  await waitFor(() => expect(changed).toHaveBeenCalledOnce());
+  expect(vi.mocked(request)).toHaveBeenCalledWith("reports/1/remover", "POST", {version: 2});
+});
