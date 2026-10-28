@@ -24,6 +24,8 @@ export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = fa
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
   }
+  const reportCount = links.filter(link => link.startsWith("Relatório: ")).length;
+  const scheduleCount = links.filter(link => link.startsWith("Agendamento") || link.startsWith("Programação")).length;
   async function remove() {
     setLoading(true); setError("");
     try {
@@ -43,6 +45,8 @@ export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = fa
       {!available && <p>A remoção ainda não foi liberada neste ambiente.</p>}
       {dirty && <p>As alterações não salvas no editor serão perdidas.</p>}
       {loading && <p>Consultando vínculos…</p>}
+      {kind === "conexão" && reportCount > 0 && <p>Usada por {reportCount} {reportCount === 1 ? "relatório" : "relatórios"}.</p>}
+      {kind === "relatório" && scheduleCount > 0 && <p>Tem {scheduleCount} {scheduleCount === 1 ? "agendamento ou programação" : "agendamentos ou programações"}.</p>}
       {links.length > 0 && <><p>Remoção bloqueada. Resolva estes vínculos antes de remover:</p><ul>{links.map((link) => <li key={link}>{link}</li>)}</ul></>}
       {error && <div role="alert" className="inline-error">{error}</div>}
     </InlineDialog>}
