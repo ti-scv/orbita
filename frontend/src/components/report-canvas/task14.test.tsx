@@ -46,11 +46,11 @@ describe("Tarefa 14: datas na gaveta e nos blocos", () => {
 
 describe("Tarefa 14: nome consistente na edição de fonte", () => {
   it.each([
-    [{ ...source }, "dados"],
-    [{ ...source, label: "" }, "dados"],
+    [{ ...source }, "Tabela principal"],
+    [{ ...source, label: "" }, "Tabela principal"],
     [{ ...source, label: "Atendimentos" }, "Atendimentos"],
-    [{ id: "manual", type: "inline", columns: ["A"], rows: [] }, "manual"],
-    [{ id: "metas", type: "goals" }, "metas"],
+    [{ id: "manual", type: "inline", columns: ["A"], rows: [] }, "Tabela manual"],
+    [{ id: "metas", type: "goals" }, "Metas mensais"],
   ] as Array<[CanvasSource, string]>)("preenche o nome visível sem alterar o registro (%s)", (src, expected) => {
     const original = JSON.stringify(src);
     function Harness() {

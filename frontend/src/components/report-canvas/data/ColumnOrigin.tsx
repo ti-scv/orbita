@@ -1,4 +1,4 @@
-import { friendlySourceError } from "./sourceName";
+import { friendlySourceError, friendlySourceName } from "./sourceName";
 import { createContext, useContext, useEffect, useState } from "react";
 import InlineDialog from "../../InlineDialog";
 import { query, request } from "../../../api";
@@ -23,7 +23,7 @@ export function highlightColumn(sql: string, column: string) {
 export default function ColumnOrigin({ source, column, type = "unknown", loadedAt, sourceName, datasetName }: { source?: CanvasSource; column: string; type?: string; loadedAt?: Date | string | null; sourceName?: string; datasetName?: string }) {
   const {reportId, unit, lastReads, sources = []} = useContext(OriginContext);
   const catalog = source?.type === "report" ? sources.find(item => item.id === source.report_id) : undefined;
-  const friendlySource = sourceName || catalog?.name || source?.label || "Fonte";
+  const friendlySource = source ? friendlySourceName({...source, label: sourceName || source.label}, catalog) : "Fonte";
   void datasetName;
   const readAt = loadedAt || (source && lastReads?.[source.id]);
   const [open, setOpen] = useState(false);

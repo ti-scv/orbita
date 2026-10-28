@@ -288,7 +288,7 @@ export default function TopBar({
               </span>
               <span
                 className={`cv-status-chip ${enabled ? "is-active" : "is-draft"}`}
-                aria-label={enabled ? "Estado: Ativo" : "Estado: Rascunho"}
+                title={enabled ? "Estado: Ativo" : "Estado: Rascunho"}
               >
                 {enabled ? "Ativo" : "Rascunho"}
               </span>

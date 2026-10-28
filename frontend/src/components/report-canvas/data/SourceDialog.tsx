@@ -1,5 +1,5 @@
 import { friendlyParameterName, friendlyParameterValue } from "../parameters";
-import { friendlySourceError } from "./sourceName";
+import { friendlySourceError, friendlySourceName } from "./sourceName";
 import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
 import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
@@ -166,7 +166,6 @@ export default function SourceDialog({
     (s) => s.id === Number(sourceModal.reportId),
   );
 
-  const friendlyDefault = selectedCatalog?.name || "";
 
   // Handle label change and auto slug
   const handleLabelChange = (val: string) => {
@@ -462,7 +461,7 @@ export default function SourceDialog({
               type="text"
               maxLength={60}
               placeholder="Ex.: Faturamento Mensal"
-              value={sourceModal.type === "report" && sourceModal.mode === "edit" && sourceModal.label === sourceModal.originalId && friendlyDefault ? friendlyDefault : sourceModal.label || ""}
+              value={sourceModal.mode === "edit" && sourceModal.label ? friendlySourceName({...constructDraftSource(), label: sourceModal.label}, selectedCatalog) : sourceModal.label || ""}
               onChange={(e) => handleLabelChange(e.target.value)}
               autoFocus
             />
@@ -641,7 +640,7 @@ export default function SourceDialog({
                           </div>
                         ) : (
                           <input type="text" aria-label={`Valor de ${friendlyParameterName(param.key)}`} title="Valor fixo" placeholder="Valor fixo"
-                            value={param.fixedValue} onChange={(e) => handleParamChange(idx, { fixedValue: e.target.value })}
+                            value={friendlyParameterValue(param.key, param.fixedValue) === "—" ? "" : friendlyParameterValue(param.key, param.fixedValue)} onChange={(e) => handleParamChange(idx, { fixedValue: /^(unidade|unit)$/i.test(param.key) && e.target.value.toLowerCase() === "ame votuporanga" ? "ame" : param.key === "tipo_envio" && e.target.value === "Agendamento" ? "appointment" : e.target.value })}
                             style={{ height: "28px", fontSize: "12px" }} />
                         )}
 

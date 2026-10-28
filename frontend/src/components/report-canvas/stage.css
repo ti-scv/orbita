@@ -945,3 +945,6 @@
 [data-theme="dark"] .cv-root .cv-preview-controls summary {
   color: var(--cv-text-2);
 }
+
+/* Cabeçalhos longos devem quebrar dentro da coluna, sem cobrir a próxima. */
+.cv-table-preview th {overflow-wrap:anywhere; white-space:normal;}

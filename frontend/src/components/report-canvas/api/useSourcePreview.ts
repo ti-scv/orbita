@@ -1,3 +1,4 @@
+import { friendlyParameterName } from "../parameters";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { query, request } from "../../../api";
 import type { CanvasSource, ColumnInfo, SourcePreview } from "../model";
@@ -100,9 +101,7 @@ export function findMissingRequiredParameter(
         (typeof val === "string" && val.trim() === "") ||
         (typeof val === "object" && !isParameterBinding(val) && Object.keys(val).length === 0);
       if (isMissing) {
-        const key = name.toLowerCase().replace(/^wpa_/, "");
-        const fallback = key.replaceAll("_", " ");
-        const label = spec.label || fallback.charAt(0).toUpperCase() + fallback.slice(1);
+        const label = spec.label || friendlyParameterName(name);
         return { name, label };
       }
     }

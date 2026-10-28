@@ -95,7 +95,6 @@ export default function ContentFields({
   block,
   hidden,
   layout,
-  sourceOrigin,
   sources,
   columnInfos,
   rows,
@@ -1055,11 +1054,9 @@ export default function ContentFields({
                           <span className="cv-table-col-name" title={item.name}>
                             {item.name}
                           </span>
-                          <small className="cv-column-origin" title={`${sourceOrigin || block.source_id || "Sem fonte"} › ${item.name}`}>
-                            {sourceOrigin || block.source_id || "Sem fonte"} › {item.name}
-                          </small>
+
                         </div>
-                        <ColumnOrigin source={sources.find(s => s.id === block.source_id)} column={item.name} type={item.info?.type} />
+                        <div className="cv-table-col-origin"><ColumnOrigin source={sources.find(s => s.id === block.source_id)} column={item.name} type={item.info?.type} /></div>
                         {isMissing && <span className="cv-col-missing-tag">Ausente</span>}
                         {item.checked && selectedTableCols.length > 1 && (
                           <div className="cv-well-actions">

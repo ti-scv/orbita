@@ -43,12 +43,12 @@ export default function TablePreview({
     return (
       <div className="cv-block-inner">
         {block.title && <div className="cv-block-title">{block.title}</div>}
-        <div className="cv-table-wrap">
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
           <table className="cv-table-preview">
             <thead>
               <tr>
                 {headers.map((c) => (
-                  <th key={c} style={{ borderBottomColor: primaryColor }}>
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
                     <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}
@@ -86,7 +86,7 @@ export default function TablePreview({
           </span>
         </div>
       ) : (
-        <div className="cv-table-wrap">
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
           <table
             className="cv-table-preview"
             style={{ fontSize: `${fontSize}px`, tableLayout: "fixed" }}
@@ -101,7 +101,7 @@ export default function TablePreview({
             <thead>
               <tr>
                 {chosenCols.map((c) => (
-                  <th key={c} style={{ borderBottomColor: primaryColor }}>
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
                     <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}

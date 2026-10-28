@@ -5,7 +5,7 @@ import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import { OriginContext } from "./report-canvas/data/ColumnOrigin";
 import JsonEditorDialog from "./report-canvas/dialogs/JsonEditorDialog";
-import { query, request } from "../api";
+import { validateCanvasRequest } from "./report-canvas/api/useCanvasApi";
 import ParameterEditor from "./report-canvas/data/ParameterEditor";
 import DataPanel from "./report-canvas/data/DataPanel";
 import SourceDialog from "./report-canvas/data/SourceDialog";
@@ -412,7 +412,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         onToggleLeftPanel={prefs.toggleLeftPanel}
       >
         <input ref={session.fileInputRef} type="file" accept="image/png,image/jpeg" hidden onChange={(e) => void session.handleFileChange(e)} />
-        {jsonOpen && <JsonEditorDialog layout={layout} canUndo={store.canUndo} onUndo={store.undo} onClose={() => setJsonOpen(false)} onApply={next => store.apply("Aplicar JSON", () => next)} validate={async text => { const result = await request<{layout: import("./report-canvas/model").CanvasLayout}>(query(`reports/${report.id}/canvas-validate`, {unit}), "POST", {json: text, enabled: session.enabled, output_format: session.outputFormat, parameter_edits: session.parameterEdits}); return result.layout; }} />}
+        {jsonOpen && <JsonEditorDialog layout={layout} canUndo={store.canUndo} onUndo={store.undo} onClose={() => setJsonOpen(false)} onApply={next => store.apply("Aplicar JSON", () => next)} validate={text => validateCanvasRequest(report.id, unit, text, session.enabled, session.outputFormat, session.parameterEdits)} /> }
         <TopBar
           onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}

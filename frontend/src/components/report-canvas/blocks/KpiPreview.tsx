@@ -38,14 +38,14 @@ export default function KpiPreview({
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
     return (
-      <div className="cv-block-inner" title={`Fonte: ${sourceLabel || source.id}`}>
+      <div className="cv-block-inner" title={`Fonte: ${sourceLabel || "Tabela principal"}`}>
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-kpi-body">
           <div className="cv-kpi-value" style={{ fontSize: `${fontSize}px`, color: primaryColor }}>
             —
           </div>
           <div className="cv-kpi-meta">
-            <span className="cv-kpi-source" title={sourceLabel || source.id}>{sourceLabel}</span>
+            <span className="cv-kpi-source" title={sourceLabel || "Tabela principal"}>{sourceLabel}</span>
             <span className="cv-kpi-sep">·</span>
             <span className="cv-kpi-aggregation">
               {opt.aggregate === "count" ? "Contagem" : opt.value_field || "coluna padrão"}
@@ -92,7 +92,7 @@ export default function KpiPreview({
       : `${mode === "sum" ? "Soma" : "Primeiro"} (${targetCol || "—"})`;
 
   return (
-    <div className="cv-block-inner" title={`Fonte: ${sourceLabel || source.id}`}>
+    <div className="cv-block-inner" title={`Fonte: ${sourceLabel || "Tabela principal"}`}>
       {block.title && <div className="cv-block-title">{block.title}</div>}
       <div className="cv-kpi-body">
         <div
@@ -103,7 +103,7 @@ export default function KpiPreview({
           {formatted}{unit ? ` ${unit}` : ""}
         </div>
         <div className="cv-kpi-meta">
-          <span className="cv-kpi-source" title={sourceLabel || source.id}>
+          <span className="cv-kpi-source" title={sourceLabel || "Tabela principal"}>
             {sourceLabel}
           </span>
           <span className="cv-kpi-sep">·</span>

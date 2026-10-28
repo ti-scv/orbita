@@ -23,3 +23,11 @@ it("anuncia linha e coluna da validação do backend", async () => {
  await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("linha 2, coluna 4"));
  expect(screen.getByRole("textbox").getAttribute("aria-invalid")).toBe("true");
 });
+it.each(["{", "null", "[]", "{}", '{"pages":[],"sources":{}}'])("bloqueia corpo inválido antes da rede: %s", async text => {
+ const validate=vi.fn();
+ render(<JsonEditorDialog layout={createDefaultLayout()} validate={validate} onApply={vi.fn()} onUndo={vi.fn()} canUndo={false} onClose={vi.fn()} />);
+ fireEvent.change(screen.getByRole("textbox"),{target:{value:text}});
+ fireEvent.click(screen.getByRole("button",{name:"Validar e aplicar"}));
+ await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+ expect(validate).not.toHaveBeenCalled();
+});

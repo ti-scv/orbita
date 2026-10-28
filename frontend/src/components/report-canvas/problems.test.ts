@@ -90,7 +90,8 @@ describe("computeProblems (diagnóstico puro por bloco)", () => {
 
     const res = computeProblems(layout, {}, sampleCatalog);
     expect(res.map((p) => p.code)).toContain("source_missing");
-    expect(res[0].message).toContain("fonte_apagada");
+    expect(res[0].message).toContain("fonte selecionada");
+    expect(res[0].message).not.toContain("fonte_apagada");
   });
 
   it("detecta kpi_no_value_field para soma/primeiro, mas aceita contagem sem value_field", () => {

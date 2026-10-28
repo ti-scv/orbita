@@ -1310,3 +1310,12 @@
   -webkit-text-fill-color: var(--cv-text);
 }
 .cv-root .cv-page-readonly .cv-seg-group.is-disabled { opacity: 1; }
+
+/* Mantém o nome da coluna inteiro mesmo no inspetor estreito. */
+.cv-root .cv-table-col-list > .cv-table-col-item { display:grid; grid-template-columns:16px 22px minmax(0,1fr) auto; gap:4px; align-items:center; }
+.cv-root .cv-table-col-copy { grid-column:3 / -1; }
+.cv-root .cv-table-col-copy > .cv-table-col-name { flex:0 0 auto; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+.cv-root .cv-table-col-origin { grid-column:1 / 4; display:flex; align-items:center; min-width:0; gap:4px; }
+.cv-root .cv-table-col-origin .cv-origin-text { flex:1; min-width:0; white-space:normal; overflow-wrap:anywhere; }
+.cv-root .cv-table-col-item > .cv-well-actions { grid-column:4; grid-row:2; }
+.cv-root .cv-table-col-item > .cv-col-missing-tag { grid-column:1 / -1; }

@@ -41,7 +41,7 @@ export function collectTestParameters(fields: TestParameter[], values: Record<st
       if(!Number.isFinite(number) || (field.type === "integer" && !Number.isInteger(number)))throw new Error(`${field.label}: número inválido.`);
       if((field.minimum!=null && number<field.minimum)||(field.maximum!=null && number>field.maximum))throw new Error(`${field.label}: valor fora do intervalo permitido.`);
       result[field.name]=number;
-    }else result[field.name]=/^(unidade|unit)$/i.test(field.name) && value.toLocaleLowerCase("pt-BR") === "ame votuporanga" ? "ame" : value;
+    }else result[field.name]=/^(unidade|unit)$/i.test(field.name) && value.toLocaleLowerCase("pt-BR") === "ame votuporanga" ? "ame" : field.name === "tipo_envio" && value === "Agendamento" ? "appointment" : value;
     if(field.options && !field.options.some(o=>o.value===value))throw new Error(`Selecione uma opção válida em ${field.label.toLowerCase()}.`);
   }
   for(const field of fields){

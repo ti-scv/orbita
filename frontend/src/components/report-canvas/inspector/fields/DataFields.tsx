@@ -433,7 +433,7 @@ export default function DataFields({
                   </>
                 ) : isSourceMissing ? (
                   <>
-                    <span className="cv-col-select-name">{block.source_id}</span>
+                    <span className="cv-col-select-name">Fonte indisponível</span>
                     <span className="cv-col-missing-tag">Ausente</span>
                   </>
                 ) : (
@@ -445,7 +445,7 @@ export default function DataFields({
           </div>
           {isSourceMissing && (
             <p id="insp-source-missing-err" className="cv-field-error" role="alert">
-              A fonte &ldquo;{block.source_id}&rdquo; foi removida. Escolha outra fonte.
+              A fonte selecionada foi removida. Escolha outra fonte.
             </p>
           )}
         </div>
@@ -662,12 +662,12 @@ export default function DataFields({
           {preview && <p className="cv-field-hint">Prévia · {preview.rows.length} linhas{previewPeriod ? ` · período ${previewPeriod}` : ""}</p>}
           {rowsMeta.hasRows && miniPreviewCols.length > 0 ? (
             <>
-              <div className="cv-mini-preview-wrap">
+              <div className="cv-mini-preview-wrap" tabIndex={0} role="region" aria-label="Amostra da fonte">
                 <table className="cv-mini-preview-table" aria-label="Mini-prévia das colunas">
                   <thead>
                     <tr>
                       {miniPreviewCols.map((col) => (
-                        <th key={col.name}>
+                        <th scope="col" key={col.name}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <ColumnBadge type={col.type} looksLike={col.looks_like} />
                             <span>{col.name}</span>

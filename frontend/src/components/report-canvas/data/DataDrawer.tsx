@@ -149,7 +149,7 @@ export default function DataDrawer({
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${sourceName || friendlySourceName(source)}`}>
       <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
-        <table className="cv-column-metadata"><thead><tr><th>Coluna</th><th>Exemplo</th><th>Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
+        <table className="cv-column-metadata"><thead><tr><th scope="col">Coluna</th><th scope="col">Exemplo</th><th scope="col">Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
       </details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
@@ -209,7 +209,7 @@ export default function DataDrawer({
         <label>Linhas por página <select value={pageSize} disabled={loading || pageLoading} onChange={event => void loadPage(0, Number(event.target.value))}>{[25, 50, 100, 200].map(size => <option key={size} value={size}>{size}</option>)}</select></label>
         {pageLoading && <span role="status">Carregando página…</span>}
       </div>
-      <div className="cv-drawer-body" aria-busy={loading || pageLoading}>
+      <div className="cv-drawer-body" tabIndex={0} role="region" aria-label="Linhas da prévia" aria-busy={loading || pageLoading}>
         {loading ? (
           <div className="cv-drawer-loading" role="status">Carregando dados…</div>
         ) : columns.length === 0 ? (
@@ -222,9 +222,9 @@ export default function DataDrawer({
           <table className="cv-preview-table">
             <thead>
               <tr>
-                <th style={{ width: 36, textAlign: "center" }}>#</th>
+                <th scope="col" style={{ width: 36, textAlign: "center" }}>#</th>
                 {columns.map((col, idx) => (
-                  <th key={col.name || idx} onClick={() => toggleSort(idx)} title={`Ordenar por ${col.name}`}>
+                  <th scope="col" role="columnheader" key={col.name || idx} tabIndex={0} aria-sort={sortCol === idx ? (sortDir === "asc" ? "ascending" : "descending") : "none"} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSort(idx); } }} onClick={() => toggleSort(idx)} title={`Ordenar por ${col.name}`}>
                     <div className="cv-table-th-content">
                       <ColumnBadge type={col.type} looksLike={col.looks_like} />
                       <span>{col.name}</span>
@@ -241,7 +241,7 @@ export default function DataDrawer({
                           <ArrowDown size={11} />
                         )
                       ) : (
-                        <ArrowUpDown size={10} style={{ opacity: 0.3 }} />
+                        <ArrowUpDown size={10} style={{ color: "var(--cv-text-3)" }} />
                       )}
                     </div>
                   </th>
@@ -262,7 +262,7 @@ export default function DataDrawer({
               ) : (
                 displayRows.map((row, rIdx) => (
                   <tr key={rIdx}>
-                    <td style={{ textAlign: "center", color: "var(--cv-text-disabled)" }}>{offset + rIdx + 1}</td>
+                    <td style={{ textAlign: "center", color: "var(--cv-text-3)" }}>{offset + rIdx + 1}</td>
                     {columns.map((col, cIdx) => {
                       const cellVal = row[cIdx];
                       const isNull = cellVal == null || String(cellVal).trim() === "";

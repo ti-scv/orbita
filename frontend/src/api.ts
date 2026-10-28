@@ -1,3 +1,4 @@
+import { canvasErrorMessage } from "./components/report-canvas/common/errorMessage";
 let csrfToken = "";
 export function apiUrl(url: string): string {
   const [path, search = ""] = url.split("?");
@@ -35,7 +36,7 @@ export async function request<T>(
 ): Promise<T> {
   // Only retry read-only operations: a session lookup and source previews.
   const retryable = (method === "GET" && /\/auth\/session\//.test(url)) ||
-    (method === "POST" && /\/canvas-source-preview\//.test(url));
+    (method === "POST" && /\/canvas-(?:source-)?preview\//.test(url));
   const idempotencyKey = method === "POST" ? generateUUID() : "";
   let response: Response | undefined;
   for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
@@ -63,6 +64,7 @@ export async function request<T>(
       if (signal?.aborted) throw error;
       if (!timedOut || attempt === 2) {
         if (timedOut) throw new Error("A consulta demorou demais. Tente novamente em instantes.");
+        if (error instanceof TypeError && (retryable || /\/canvas(?:[/-]|$)/.test(url))) throw new Error("Não foi possível acessar o servidor. Confira a conexão e tente novamente.");
         throw error;
       }
     } finally {
@@ -83,10 +85,8 @@ export async function request<T>(
   }
   if (!response.ok) {
     const error = new Error(
-      typeof data.detail === "string"
-        ? data.detail
-        : Object.values(data).flat().join(" ") ||
-            "Não foi possível concluir a operação.",
+      /\/canvas(?:[/-]|$)/.test(url) ? canvasErrorMessage(data, body, response.status) :
+      typeof data.detail === "string" ? data.detail : Object.values(data).flat().join(" ") || "Não foi possível concluir a operação.",
     );
     Object.assign(error, { status: response.status });
     throw error;

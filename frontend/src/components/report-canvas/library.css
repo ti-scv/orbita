@@ -627,3 +627,5 @@
 .cv-root .cv-block-tree-item { flex: 0 0 auto; min-height: 44px; padding-block: 4px; }
 .cv-root .cv-block-tree-main { gap: 3px; }
 .cv-root :is(.cv-block-tree-title, .cv-block-tree-lineage) { line-height: 16px; }
+/* A linhagem permanece legível também no item selecionado. */
+.cv-root .cv-block-tree-lineage, .cv-root .cv-page-count { color:var(--cv-text-2); }

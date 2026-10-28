@@ -73,6 +73,7 @@ export default function StatusBar({
 
       <div
         className="cv-statusbar-center"
+        role="group"
         aria-label={coordsText ? "Posição e dimensões do bloco selecionado" : undefined}
       >
         {coordsText}

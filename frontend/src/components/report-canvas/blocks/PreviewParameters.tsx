@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { collectTestParameters, displayParameter } from "../parameters";
+import { collectTestParameters, displayParameter, friendlyParameterValue } from "../parameters";
 import type { TestParameter } from "../parameters";
 
 export default function PreviewParameters({fields, values, onSubmit, compact = false}: {
   compact?: boolean; fields: TestParameter[]; values: Record<string,string>; onSubmit: (parameters: Record<string,unknown>) => void;
 }) {
-  const [draft, setDraft] = useState(() => Object.fromEntries(fields.map(field => [field.name, displayParameter(values[field.name], field.type)])));
+  const [draft, setDraft] = useState(() => Object.fromEntries(fields.map(field => [field.name, !field.options && /^(unidade|unit|tipo_envio)$/i.test(field.name) ? (values[field.name] ? friendlyParameterValue(field.name, values[field.name]) : "") : displayParameter(values[field.name], field.type)])));
   const [error, setError] = useState("");
   const form = <form className="cv-preview-parameters" onSubmit={event => {
     event.preventDefault(); event.stopPropagation();
@@ -13,7 +13,7 @@ export default function PreviewParameters({fields, values, onSubmit, compact = f
     catch (err) { setError((err as Error).message); }
   }}>
     {fields.map(field => <label key={field.name}>{field.label}{field.required !== false && field.default == null ? " *" : ""}
-      {field.options ? <select value={draft[field.name] || ""} onChange={e => setDraft({...draft, [field.name]: e.target.value})}><option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+      {field.options ? <select value={draft[field.name] || ""} onChange={e => setDraft({...draft, [field.name]: e.target.value})}><option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{friendlyParameterValue(field.name, option.label)}</option>)}</select>
         : <input type="text" inputMode={field.type === "date" ? "numeric" : undefined} maxLength={field.type === "date" ? 10 : undefined} value={draft[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : undefined} onChange={e => setDraft({...draft, [field.name]: e.target.value})} />}
     </label>)}
     {error && <p role="alert">{error}</p>}

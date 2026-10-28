@@ -35,7 +35,7 @@ export function usePreviewDialog({
     setPreviewModal({
       format: outputFormat,
       values: Object.fromEntries(
-        previewFields.map((f) => [f.name, /^(unidade|unit)$/i.test(f.name) && !f.options && f.default != null ? friendlyParameterValue(f.name, f.default) : displayParameter(f.default, f.type)]),
+        previewFields.map((f) => [f.name, /^(unidade|unit|tipo_envio)$/i.test(f.name) && !f.options && f.default != null && f.default !== "" ? friendlyParameterValue(f.name, f.default) : displayParameter(f.default, f.type)]),
       ),
       busy: false,
       error: "",

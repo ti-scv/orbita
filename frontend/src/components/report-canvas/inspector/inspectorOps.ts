@@ -1,3 +1,4 @@
+import { friendlySourceName } from "../data/sourceName";
 import { inferColumnType } from "../data/columnTypes";
 import { placeholderDataset } from "../placeholderData";
 import type {
@@ -150,16 +151,16 @@ export function getSourceDisplayMeta(
   source: CanvasSource,
   availableSources: readonly CatalogSqlSource[] = [],
 ): { title: string; subtitle: string; kindLabel: string } {
-  const title = source.label?.trim() || source.id;
+  const title = friendlySourceName(source, source.type === "report" ? availableSources.find(item => item.id === source.report_id) : undefined);
   if (source.type === "report") {
     const sql = availableSources.find((c) => c.id === source.report_id);
     const ds =
       sql?.datasets?.find((d) => d.id === (source.dataset || "rows")) || sql?.datasets?.[0];
-    const reportTitle = sql?.name || `Relatório #${source.report_id}`;
-    const dsTitle = ds?.name || source.dataset || "Registros";
+    const reportTitle = sql?.name?.replace(/\s*[›»]\s*Dados\s*$/i, "") || "Relatório de origem";
+    const dsTitle = ds?.name && !/^(dados|rows|contacts|not-sent|confirmed)$/i.test(ds.name) ? ds.name : "";
     return {
       title,
-      subtitle: `${reportTitle} › ${dsTitle}`,
+      subtitle: dsTitle ? `${reportTitle} › ${dsTitle}` : reportTitle,
       kindLabel: "Consulta",
     };
   }
