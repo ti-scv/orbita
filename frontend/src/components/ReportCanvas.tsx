@@ -464,6 +464,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
           reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary role="button" aria-haspopup="menu" aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div role="menu" aria-label="Ações do relatório" className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} menuItem showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
+          reportActive={Boolean(report.enabled)}
           outputFormat={session.outputFormat}
           dirty={dirty}
           loading={session.loading}

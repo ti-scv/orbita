@@ -54,6 +54,7 @@ export interface TopBarProps {
   reportActions?: React.ReactNode;
   version: number;
   enabled: boolean;
+  reportActive: boolean;
   outputFormat: OutputFormat;
   dirty: boolean;
   loading: boolean;
@@ -107,6 +108,7 @@ export default function TopBar({
   reportActions,
   version,
   enabled,
+  reportActive,
   outputFormat,
   dirty,
   loading,
@@ -289,10 +291,10 @@ export default function TopBar({
                 {reportName}
               </h1>
               <span
-                className={`cv-status-chip ${enabled ? "is-active" : "is-draft"}`}
-                title={enabled ? "Estado: Ativo" : "Estado: Rascunho"}
+                className={`cv-status-chip ${reportActive ? "is-active" : "is-draft"}`}
+                title={reportActive ? "Estado: Ativo" : "Estado: Rascunho"}
               >
-                {enabled ? "Ativo" : "Rascunho"}
+                {reportActive ? "Ativo" : "Rascunho"}
               </span>
               <span className="cv-version-tag" title={`Versão ${version}`}>
                 v{version}
