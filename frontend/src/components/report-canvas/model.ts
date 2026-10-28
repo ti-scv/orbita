@@ -68,6 +68,7 @@ export interface ColumnInfo {
 }
 
 export interface SourcePreview {
+  effective_parameters?: Array<{name: string; label: string; value: string | number | boolean | null; default: boolean}> | null;
   columns: ColumnInfo[];
   rows: Array<Array<string | number | boolean | null>>;
   total_rows: number;

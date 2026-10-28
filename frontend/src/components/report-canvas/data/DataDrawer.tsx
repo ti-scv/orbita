@@ -1,7 +1,7 @@
-import { useContext, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Check, RefreshCw, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { CanvasSource, SourcePreview } from "../model";
-import ColumnOrigin, { OriginContext } from "./ColumnOrigin";
+import ColumnOrigin, { OriginContext, loadOrigin } from "./ColumnOrigin";
 import { fetchSourcePreviewRequest } from "../api/useSourcePreview";
 import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
@@ -42,7 +42,9 @@ export default function DataDrawer({
     const requestId = ++pageRequest.current;
     setPageLoading(true); setPageError("");
     try {
-      const result = await fetchSourcePreviewRequest(reportId, unit, source, source.type === "report" ? source.parameters || {} : {}, size, undefined, nextOffset);
+      const effective = currentPreview?.effective_parameters;
+      const pageSource = source.type === "report" && effective ? {...source, parameters: Object.fromEntries(effective.map(item => [item.name, item.value]))} : source;
+      const result = await fetchSourcePreviewRequest(reportId, unit, pageSource, {}, size, undefined, nextOffset);
       if (requestId !== pageRequest.current) return;
       setPagePreview(result); setOffset(nextOffset); setPageSize(size); setSearch("");
     } catch (error) { if (requestId === pageRequest.current) setPageError((error as Error).message); }
@@ -64,6 +66,18 @@ export default function DataDrawer({
         }))
       : []);
   const rawRows = currentPreview?.rows || (source?.type === "inline" ? source.rows : []);
+  const columnNames = columns.map(column => column.name).join("\0");
+  useEffect(() => {
+    if (!source || !columnNames || !reportId || !unit) return;
+    let cancelled = false;
+    void (async () => {
+      for (const column of columnNames.split("\0")) {
+        if (cancelled) break;
+        try { await loadOrigin(reportId, unit, source, column); } catch { /* The dialog can retry. */ }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [source, columnNames, reportId, unit]);
 
   // Filter rows locally
   const filteredRows = useMemo(() => {

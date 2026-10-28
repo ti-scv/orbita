@@ -74,6 +74,20 @@ class GoalsSource:
     def read(self,context,s):
         return Dataset(["year","month","value"],[[r["year"],r["month"],r["value"]] for r in context.goals])
 
+def source_parameter_values(context, source, child):
+    defaults = {}
+    for key, value in source.get("parameters", {}).items():
+        if isinstance(value, dict):
+            name = value["parameter"]
+            if name not in context.parameters:
+                fail("Parâmetro de origem não informado: " + name)
+            value = context.parameters[name]
+        defaults[key] = value
+    runtime = {k: v for k, v in context.parameters.items() if k in child.parameter_schema}
+    if context.report.source == "composite" and runtime.get("unidade") == "_origens":
+        runtime.pop("unidade")
+    return {**defaults, **runtime}
+
 class ReportSource:
     def validate(self,s):
         if "dataset" in s and (not isinstance(s["dataset"],str) or not s["dataset"] or len(s["dataset"])>50):fail("Conjunto de dados inválido.")
@@ -93,19 +107,7 @@ class ReportSource:
             raise source_failure(exc, s, child.connection if child and child.connection_id else None) from None
 
     def _read(self,context,s,child):
-        # Runtime recipient restrictions have precedence over per-source defaults.
-        defaults={}
-        for key,value in s.get("parameters",{}).items():
-            if isinstance(value,dict):
-                name=value["parameter"]
-                if name not in context.parameters:fail("Parâmetro de origem não informado: "+name)
-                value=context.parameters[name]
-            defaults[key]=value
-        runtime={k:v for k,v in context.parameters.items() if k in child.parameter_schema}
-        if context.report.source == "composite" and runtime.get("unidade") == "_origens":
-            # Consolidated compositions retain each source's independently scoped connection.
-            runtime.pop("unidade")
-        vals={**defaults,**runtime}
+        vals = source_parameter_values(context, s, child)
         from .native import datasets,read
         if datasets(child):return read(context,child,s.get("dataset","rows"),vals)
         preview_limit = getattr(context, "preview_limit", None)

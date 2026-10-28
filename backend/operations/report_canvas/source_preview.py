@@ -152,7 +152,40 @@ def source_preview(view, request):
         },
     )
 
+    effective_parameters = None
+    if child and not datasets(child):
+        from operations.report_engine import parameters as resolve_parameters
+        from .sources import source_parameter_values
+        supplied = source_parameter_values(SimpleNamespace(report=report, parameters=params), source, child)
+        values = resolve_parameters(child, supplied)
+        effective_parameters = [
+            {"name": name, "label": spec.get("label") or name, "value": serialize_cell(values[name]),
+             "default": name not in supplied and spec.get("default") is not None}
+            for name, spec in child.parameter_schema.items()
+        ]
+
+    if child and child.handler == "app_operational_v1":
+        from .sources import source_parameter_values
+        from operations.app_reporting import date_range
+        supplied = source_parameter_values(SimpleNamespace(report=report, parameters=params), source, child)
+        start, end = date_range(child.unit, supplied)
+        effective_parameters = [
+            {"name": name, "label": label, "value": str(value), "default": not supplied.get(name)}
+            for name, label, value in [("start", "Data inicial", start), ("end", "Data final", end)]
+        ]
+
+    if child and child.handler == "app_operational_v1":
+        from .sources import source_parameter_values
+        from operations.app_reporting import date_range
+        supplied = source_parameter_values(SimpleNamespace(report=report, parameters=params), source, child)
+        start, end = date_range(child.unit, supplied)
+        effective_parameters = [
+            {"name": name, "label": label, "value": str(value), "default": not supplied.get(name)}
+            for name, label, value in [("start", "Data inicial", start), ("end", "Data final", end)]
+        ]
+
     return Response({
+        "effective_parameters": effective_parameters,
         "columns": columns,
         "rows": preview_rows,
         "truncated": has_more,

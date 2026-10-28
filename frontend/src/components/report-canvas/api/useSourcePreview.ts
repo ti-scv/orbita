@@ -129,18 +129,13 @@ export async function fetchSourcePreviewRequest(
     parameters,
     limit,
     offset,
-  });
-
-  const res = signal
-    ? await Promise.race([
-        reqPromise,
-        new Promise<never>((_, reject) => {
-          signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {
-            once: true,
-          });
-        }),
-      ])
-    : await reqPromise;
+  }, signal);
+  const res = signal ? await Promise.race([
+    reqPromise,
+    new Promise<never>((_, reject) => {
+      signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {once: true});
+    }),
+  ]) : await reqPromise;
 
   const columns: ColumnInfo[] = Array.isArray(res.columns)
     ? res.columns.map((c: any) => ({
@@ -154,6 +149,7 @@ export async function fetchSourcePreviewRequest(
     : [];
 
   const preview: SourcePreview = {
+    effective_parameters: res.effective_parameters,
     columns,
     rows: Array.isArray(res.rows) ? res.rows : [],
     total_rows: typeof res.total_rows === "number" ? res.total_rows : (res.rows?.length || 0),

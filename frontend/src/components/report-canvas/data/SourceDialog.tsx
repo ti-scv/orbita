@@ -545,7 +545,7 @@ export default function SourceDialog({
 
         {sourceModal.type === "report" && (
           <p className="cv-source-sub">
-            Origem: {selectedCatalog?.name || `Relatório #${sourceModal.reportId}`} {selectedCatalog?.code && `· ${selectedCatalog.code}`}. Colunas: {(
+            Origem: {selectedCatalog?.name || `Relatório #${sourceModal.reportId}`}. Colunas: {(
               selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns
               || selectedCatalog?.columns || []
             ).join(", ") || "Use Testar e carregar prévia para consultar as colunas."}
@@ -904,13 +904,19 @@ export default function SourceDialog({
             <div className="cv-test-preview-head">
               <span>
                 <strong>Prévia confirmada:</strong> {sourceModal.testPreview.columns.length} colunas ·{" "}
-                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)} (com os parâmetros configurados; valores padrão quando omitidos){" "}
+                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)}{" "}
                 {sourceModal.testPreview.elapsed_ms != null ? `(${sourceModal.testPreview.elapsed_ms} ms)` : ""}
               </span>
               <span className="cv-chip ready">
                 <Check size={10} /> Teste com sucesso
               </span>
             </div>
+
+            {sourceModal.testPreview.effective_parameters != null && <div>
+              <strong>Parâmetros aplicados:</strong>{" "}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${p.label}: ${formatCellValue(p.value)}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+            </div>}
+            {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 
             <div style={{ overflowX: "auto", maxHeight: 180 }}>
               <table className="cv-preview-table">

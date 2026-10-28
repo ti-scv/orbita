@@ -1,10 +1,11 @@
+import { friendlySourceError } from "./sourceName";
 import { createContext, useContext, useEffect, useState } from "react";
 import InlineDialog from "../../InlineDialog";
 import { query, request } from "../../../api";
 import type { CanvasSource, CatalogSqlSource } from "../model";
 export const OriginContext = createContext<{reportId: number; unit: string; lastReads?: Record<string, Date | null>; sources?: CatalogSqlSource[]}>({reportId: 0, unit: ""});
 const originCache = new Map<string, { expires: number; promise: Promise<OriginDetails> }>();
-function loadOrigin(reportId: number, unit: string, source: CanvasSource, column: string) {
+export function loadOrigin(reportId: number, unit: string, source: CanvasSource, column: string) {
   const key = JSON.stringify([reportId, unit, source, column]);
   const cached = originCache.get(key);
   if (cached && cached.expires > Date.now()) return cached.promise;
@@ -33,7 +34,7 @@ export default function ColumnOrigin({ source, column, type = "unknown", loadedA
     if (!open || !source) return;
     let current = true;
     setData(null); setError(""); setCopyStatus("");
-    loadOrigin(reportId, unit, source, column).then(value => { if (current) setData(value); }).catch(exc => { if (current) setError((exc as Error).message); });
+    loadOrigin(reportId, unit, source, column).then(value => { if (current) setData(value); }).catch(exc => { if (current) setError(friendlySourceError((exc as Error).message, source, catalog)); });
     return () => { current = false; };
   }, [open, source, column, reportId, unit]);
   return <>

@@ -31,10 +31,12 @@ export async function request<T>(
   url: string,
   method = "GET",
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(apiUrl(url), {
     method,
     credentials: "same-origin",
+    signal,
     headers: {
       "Content-Type": "application/json",
       ...(method !== "GET" ? { "X-CSRFToken": csrfToken } : {}),

@@ -298,3 +298,21 @@ def test_canvas_cached_source_has_same_snapshot_without_queries_or_mutation(env)
     assert actual == expected
     assert len(queries) == 0
     assert child.parameter_schema == original
+
+
+def test_source_preview_reports_effective_values_and_defaults(env):
+    e, report, child = env
+    child.query_sql = "SELECT label,total FROM totals WHERE total >= :minimum"
+    child.parameter_schema = {"minimum": {"type": "integer", "label": "Mínimo", "default": 15}}
+    child.save()
+    source = {"id": "dados", "type": "report", "report_id": child.pk}
+    response = post(e, report, "canvas-source-preview", {"source": source})
+    assert response.status_code == 200, response.data
+    assert response.data["effective_parameters"] == [{"name": "minimum", "label": "Mínimo", "value": 15, "default": True}]
+    assert response.data["rows"] == [["Fev", 20]]
+    source["parameters"] = {"minimum": {"parameter": "limite"}}
+    response = post(e, report, "canvas-source-preview", {"source": source, "parameters": {"limite": 5}})
+    assert response.status_code == 200, response.data
+    assert response.data["effective_parameters"][0]["value"] == 5
+    assert response.data["effective_parameters"][0]["default"] is False
+    assert len(response.data["rows"]) == 2
