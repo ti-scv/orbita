@@ -18,6 +18,7 @@ export interface PreviewServerError {
 export interface PreviewModalState {
   format: OutputFormat;
   values: Record<string, string>;
+  defaultPeriod?: string;
   resultUrl?: string;
   resultName?: string;
   resultFormat?: string;
@@ -88,6 +89,7 @@ export default function PreviewDialog({
       <div className="cv-test-layout">
         <form id={previewFormId} className="cv-subform cv-test-fields" onSubmit={onSubmit}>
           <strong>{reportName}</strong>
+          {previewModal.defaultPeriod && <p className="cv-help">Padrão: {previewModal.defaultPeriod}</p>}
 
           {previewModal.error && (
             <div className="cv-dialog-alert is-error" role="alert">

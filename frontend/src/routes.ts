@@ -20,7 +20,7 @@ const pages: Record<string, PageName> = {
 export function readRoute(path = window.location.pathname) {
   const normalized = path.replace(/\/$/, "") || "/";
   const match = normalized.match(/^\/grupos\/([0-9a-f-]{36})$/i);
-  const canvas = normalized.match(/^\/relatorios\/([0-9]+)\/canvas$/);
+  const canvas = normalized.match(/^\/relatorios\/([0-9]+)\/(?:canvas|previa)$/);
   return {
     ...(canvas ? {canvasId: Number(canvas[1])} : {}),
     page: canvas ? ("reports" as PageName) : match ? ("groups" as PageName) : pages[normalized] || "appointments",

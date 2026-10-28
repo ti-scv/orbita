@@ -60,3 +60,12 @@ export function friendlyParameterValue(name: string, value: unknown): string {
   if (/^(tipo_envio)$/i.test(name) && text.toLowerCase() === "appointment") return "Agendamento";
   return displayParameter(value, /^\d{4}-\d{2}-\d{2}$/.test(text) ? "date" : "string");
 }
+
+
+export function previewUrlError(schema: Record<string, unknown>, search: string): string {
+  const known = new Set(["unit", ...Object.keys(schema)]);
+  for (const key of new URLSearchParams(search).keys()) {
+    if (!known.has(key)) return "Este parâmetro não existe neste relatório. Remova-o do endereço e tente novamente.";
+  }
+  return "";
+}
