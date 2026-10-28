@@ -337,14 +337,9 @@ export default function DataPanel({
               >
                 <div
                   className="cv-source-row"
-                  onClick={() => toggleExpand(src)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(src)}
-                  aria-expanded={isExpanded}
                 >
                   <div className="cv-source-main">
-                    <div className="cv-source-title-line">
+                    <button type="button" className="cv-source-title-line cv-btn-compact" onClick={() => toggleExpand(src)} aria-expanded={isExpanded} aria-label={`Colunas de ${src.label || src.id}`}>
                       <ChevronRight
                         size={14}
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}
@@ -353,7 +348,7 @@ export default function DataPanel({
                         {src.label || src.id}
                       </span>
                       {src.label && <span className="cv-source-id">#{src.id}</span>}
-                    </div>
+                    </button>
                     <span className="cv-source-sub" title={subtitle}>
                       {subtitle}
                     </span>
@@ -602,6 +597,7 @@ export default function DataPanel({
         <DataDrawer
           key={drawerSource.id}
           source={drawerSource}
+          datasetName={drawerSource.type === "report" ? availableSources.find(item => item.id === drawerSource.report_id)?.datasets?.find(item => item.id === drawerSource.dataset)?.name : undefined}
           sourceName={drawerSource.label && drawerSource.label.toLowerCase() !== "dados" ? drawerSource.label : availableSources.find(item => drawerSource.type === "report" && item.id === drawerSource.report_id)?.name || drawerSource.label || "Dados"}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
           loadedAt={previews[drawerSource.id]?.loadedAt}

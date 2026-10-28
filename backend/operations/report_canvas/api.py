@@ -187,7 +187,7 @@ def validate_json(view, request):
     try:
         value = json.loads(text)
     except json.JSONDecodeError as exc:
-        return Response({"detail": f"JSON inválido na linha {exc.lineno}, coluna {exc.colno}: {exc.msg}", "line": exc.lineno, "column": exc.colno}, status=400)
+        return Response({"detail": f"JSON inválido na linha {exc.lineno}, coluna {exc.colno}: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.", "line": exc.lineno, "column": exc.colno}, status=400)
     from .parameter_editor import apply_edits
     apply_edits(report, request.data.get("parameter_edits", []))
     try:
@@ -277,9 +277,9 @@ def preview(view, request):
 
 
 def infer_column_metadata(col_name, values):
-    null_count = sum(1 for v in values if v is None)
+    null_count = sum(1 for v in values if v is None or (isinstance(v, str) and not v.strip()))
     nullable = null_count > 0
-    non_nulls = [v for v in values if v is not None]
+    non_nulls = [v for v in values if v is not None and not (isinstance(v, str) and not v.strip())]
 
     sample = []
     seen = set()

@@ -12,7 +12,7 @@ it("preserva o codigo HTTP na falha da API", async () => {
 it("apresenta detalhes da previa e permite tentar novamente", () => {
   const retry = vi.fn();
   render(<DataPanel active sources={[{id: "dados", label: "Agenda", type: "report", report_id: 1}]} availableSources={[]} onCreateSource={() => {}} onEditSource={() => {}} onRemoveSource={() => {}} onLoadStagePreview={retry} stagePreviewStates={{dados: {status: "error", data: null, error: "Consulta invalida", loadedAt: null, httpStatus: 400, elapsedMs: 42}}} />);
-  fireEvent.keyDown(screen.getByRole("button", {expanded: false}), {key: "Enter"});
+  fireEvent.click(screen.getByRole("button", {expanded: false}));
   expect(screen.getByRole("alert").textContent).toContain("HTTP 400");
   expect(screen.getByRole("alert").textContent).toContain("42 ms");
   expect(screen.getByRole("alert").textContent).toContain("Consulta invalida");

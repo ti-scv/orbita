@@ -107,6 +107,7 @@ export default function PageInspector({
       </div>
 
       <div className="cv-inspector-scroll">
+        {!onUpdatePageConfig && <p className="cv-field-hint">Relatório ativo: crie uma nova versão para editar.</p>}
         <CollapsibleSection title="Página" defaultOpen={true}>
           {activePage && (
             <div className="cv-field">
@@ -272,7 +273,7 @@ export default function PageInspector({
                     <button
                       type="button"
                       className="cv-well-btn is-danger"
-                      aria-label={`Remover ${b.title || b.id}`}
+                      aria-label={`Remover ${({title: "Título", data: "Dados"} as Record<string, string>)[b.title || b.id] || b.title || b.id}`}
                       title="Excluir bloco"
                       onClick={() => onRemoveBlock(b.id)}
                     >

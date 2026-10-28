@@ -119,7 +119,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${rowsCount} de ${previewState.data.total_rows_exact === false ? "pelo menos " : ""}${previewState.data.total_rows} linhas` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";
@@ -150,7 +150,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${rowsCount} de ${previewState.data.total_rows_exact === false ? "pelo menos " : ""}${previewState.data.total_rows} linhas` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";

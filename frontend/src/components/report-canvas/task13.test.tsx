@@ -115,11 +115,11 @@ describe("Tarefa 13: Ver dados e proteção de erros", () => {
         }}
       />,
     );
-    expect(screen.getByText("QA")).toBeTruthy();
+    expect(screen.getAllByText("QA")[0]).toBeTruthy();
     view.rerender(<DataDrawer {...props} />);
     expect(screen.queryByRole("dialog")).toBeNull();
     view.rerender(<DataDrawer {...props} source={source} />);
-    expect(screen.getByText("QA")).toBeTruthy();
+    expect(screen.getAllByText("QA")[0]).toBeTruthy();
   });
   it("mostra erro em português, registra console e preserva estado acima do boundary", () => {
     const logged = vi.spyOn(console, "error").mockImplementation(() => {});

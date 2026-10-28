@@ -81,8 +81,15 @@ def validate_layout(value):
     if v.get("xlsx_mode", "layout") not in ("layout", "table"):
         fail("Modo de planilha inválido.")
     page = v.get("page")
-    if not isinstance(page, dict) or not number(page.get("width"),150,3000) or not number(page.get("height"),150,3000) or type(page.get("columns")) is not int or not 1 <= page["columns"] <= 48 or not color(page.get("background")):
-        fail("Tamanho, colunas ou cor da página inválidos.")
+    if not isinstance(page, dict):
+        fail("A chave page é obrigatória e deve conter um objeto.")
+    for key in ("width", "height"):
+        if not number(page.get(key), 150, 3000):
+            fail(f"A chave page.{key} é obrigatória e deve ser um número entre 150 e 3000.")
+    if type(page.get("columns")) is not int or not 1 <= page["columns"] <= 48:
+        fail("A chave page.columns é obrigatória e deve ser um inteiro entre 1 e 48.")
+    if not color(page.get("background")):
+        fail("A chave page.background é obrigatória e deve conter uma cor válida.")
     sources = v.get("sources")
     if not isinstance(sources,list) or len(sources)>30:
         fail("Limite de 30 fontes por relatório.")

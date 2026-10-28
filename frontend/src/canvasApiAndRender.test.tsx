@@ -95,6 +95,7 @@ describe("Cliente de API do Canvas com request mockado (load, save, preview, con
       layout: clean,
       enabled: false,
       output_format: "xlsx",
+      parameter_edits: [],
     });
 
     // Conflito de versão (409)

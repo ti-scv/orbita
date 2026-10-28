@@ -22,7 +22,7 @@ it("separa o carregamento da prévia do estilo de erro",()=>{
 it("Ver dados preserva exatamente a resposta e ordem da prévia sem nova consulta",async()=>{
  render(<DataPanel active sources={[source]} availableSources={[]} stagePreviewStates={{s:{status:"ready",data:preview,error:null,loadedAt:new Date()}}} onLoadStagePreview={vi.fn()} onCreateSource={vi.fn()} onEditSource={vi.fn()} onRemoveSource={vi.fn()} />);
  fireEvent.click(screen.getByRole("button",{name:/Ver dados/}));
- expect(Array.from(document.querySelectorAll(".cv-data-drawer tbody tr")).map(e=>e.querySelector("td:last-child")?.textContent)).toEqual(["Z","A","M"]);
+ expect(Array.from(document.querySelectorAll(".cv-data-drawer .cv-preview-table tbody tr")).map(e=>e.querySelector("td:last-child")?.textContent)).toEqual(["Z","A","M"]);
  expect(request).not.toHaveBeenCalled();
 });
 it("mostra mensagem visível durante a preparação do editor",()=>{

@@ -66,6 +66,8 @@ export default function SourceDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchCatalog, setSearchCatalog] = useState("");
+  const latestPreviewSpec = useRef("");
+  latestPreviewSpec.current = JSON.stringify([sourceModal?.parametersJson, sourceModal?.reportId, sourceModal?.dataset]);
   const [testing, setTesting] = useState(false);
   const [autoSlug, setAutoSlug] = useState(true);
   const [showAdvancedId, setShowAdvancedId] = useState(false);
@@ -211,7 +213,7 @@ export default function SourceDialog({
         }
       }
     }
-    onChange({ ...sourceModal, parametersJson: JSON.stringify(obj, null, 2) });
+    onChange({ ...sourceModal, parametersJson: JSON.stringify(obj, null, 2), testPreview: null, testError: "Parâmetros alterados. Teste a fonte novamente." });
   };
 
   const handleAddParam = () => {
@@ -234,7 +236,7 @@ export default function SourceDialog({
     if (!item || !window.confirm(`Remover o vínculo do parâmetro "${item.key}" desta fonte? A consulta pode passar a usar o valor padrão ou falhar. A alteração só será gravada ao salvar o relatório.`)) return;
     const next = { ...currentParamsMap };
     delete next[item.key];
-    onChange({ ...sourceModal, parametersJson: JSON.stringify(next, null, 2) });
+    onChange({ ...sourceModal, parametersJson: JSON.stringify(next, null, 2), testPreview: null, testError: "Parâmetros alterados. Teste a fonte novamente." });
   };
 
   const handleParamChange = (index: number, patch: Partial<ParsedParamItem>) => {
@@ -370,6 +372,7 @@ export default function SourceDialog({
   // Test and load preview
   const handleTestPreview = async () => {
     setTesting(true);
+    const testedSpec = latestPreviewSpec.current;
     onChange({ ...sourceModal, testError: null, testPreview: null });
     try {
       const draft = constructDraftSource();
@@ -380,10 +383,10 @@ export default function SourceDialog({
         {},
         10,
       );
-      onChange({ ...sourceModal, testPreview: preview, testError: null });
+      if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testPreview: preview, testError: null });
     } catch (err: any) {
       const msg = err?.message || "Falha ao carregar prévia.";
-      onChange({ ...sourceModal, testError: msg, testPreview: null });
+      if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testError: msg, testPreview: null });
     } finally {
       setTesting(false);
     }
@@ -644,7 +647,9 @@ export default function SourceDialog({
                           </Select>
                         ) : (
                           <input
-                            type="text"
+                            type={/date|data/i.test(param.type) || /^(start|end|data.*|.*_date)$/i.test(param.key) ? "date" : "text"}
+                            aria-label={`Valor de ${param.key}`}
+                            title={/date|data/i.test(param.type) || /^(start|end|data.*|.*_date)$/i.test(param.key) ? "Data: DD/MM/AAAA. Enviada como AAAA-MM-DD." : "Valor fixo"}
                             placeholder="Valor fixo"
                             value={param.fixedValue}
                             onChange={(e) =>

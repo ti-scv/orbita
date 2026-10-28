@@ -38,7 +38,7 @@ describe("Tarefa 14: datas na gaveta e nos blocos", () => {
     };
     const original = JSON.stringify(preview);
     render(<DataDrawer source={source} preview={preview} onClose={vi.fn()} />);
-    expect(screen.getByText("21/09/2026")).toBeTruthy();
+    expect(screen.getAllByText("21/09/2026")[0]).toBeTruthy();
     expect(screen.getByText("21/09/2026 14:35")).toBeTruthy();
     expect(JSON.stringify(preview)).toBe(original);
   });

@@ -10,6 +10,7 @@ import { formatCellValue } from "./columnTypes";
 export interface DataDrawerProps {
   source: CanvasSource | null;
   sourceName?: string;
+  datasetName?: string;
   preview: SourcePreview | null;
   loadedAt?: Date | null;
   loading?: boolean;
@@ -20,6 +21,7 @@ export interface DataDrawerProps {
 export default function DataDrawer({
   source,
   sourceName,
+  datasetName,
   preview,
   loadedAt,
   loading = false,
@@ -131,7 +133,7 @@ export default function DataDrawer({
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>
       <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
-        <table className="cv-column-metadata"><thead><tr><th>Coluna</th><th>Exemplo</th><th>Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
+        <table className="cv-column-metadata"><thead><tr><th>Coluna</th><th>Exemplo</th><th>Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
       </details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
