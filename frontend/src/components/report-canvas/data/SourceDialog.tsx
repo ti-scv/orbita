@@ -1,4 +1,6 @@
-import { friendlyParameterName, friendlyParameterValue } from "../parameters";
+import { friendlyParameterName, friendlyParameterValue, collectTestParameters } from "../parameters";
+import { previewParameters } from "../hooks/useStagePreviews";
+import { query, request } from "../../../api";
 import { friendlySourceError, friendlySourceName } from "./sourceName";
 import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
 import { formatRowCount } from "./rowCount";
@@ -71,6 +73,17 @@ export default function SourceDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchCatalog, setSearchCatalog] = useState("");
+  const [schema, setSchema] = useState<Record<string, unknown>>({});
+  const [schemaStatus, setSchemaStatus] = useState<"loading" | "ready" | "error">("loading");
+  useEffect(() => {
+    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId) return;
+    const controller = new AbortController();
+    setSchemaStatus("loading");
+    request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${sourceModal.reportId}`, {unit}), "GET", undefined, controller.signal)
+      .then(data => { setSchema(data.parameter_schema || {}); setSchemaStatus("ready"); })
+      .catch(() => { if (!controller.signal.aborted) { setSchema({}); setSchemaStatus("error"); } });
+    return () => controller.abort();
+  }, [sourceModal?.reportId, sourceModal?.type, unit]);
   const testAbort = useRef<AbortController | null>(null);
   const latestPreviewSpec = useRef("");
   latestPreviewSpec.current = JSON.stringify([sourceModal?.parametersJson, sourceModal?.reportId, sourceModal?.dataset]);
@@ -386,7 +399,11 @@ export default function SourceDialog({
     const testedSpec = latestPreviewSpec.current;
     onChange({ ...sourceModal, testError: null, testPreview: null });
     try {
-      const draft = constructDraftSource();
+      let draft = constructDraftSource();
+      if (draft.type === "report") {
+        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit);
+        draft = {...draft, parameters: {...draft.parameters, ...collectTestParameters(fields, values)} as Extract<CanvasSource, {type: "report"}>["parameters"]};
+      }
       const preview = await fetchSourcePreviewRequest(
         reportId,
         unit,
@@ -415,7 +432,7 @@ export default function SourceDialog({
   return (
     <InlineDialog
       title={isCreate ? "Adicionar fonte de dados" : "Editar fonte de dados"}
-      subtitle="Confirmar aplica a fonte ao rascunho. Cancelar descarta esta edição. O relatório só é gravado ao salvar o relatório."
+      subtitle="Escolha a origem e configure a fonte."
       className="cv-subdialog cv-root"
       onClose={onClose}
       footer={
@@ -427,7 +444,7 @@ export default function SourceDialog({
             type="button"
             className="cv-btn-compact"
             onClick={handleTestPreview}
-            disabled={testing || Boolean(idError) || invalidDate}
+            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "report" && schemaStatus !== "ready")}
             title="Executar consulta e verificar dados retornados"
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
@@ -439,7 +456,7 @@ export default function SourceDialog({
             className="cv-btn-compact primary"
             disabled={Boolean(idError) || invalidDate}
           >
-            {sourceModal.testError ? "Confirmar sem testar" : "Confirmar fonte"}
+            {isCreate ? "Adicionar" : "Salvar"}
           </button>
         </>
       }
@@ -453,25 +470,9 @@ export default function SourceDialog({
         )}
 
         {sourceModal.type === "report" && selectedCatalog && <p className="cv-source-sub">Fonte: {selectedCatalog.name}</p>}
-        {/* 1. Nome amigável e Identificador técnico */}
-        <div className="cv-grid-2">
-          <label className="op-field">
-            <span>Nome da fonte</span>
-            <input
-              type="text"
-              maxLength={60}
-              placeholder="Ex.: Faturamento Mensal"
-              value={sourceModal.mode === "edit" && sourceModal.label ? friendlySourceName({...constructDraftSource(), label: sourceModal.label}, selectedCatalog) : sourceModal.label || ""}
-              onChange={(e) => handleLabelChange(e.target.value)}
-              autoFocus
-            />
-          </label>
-
-        </div>
-
         {/* 2. Tipo de Fonte (Segmented control) */}
         <div className="op-field">
-          <span>Tipo de dados</span>
+          <span>1. De onde vêm os dados?</span>
           <div className="cv-segmented" role="tablist">
             <button
               type="button"
@@ -516,7 +517,8 @@ export default function SourceDialog({
         )}
 
         {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">{selectedCatalog.unavailable_reason}</p>}
-        {/* 3. Conteúdo para Relatório Existente */}
+        <h3>2. Escolha os dados</h3>
+        {/* Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (
           <>
             <div className="cv-grid-2">
@@ -582,8 +584,21 @@ export default function SourceDialog({
               )}
             </div>
 
+            {schemaStatus === "loading" && <p role="status">Carregando opções do relatório…</p>}
+            {schemaStatus === "error" && <p role="alert">Não foi possível carregar as opções do relatório. Feche a janela e tente novamente.</p>}
+            {schemaStatus === "ready" && (() => {
+              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit);
+              return fields.length ? <div className="cv-params-section"><strong>Valores para a prévia</strong>
+                {fields.map(field => <label className="op-field" key={field.name}>
+                  <span>{field.label}{field.required !== false ? " *" : ""}</span>
+                  {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
+                    <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
+                </label>)}
+              </div> : <p className="cv-hint">Este relatório não exige valores adicionais.</p>;
+            })()}
             {/* Seção de Parâmetros */}
-            <div className="cv-params-section">
+            <details className="cv-params-section"><summary>Outras opções de parâmetros</summary>
               <div className="cv-params-head">
                 <span className="cv-params-title">Parâmetros da consulta</span>
                 <button
@@ -679,7 +694,7 @@ export default function SourceDialog({
                   ))}
                 </div>
               )}
-            </div>
+            </details>
           </>
         )}
 
@@ -848,7 +863,22 @@ export default function SourceDialog({
           </div>
         )}
 
-        {/* 6. Test Preview dentro do Diálogo */}
+        <h3>3. Nome da fonte e opções</h3>
+        <div className="cv-grid-2">
+          <label className="op-field">
+            <span>Nome da fonte</span>
+            <input
+              type="text"
+              maxLength={60}
+              placeholder="Ex.: Faturamento Mensal"
+              value={sourceModal.mode === "edit" && sourceModal.label ? friendlySourceName({...constructDraftSource(), label: sourceModal.label}, selectedCatalog) : sourceModal.label || ""}
+              onChange={(e) => handleLabelChange(e.target.value)}
+            />
+          </label>
+
+        </div>
+
+        {/* Prévia */}
         {testing && (
           <div className="cv-test-preview" style={{ textAlign: "center", padding: "16px" }}>
             <RefreshCw size={14} className="spin" style={{ marginRight: 6 }} />

@@ -30,7 +30,11 @@ export function previewParameters(source: CanvasSource, schema: Record<string, u
     let value = bound ? ownerSchema[configured.parameter]?.default : configured;
     value = (value === "" ? undefined : value) ?? field.default ?? ownerSchema[field.name]?.default;
     const key = field.name.toLowerCase().replace(/^wpa_/, "");
-    if (/^(unit|unit_slug|unidade)$/.test(key) && unit) value = unit;
+    if ((value == null || value === "") && /^(unit|unit_slug|unidade)$/.test(key) && unit && (!field.options || field.options.some(option => option.value === unit))) value = unit;
+    if (field.options && value != null && value !== "" && !field.options.some(option => option.value === String(value))) {
+      value = field.options.some(option => option.value === String(field.default)) ? field.default : undefined;
+      if (value == null) field.default = undefined;
+    }
     if (value == null || value === "") {
       if (field.type === "date" || /^(start|end|start_date|end_date|data_inicial|data_final)$/.test(key)) {
         const date = new Date(now);
@@ -109,7 +113,7 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
       }
       const missing = fields.filter(f => f.required !== false && f.default == null && !values[f.name]?.trim());
       if (missing.length) {
-        put({status: "idle", data: null, error: `Sem padrão seguro; informe o filtro (ex.: o identificador desejado): ${missing.map(f => f.label).join(", ")}.`, loadedAt: null, fields, values});
+        put({status: "idle", data: null, error: `Escolha ${missing.map(f => f.label).join(", ")} para ver a prévia.`, loadedAt: null, fields, values});
         return;
       }
       // Only this request receives resolved values; never change the layout/store.

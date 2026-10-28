@@ -461,18 +461,19 @@ export default function DataPanel({
                   </div>
                 </div>
 
-                {isExpanded && previewState?.status === "error" && (
+                {isExpanded && (previewState?.status === "error" || (previewState?.status === "idle" && previewState.error)) && (
                   <div role="alert">
                     <p>Fonte: {displayName}. {friendlySourceError(previewState.error || "Não foi possível carregar a prévia.", src, sqlItem)}</p>
-                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${displayName}\n${friendlySourceError(previewState.error || "", src, sqlItem)}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
-                    <p>{previewState.httpStatus != null ? `HTTP ${previewState.httpStatus}` : "HTTP indisponível"} · {previewState.elapsedMs != null ? `${previewState.elapsedMs} ms` : "tempo indisponível"}</p>
-                    <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>
+                    {previewState.status === "error" && previewState.httpStatus !== 400 && <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>}
+                    {(previewState.httpStatus === 400 || previewState.status === "idle") && <button type="button" className="cv-btn-compact" onClick={() => onEditSource(src)}>Editar fonte</button>}
                   </div>
                 )}
                 {/* Lista Expandida de Colunas */}
                 {isExpanded && (
                   <div className="cv-column-list">
-                    {columns.length === 0 ? (
+                    {columns.length === 0 && previewState?.status !== "ready" ? (
+                      <span className="cv-column-hint">Carregue a prévia para ver as colunas.</span>
+                    ) : columns.length === 0 ? (
                       <span className="cv-column-hint">Nenhuma coluna detectada.</span>
                     ) : (
                       <>
