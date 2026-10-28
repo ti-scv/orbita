@@ -307,7 +307,7 @@ describe("Operações puras de geometria, fontes, validação e paridade byte-a-
     const empty = normalizeLayout(null);
     expect(validateLayoutBeforeSend(empty, true)).toEqual({
       ok: false,
-      error: "Adicione ao menos um bloco ao Canvas.",
+      error: "Adicione ao menos um bloco ao relatório.",
     });
     expect(validateLayoutBeforeSend(empty, false).ok).toBe(true);
 

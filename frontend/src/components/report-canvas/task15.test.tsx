@@ -46,6 +46,6 @@ it("a lâmpada explica o próximo tema ao clicar",()=>{
 });
 it("Publicação explica a abertura e o salvamento",()=>{
  const text=topbarSource;
- expect(text).toContain('aria-label="Publicação: abrir opções de ativação do Canvas e formato de saída"');
+ expect(text).toContain('aria-label="Publicação: abrir opções de ativação do modelo do relatório e formato de saída"');
  expect(text).toContain("As alterações são aplicadas ao salvar.");
 });
