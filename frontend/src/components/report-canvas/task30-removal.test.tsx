@@ -65,3 +65,27 @@ it("relatório ativo não permite remover com Delete nem pelo inspetor", async (
   fireEvent.contextMenu(first);
   expect(screen.queryByRole("menuitem", { name: /Remover.*Primeiro/ })).toBeNull();
 });
+
+it("Backspace remove seleção múltipla feita com Ctrl no rascunho", async () => {
+  render(<ReportCanvas unit="ame" report={{ id: 6, name: "QA", version: 1 }} onClose={() => {}} />);
+  const first = await screen.findByRole("group", { name: /Primeiro/ });
+  const second = screen.getByRole("group", { name: /Segundo/ });
+  fireEvent.focus(first);
+  fireEvent(second, new MouseEvent("pointerdown", { bubbles: true, button: 0, ctrlKey: true }));
+  expect(first.className).toContain("is-selected");
+  expect(second.className).toContain("is-selected");
+  fireEvent.keyDown(second, { key: "Backspace" });
+  expect(screen.queryByRole("group", { name: /Primeiro/ })).toBeNull();
+  expect(screen.queryByRole("group", { name: /Segundo/ })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
+  expect(screen.getByRole("group", { name: /Primeiro/ })).toBeTruthy();
+  expect(screen.getByRole("group", { name: /Segundo/ })).toBeTruthy();
+});
+
+it("Backspace não remove componente de relatório ativo", async () => {
+  render(<ReportCanvas unit="ame" report={{ id: 6, name: "QA", version: 1, enabled: true }} onClose={() => {}} />);
+  const first = await screen.findByRole("group", { name: /Primeiro/ });
+  fireEvent.focus(first);
+  fireEvent.keyDown(first, { key: "Backspace" });
+  expect(screen.getByRole("group", { name: /Primeiro/ })).toBeTruthy();
+});

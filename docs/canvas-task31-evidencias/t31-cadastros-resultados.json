@@ -5,7 +5,7 @@
     "theme": "light",
     "errors": [],
     "timings": {
-      "relatorios": 794
+      "relatorios": 579
     },
     "horizontal": false
   },
@@ -15,7 +15,7 @@
     "theme": "dark",
     "errors": [],
     "timings": {
-      "relatorios": 414
+      "relatorios": 565
     },
     "horizontal": false
   },
@@ -25,7 +25,7 @@
     "theme": "light",
     "errors": [],
     "timings": {
-      "relatorios": 376
+      "relatorios": 707
     },
     "horizontal": false
   },
@@ -35,7 +35,7 @@
     "theme": "dark",
     "errors": [],
     "timings": {
-      "relatorios": 474
+      "relatorios": 652
     },
     "horizontal": false
   },
@@ -45,7 +45,7 @@
     "theme": "light",
     "errors": [],
     "timings": {
-      "relatorios": 367
+      "relatorios": 748
     },
     "horizontal": false
   },
@@ -55,7 +55,7 @@
     "theme": "dark",
     "errors": [],
     "timings": {
-      "relatorios": 380
+      "relatorios": 724
     },
     "horizontal": false
   },
@@ -65,7 +65,7 @@
     "theme": "light",
     "errors": [],
     "timings": {
-      "relatorios": 426
+      "relatorios": 520
     },
     "horizontal": false
   },
@@ -75,7 +75,7 @@
     "theme": "dark",
     "errors": [],
     "timings": {
-      "relatorios": 549
+      "relatorios": 631
     },
     "horizontal": false
   }
