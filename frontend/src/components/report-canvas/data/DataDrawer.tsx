@@ -9,6 +9,7 @@ import { formatCellValue } from "./columnTypes";
 export interface DataDrawerProps {
   source: CanvasSource | null;
   preview: SourcePreview | null;
+  loadedAt?: Date | null;
   loading?: boolean;
   onClose: () => void;
   onRefresh?: () => void;
@@ -17,6 +18,7 @@ export interface DataDrawerProps {
 export default function DataDrawer({
   source,
   preview,
+  loadedAt,
   loading = false,
   onClose,
   onRefresh,
@@ -106,7 +108,7 @@ export default function DataDrawer({
 
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>
-      <details><summary>Origem das colunas</summary>{columns.map(col => <div key={col.name}><span>{col.name} </span><ColumnOrigin source={source} column={col.name} type={col.type} /></div>)}</details>
+      <details className="cv-column-origins"><summary>Origem das colunas</summary>{columns.map(col => <div key={col.name}><span>{col.name} </span><ColumnOrigin source={source} column={col.name} type={col.type} loadedAt={loadedAt} /></div>)}</details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
           <h3 className="cv-drawer-title" title={`Dados: ${source.label || source.id}`}>
