@@ -11,7 +11,8 @@ def test_removes_connection_strings_and_secrets():
     connection=SimpleNamespace(ciphertext="encrypted-private",username="private-user")
     with patch("operations.report_engine.secret",return_value="private-pass"):
         text=safe_error(Exception("relation missing password=private-pass postgresql://private-user:private-pass@db/x encrypted-private"), connection)
-    assert "relation missing" in text
+    assert "Referência:" in text
+    assert "relation missing" not in text
     assert all(s not in text for s in ("private-pass","private-user","encrypted-private","postgresql://"))
 
 def test_real_database_error_identifies_source(env):
@@ -22,5 +23,6 @@ def test_real_database_error_identifies_source(env):
     with ExitStack() as stack:
         ctx=SimpleNamespace(report=owner,parameters={},sessions={},stack=stack)
         with pytest.raises(ValidationError) as error: ReportSource().read(ctx,spec)
-    assert "no such column: missing_column" in str(error.value.detail)
+    assert "missing_column" not in str(error.value.detail)
+    assert "Referência:" in str(error.value.detail)
     assert error.value.detail["source_id"] == "dados"
