@@ -25,7 +25,7 @@ export default function ColumnOrigin({ source, column, type = "unknown", loadedA
   }, [open, source, column, reportId, unit]);
   return <>
     <span className="cv-origin-text">{source?.type === "report" ? `${sourceName || source.label || "Fonte"} › ${datasetName || source.dataset || "Dados"} › ${column}` : source?.type === "inline" ? `Fixa › ${column}` : `Calculada › ${column}`}</span>
-    <button type="button" className="cv-btn-compact" aria-label={`Origem da coluna ${column}`} disabled={!source} onClick={event => {event.stopPropagation(); setOpen(true);}}>Origem</button>
+    <button type="button" className="cv-btn-compact" title="Ver detalhes e consulta da origem" aria-label={`Origem da coluna ${column}`} disabled={!source} onClick={event => {event.stopPropagation(); setOpen(true);}}>Origem</button>
     {open && <InlineDialog title={`Origem da coluna ${column}`} subtitle="Somente leitura" onClose={() => setOpen(false)} className="cv-root" footer={<button type="button" className="cv-btn-compact" disabled={!data?.query} onClick={async () => { try { await navigator.clipboard.writeText(data?.query || ""); setCopyStatus("Consulta copiada"); } catch { setCopyStatus("Não foi possível copiar a consulta"); } }}>Copiar consulta</button>}>
       {error && <p role="alert">{error}</p>}
       {!data && !error && <p role="status">Carregando origem…</p>}
