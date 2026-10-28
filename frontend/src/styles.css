@@ -5001,6 +5001,8 @@ body:has([role="dialog"][aria-modal="true"]) {
 
 .whatsapp-double-check {
   display: inline-block;
+  color: #53bdeb;
+  vertical-align: middle;
 }
 
 .whatsapp-bubble-buttons {

@@ -342,7 +342,14 @@ export default function DataPanel({
                   className="cv-source-row"
                 >
                   <div className="cv-source-main">
-                    <button type="button" className="cv-source-title-line cv-btn-compact" onClick={() => toggleExpand(src)} aria-expanded={isExpanded} aria-label={`Colunas de ${displayName}`}>
+                    <button
+                      type="button"
+                      className="cv-source-title-line cv-btn-compact"
+                      onClick={() => toggleExpand(src)}
+                      aria-expanded={isExpanded}
+                      aria-label={`Colunas de ${displayName}`}
+                      title={isExpanded ? `Recolher colunas de ${displayName}` : `Expandir colunas de ${displayName}`}
+                    >
                       <ChevronRight
                         size={14}
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}

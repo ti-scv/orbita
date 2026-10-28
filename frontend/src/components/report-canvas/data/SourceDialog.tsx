@@ -751,6 +751,7 @@ export default function SourceDialog({
                               style={{ width: 20, height: 20 }}
                               onClick={() => handleRemoveColumn(cIdx)}
                               title="Remover coluna"
+                              aria-label="Remover coluna"
                             >
                               <Trash2 size={11} />
                             </button>
@@ -794,6 +795,7 @@ export default function SourceDialog({
                             style={{ width: 20, height: 20 }}
                             onClick={() => handleRemoveRow(rIdx)}
                             title="Remover linha"
+                            aria-label="Remover linha"
                           >
                             <Trash2 size={11} />
                           </button>

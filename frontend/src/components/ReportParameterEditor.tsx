@@ -41,8 +41,8 @@ export default function ReportParameterEditor({value,onChange,sql=""}:{value:str
    {entries.map(([name,spec],i)=><div className="rpe-row" key={name}>
     <span className="rpe-order">{spec.order || i+1}</span><div className="rpe-name"><strong>{spec.label || name}</strong><code>:{name}</code></div>
     <span className="rpe-type">{kinds[spec.type] || spec.type}</span><span className="rpe-required">{spec.required===false?"Opcional":"Obrigatório"}</span>
-    <button type="button" className="icon-button" aria-label={`Editar parâmetro ${name}`} onClick={()=>edit(name,spec)}><Pencil size={14}/></button>
-    <button type="button" className="icon-button" aria-label={`Remover parâmetro ${name}`} onClick={()=>{
+    <button type="button" className="icon-button" aria-label={`Editar parâmetro ${name}`} title={`Editar parâmetro ${name}`} onClick={()=>edit(name,spec)}><Pencil size={14}/></button>
+    <button type="button" className="icon-button" aria-label={`Remover parâmetro ${name}`} title={`Remover parâmetro ${name}`} onClick={()=>{
      const next={...schema};delete next[name];for(const [key,s] of Object.entries(next)){if(s.not_before===name){next[key]={...s};delete next[key].not_before;}}
      onChange(JSON.stringify(next,null,2));
     }}><Trash2 size={14}/></button>

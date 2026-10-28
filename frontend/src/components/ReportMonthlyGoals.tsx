@@ -16,7 +16,7 @@ export default function ReportMonthlyGoals({ value, onChange }: { value: Goal[];
       {value.map((row, index) => <tr key={index}>
         <td><input aria-label={`Competência ${index + 1}`} type="month" required min="2000-01" max="2199-12" value={`${row.year}-${String(row.month).padStart(2, "0")}`} onChange={(e) => { const [year, month] = e.target.value.split("-").map(Number); update(index, { year, month }); }} /></td>
         <td><input aria-label={`Meta ${index + 1}`} type="number" required min={0} max={100000000} step={1} value={Number.isNaN(row.value) ? "" : row.value} onChange={(e) => update(index, { value: e.target.valueAsNumber })} /></td>
-        <td><button type="button" className="button" aria-label={`Remover meta ${String(row.month).padStart(2, "0")}/${row.year}`} onClick={() => onChange(value.filter((_, i) => i !== index))}><Trash2 size={14} /></button></td>
+        <td><button type="button" className="button" aria-label={`Remover meta ${String(row.month).padStart(2, "0")}/${row.year}`} title={`Remover meta ${String(row.month).padStart(2, "0")}/${row.year}`} onClick={() => onChange(value.filter((_, i) => i !== index))}><Trash2 size={14} /></button></td>
       </tr>)}
     </tbody></table>{value.length === 0 && <p>Sem metas cadastradas.</p>}</div>
   </section>;

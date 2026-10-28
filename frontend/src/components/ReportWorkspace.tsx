@@ -821,8 +821,10 @@ export default function ReportWorkspace({
           </div>
           <div className="report-actions">
             <button
+              type="button"
               className="button"
-              aria-label="Atualizar"
+              aria-label="Atualizar relatórios"
+              title="Atualizar relatórios"
               onClick={() => setRevision((v) => v + 1)}
             >
               <RefreshCw size={15} />
@@ -1081,8 +1083,10 @@ export default function ReportWorkspace({
                         )}
                         {operate && tab === "reports" && r.catalog_kind !== "component" && r.enabled && (
                           <button
+                            type="button"
                             className="button"
                             title="Gerar relatório"
+                            aria-label="Gerar relatório"
                             onClick={() => open("run", r)}
                           >
                             <Play size={14} />

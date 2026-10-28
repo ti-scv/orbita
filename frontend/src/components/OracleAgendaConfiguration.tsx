@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import {
   AlertCircle,
   Calendar,
+  CheckCheck,
   CheckCircle2,
   Clock,
   Database,
@@ -1044,22 +1045,11 @@ function Editor({
                                 {testResult?.values?.HORA_MARCADA ||
                                   (config?.send_time || "09:00").slice(0, 5)}
                               </span>
-                              <svg
-                                width="16"
-                                height="11"
-                                viewBox="0 0 16 11"
-                                fill="none"
+                              <CheckCheck
+                                size={16}
                                 className="whatsapp-double-check"
-                              >
-                                <path
-                                  d="M11.07 0.93L4.93 7.07L2.43 4.57L1.07 5.93L4.93 9.79L12.43 2.29L11.07 0.93Z"
-                                  fill="#53bdeb"
-                                />
-                                <path
-                                  d="M14.57 2.29L7.07 9.79L6.14 8.86L7.5 7.5L13.21 0.93L14.57 2.29Z"
-                                  fill="#53bdeb"
-                                />
-                              </svg>
+                                aria-hidden="true"
+                              />
                             </div>
 
                             {remote.components.find((c) => c.type === "BUTTONS")

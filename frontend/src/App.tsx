@@ -449,7 +449,9 @@ function Workspace({
       />
       {(start || end) && (
         <button
+          type="button"
           aria-label="Limpar datas"
+          title="Limpar datas"
           className="icon-button"
           onClick={() => {
             setStart("");
@@ -582,8 +584,10 @@ function Workspace({
         <header className="topbar">
           <div>
             <button
+              type="button"
               className="mobile-menu icon-button"
               aria-label="Abrir menu"
+              title="Abrir menu"
               aria-expanded={mobile}
               aria-controls="workspace-navigation"
               onClick={() => setMobile(!mobile)}
@@ -633,8 +637,10 @@ function Workspace({
               <span>Ambiente de teste</span>
             </span>
             <button
+              type="button"
               className="notification icon-button"
               aria-label="Ver pendências"
+              title="Ver pendências"
               onClick={() => navigate("issues")}
             >
               <Bell size={19} />
@@ -654,7 +660,13 @@ function Workspace({
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />
               <span>{error}</span>
-              <button className="icon-button" onClick={() => setError("")}>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Fechar aviso de erro"
+                title="Fechar aviso de erro"
+                onClick={() => setError("")}
+              >
                 <X size={16} />
               </button>
             </div>
@@ -846,8 +858,10 @@ function Workspace({
                               </td>
                               <td className="row-action">
                                 <button
+                                  type="button"
                                   className="icon-button"
                                   aria-label={`Ver mensagem de ${message.patient}`}
+                                  title={`Ver mensagem de ${message.patient}`}
                                 >
                                   <ChevronRight size={16} />
                                 </button>
@@ -1180,8 +1194,10 @@ function Workspace({
                                   >
                                     {role === "admin" && (
                                       <button
+                                        type="button"
                                         className="icon-button"
-                                        aria-label={`Editar ${rule.name}`}
+                                        aria-label={`Editar regra ${rule.name}`}
+                                        title={`Editar regra ${rule.name}`}
                                         onClick={() =>
                                           setModal({
                                             type: "rule",
@@ -1420,7 +1436,13 @@ function Workspace({
         <div className="toast" role="status">
           <Check size={18} />
           {toast}
-          <button className="icon-button" onClick={() => setToast("")}>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Fechar notificação"
+            title="Fechar notificação"
+            onClick={() => setToast("")}
+          >
             <X size={15} />
           </button>
         </div>

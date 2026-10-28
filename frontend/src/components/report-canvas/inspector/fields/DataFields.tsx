@@ -583,6 +583,7 @@ export default function DataFields({
               type="button"
               className="cv-lineage-btn"
               title={`${lineageText} — Clique para abrir os dados`}
+              aria-label={`${lineageText} — Abrir dados`}
               onClick={() => {
                 setDrawerOpen(true);
                 if (!rowsMeta.hasRows && !previewLoading && !previewUnavailable && onLoadPreview) {

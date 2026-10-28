@@ -12,7 +12,7 @@ A imagem de referência apresenta uma lâmpada desenhada com contorno de traço 
 1. **Traço uniforme e amigável:** Espessura padrão de `1.85` a `2.0` (em viewBox `0 0 24 24`), com extremidades e junções obrigatoriamente arredondadas (`strokeLinecap="round"`, `strokeLinejoin="round"`).
 2. **Preenchimento suave duotone:** As formas volumétricas fechadas (corpo de objetos, círculos, cartões) contam com uma camada translúcida de preenchimento (`fill="currentColor"` com opacidade `0.20` ou `fillOpacity="0.20"`), produzindo uma tonalidade pastel harmônica na mesma família cromática do contorno.
 3. **Traço puro para elementos lineares:** Setas, chevrons, sinais de adição/subtração, barras de rolagem e traçados puramente lineares mantêm traço uniforme sem preenchimento artificial.
-4. **Cores do tema (NUNCA fixar amarelo):** Todos os ícones do sistema utilizam `currentColor` e as variáveis CSS semânticas do Órbita. Eles reagem automaticamente à alternância entre modo claro e escuro. A cor âmbar/dourada é exclusiva do estado aceso do botão de tema (`ThemeToggle.tsx` no modo claro, correspondendo diretamente à captura de referência).
+4. **Cores do tema (NUNCA fixar amarelo):** Todos os ícones do sistema utilizam `currentColor` e as variáveis CSS semânticas do Órbita. Eles reagem automaticamente à alternância entre modo claro e escuro. Conforme a regra do Danilo, o botão de alternância de tema (`ThemeToggle.tsx` / `.theme-bulb-toggle`) não utiliza amarelo fixo: no modo claro aceso (`.is-lit`) ele utiliza a variável de marca do tema (`var(--brand-cyan, #14b4cb)`), com preenchimento duotone suave `0.38` e contorno na cor ativa, mantendo forte diferenciação visual em relação ao modo escuro/apagado (`var(--text-muted)`).
 5. **Contexto de escala e hierarquia:**
    - `14px – 16px`: Ações compactas em linhas de tabela, botões secundários e badges de coluna.
    - `18px – 20px`: Botões primários, itens de navegação na barra lateral, gavetas e formulários.
@@ -104,20 +104,30 @@ Para adicionar um novo ícone ao ecossistema do Órbita:
 1. **Testes Unitários e de Conformidade (`frontend/src/icons.test.tsx`):**
    - Validação da estrutura SVG (viewBox 24, classes `orbita-icon`, grupos `.orbita-icon-fill` e `.orbita-icon-stroke`).
    - Validação do ícone de lâmpada idêntico à referência.
-   - Validação da ausência de amarelos hardcoded.
+   - Validação de que nenhum ícone ou botão de tema utiliza amarelo fixo hardcoded (#a76b0b, #f9e5a9, #ffff00, etc.), e sim as variáveis semânticas do tema (`--brand-cyan`, `--text-*`).
    - Validação da preservação da regra de cores do WhatsApp e Usuário nos modos claro e escuro.
    - Auditoria estática que bloqueia a importação de bibliotecas concorrentes externas.
+   - Auditoria estática que varre o código `.tsx` e bloqueia qualquer `<svg>` desenhado à mão fora do pacote central (com exceções estritas documentadas).
+   - Auditoria de acessibilidade que garante `aria-label` e `title` em português em todos os botões que contêm apenas ícone.
 2. **Verificação do Frontend (`canvas-check.sh`):**
    - `npm ci`: OK
    - `canvas hooks`: OK
    - `tsc -b`: OK (0 erros de tipagem)
-   - `vitest run`: OK (541 testes passando em 51 arquivos de teste)
+   - `vitest run`: OK (543 testes passando em 51 arquivos de teste)
    - `vite build`: OK (build completo de produção)
-3. **Evidências Visuais geradas na porta 8093 (`docs/icones-qa-prints/`):**
-   - `icones-01-sidebar-light.png`: Barra lateral e workspace no tema claro com ícones duotone.
-   - `icones-01-sidebar-dark.png`: Barra lateral no tema escuro.
-   - `icones-02-tabela-atendimentos-light.png`: Tabela com paciente e WhatsApp em todos os estados de cor.
-   - `icones-02-tabela-atendimentos-dark.png`: Tabela no tema escuro com alto contraste WCAG.
-   - `icones-03-theme-toggle-light.png`: Botão da lâmpada acesa no tema claro (fiel à referência).
-   - `icones-03-theme-toggle-dark.png`: Botão da lâmpada no tema escuro.
-   - `icones-04-matriz-98-duotone.png`: Matriz completa de todos os 98 ícones renderizados lado a lado.
+3. **Evidências Visuais geradas no Staging na porta 8094 (`docs/icones-qa-prints/`):**
+   Container de staging isolado `orbita-canvas-stage-icones` em execução em `127.0.0.1:8094`. Todos os prints possuem hashes MD5 únicos e conteúdo visual específico:
+   - `icones-01-atendimentos-light.png` / `dark.png`: Lista de atendimentos com indicadores de status do WhatsApp e avatares de paciente.
+   - `icones-02-visao-geral-light.png` / `dark.png`: Painel de visão geral com métricas e ícones operacionais.
+   - `icones-03-mensagens-light.png` / `dark.png`: Painel e tabela de mensagens com estados de entrega.
+   - `icones-04-grupos-light.png` / `dark.png`: Programação e agrupamento de agendas.
+   - `icones-05-pendencias-light.png` / `dark.png`: Painel de pendências e inconformidades.
+   - `icones-06-importa-cross-light.png` / `dark.png`: Central de importação de planilhas CROSS com status de processamento e ativação.
+   - `icones-07-relatorios-lista-light.png` / `dark.png`: Listagem de relatórios, conexões e ações de geração/edição.
+   - `icones-08-canvas-editor-light.png` / `dark.png`: Editor do Canvas completo (barra superior de ferramentas, zoom, trilho esquerdo, inspetor direito e área de desenho).
+   - `icones-09-custos-meta-light.png` / `dark.png`: Monitoramento financeiro e custos da API Meta.
+   - `icones-10-configuracoes-light.png` / `dark.png`: Central de configurações e administração da unidade.
+   - `icones-11-dialogo-aberto-light.png` / `dark.png`: Diálogo modal (`InlineDialog`) com ações e botão de fechar acessível.
+   - `icones-12-sidebar-recolhida-light.png` / `dark.png`: Barra lateral recolhida destacando os ícones duotone compactos.
+   - `icones-13-theme-toggle-light.png` / `dark.png`: Close-up do botão ThemeToggle demonstrando estado aceso (cyan) e apagado (muted), sem amarelo fixo.
+   - `icones-04-matriz-98-duotone.png`: Matriz completa de todos os 98 ícones renderizados no novo padrão visual.

@@ -93,6 +93,7 @@ export default function InlineDialog({
           type="button"
           className="modal-close icon-button"
           aria-label="Fechar janela"
+          title="Fechar janela"
           disabled={busy}
           onClick={onClose}
         >

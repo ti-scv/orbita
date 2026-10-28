@@ -201,8 +201,10 @@ export function AppointmentTable({
               </td>
               <td className="row-action">
                 <button
+                  type="button"
                   className="icon-button"
                   aria-label={`Ver agendamento de ${appointment.patient}`}
+                  title={`Ver agendamento de ${appointment.patient}`}
                 >
                   <MoreHorizontal size={17} />
                 </button>

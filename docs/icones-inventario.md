@@ -301,9 +301,9 @@ Inventário levantado em 2026-10-28 cobrindo todos os ícones da aplicação (Lu
 | `UserRound` | lucide-react | `src/components/OperationsWorkspace.tsx` | Operações / Painel de Atendimentos |
 | `Users` | lucide-react | `src/components/ReportWorkspace.tsx` | Central de Relatórios / Abas e Ações |
 | `Wallet` | lucide-react | `src/App.tsx` | Barra lateral, Topbar e Navegação principal |
-| `WhatsAppDoubleCheck (confirmação dupla azul)` | SVG inline | `src/components/OracleAgendaConfiguration.tsx` | Configuração de Agendas Oracle e Prévia WhatsApp |
-| `WhatsAppNodeIcon (logo oficial WhatsApp) + Diagrama de Conexão` | SVG inline | `src/components/ReportWhatsApp.tsx` | Canal WhatsApp · QR Code e Status |
-| `WhatsAppStatusIcon (balão WhatsApp)` | SVG inline | `src/components/WhatsAppStatus.tsx` | Indicador de Status WhatsApp por Atendimento |
+| `WhatsApp (ícone central duotone)` | pacote central | `src/components/ReportWhatsApp.tsx` | Canal WhatsApp · QR Code e Status |
+| `WhatsAppStatusIcon (balão WhatsApp)` | pacote central | `src/components/WhatsAppStatus.tsx` | Indicador de Status WhatsApp por Atendimento |
+| `CheckCheck (dupla confirmação WhatsApp)` | pacote central | `src/components/OracleAgendaConfiguration.tsx` | Configuração de Agendas Oracle e Prévia WhatsApp |
 | `Wifi` | lucide-react | `src/components/ReportWhatsApp.tsx` | Canal WhatsApp · QR Code e Status |
 | `WifiOff` | lucide-react | `src/components/ReportWhatsApp.tsx` | Canal WhatsApp · QR Code e Status |
 | `Wrench` | lucide-react | `src/components/report-canvas/problems/ProblemsPanel.tsx` | Editor Canvas · Painel de Problemas |
@@ -319,3 +319,21 @@ Inventário levantado em 2026-10-28 cobrindo todos os ícones da aplicação (Lu
 | `X` | lucide-react | `src/components/report-canvas/library/PagesPanel.tsx` | Editor Canvas · Biblioteca de Blocos e Imagens |
 | `X` | lucide-react | `src/components/report-canvas/problems/ProblemsPanel.tsx` | Editor Canvas · Painel de Problemas |
 | `X` | lucide-react | `src/components/report-canvas/shell/Banner.tsx` | Editor Canvas · Barra Superior e Ferramentas |
+
+---
+
+## Elementos gráficos mantidos fora do pacote de ícones e justificativas
+
+Conforme especificado na revisão de arquitetura e design:
+
+1. **`LoginOrbitAnimation.tsx` (`src/components/LoginOrbitAnimation.tsx`)**
+   - **Justificativa:** Animação de logotipo e identidade visual do SCV Órbita na tela de entrada/login. Contém partículas em órbitas elípticas tridimensionais com cores de marca institucionais (WhatsApp #25D366, SCV #0081FB, #F80000). Não se trata de ícone de navegação ou controle interativo da UI.
+
+2. **`OrbitFavicon.tsx` (`src/components/OrbitFavicon.tsx`)**
+   - **Justificativa:** Utilitário dinâmico de favicon que sintetiza em tempo de execução via Canvas/data-URI um SVG giratório para a aba do navegador conforme o estado da aplicação. É infraestrutura do browser, não ícone de interface.
+
+3. **`report-channel-connected-canvas` em `ReportWhatsApp.tsx` (`src/components/ReportWhatsApp.tsx`)**
+   - **Justificativa:** Diagrama vetorial ilustrativo de topologia e fluxo de pacotes entre o servidor SCV e o gateway WhatsApp (linhas de grade guia, curvas Bézier de canal e animação de fluxo de partículas `pathLength`). O nó do WhatsApp em si utiliza o componente de ícone central `<WhatsApp size={34} />`.
+
+4. **Logotipos estáticos da instituição (`/logo.png`, `public/favicon.svg`)**
+   - **Justificativa:** Imagens estáticas de marca institucional do hospital e identidade corporativa.

@@ -195,7 +195,7 @@ export default function DataDrawer({
             className="cv-icon-btn"
             onClick={onClose}
             title="Fechar gaveta de dados"
-            aria-label="Fechar"
+            aria-label="Fechar gaveta de dados"
           >
             <X size={14} />
           </button>

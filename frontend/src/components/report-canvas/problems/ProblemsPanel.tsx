@@ -125,6 +125,7 @@ export default function ProblemsPanel({
           type="button"
           className="cv-btn-icon cv-problems-panel-close"
           aria-label="Fechar painel de problemas"
+          title="Fechar painel de problemas"
           onClick={onClose}
         >
           <X size={15} aria-hidden="true" />

@@ -112,10 +112,24 @@ describe("Novo Estilo de Ícones Duotone (Traço Uniforme + Preenchimento Suave)
       expect(defString).not.toContain("#ffff00");
       expect(defString).not.toContain("#facc15");
       expect(defString).not.toContain("#eab308");
+      expect(defString).not.toContain("#a76b0b");
+      expect(defString).not.toContain("#f9e5a9");
       expect(defString).not.toContain("yellow");
 
       expect(def.stroke.length).toBeGreaterThan(0);
     }
+
+    // Regra do Danilo: botão de tema (ThemeToggle / .theme-bulb-toggle) e regras de ícones não usam amarelo fixo
+    const opCss = fs.readFileSync(path.resolve("./src/operations.css"), "utf8");
+    const stylesCss = fs.readFileSync(path.resolve("./src/styles.css"), "utf8");
+    const combined = opCss + "\n" + stylesCss;
+
+    expect(combined).not.toContain("#a76b0b");
+    expect(combined).not.toContain("#f9e5a9");
+
+    // Verifica que o ThemeToggle utiliza variáveis semânticas do tema
+    expect(opCss).toContain(".theme-bulb-toggle.is-lit");
+    expect(opCss).toMatch(/\.theme-bulb-toggle\.is-lit\s*\{[^}]*--brand-cyan/);
   });
 
   it("ícones puramente lineares não possuem camada de preenchimento artificial", () => {
@@ -240,5 +254,141 @@ describe("Auditoria Estática de Ícones do Frontend", () => {
     }
 
     checkDir(srcDir);
+  });
+
+  it("nenhum ícone de interface é desenhado com <svg> manual fora do pacote central de ícones", () => {
+    const srcDir = path.resolve("./src");
+    // Exceções justificadas no inventário docs/icones-inventario.md:
+    // - components/icons/* (a biblioteca central de ícones)
+    // - LoginOrbitAnimation.tsx (animação visual/marca da tela de login)
+    // - OrbitFavicon.tsx (gerador dinâmico de favicon SVG para o navegador)
+    // - ReportWhatsApp.tsx (somente a malha vetorial de conexão report-channel-connected-canvas)
+    const allowedSvgFiles = new Set([
+      "LoginOrbitAnimation.tsx",
+      "OrbitFavicon.tsx",
+      "ReportWhatsApp.tsx",
+    ]);
+
+    function checkSvgs(dir: string) {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name === "icons") continue; // pacote de ícones central
+          checkSvgs(fullPath);
+        } else if (/\.tsx$/.test(entry.name) && !entry.name.endsWith(".test.tsx")) {
+          const content = fs.readFileSync(fullPath, "utf8");
+          const hasSvg = /<svg\b/i.test(content);
+          if (hasSvg) {
+            expect(
+              allowedSvgFiles.has(entry.name),
+              `Arquivo ${entry.name} possui <svg> inline de interface desenhado manualmente fora do pacote central!`
+            ).toBe(true);
+
+            // Se for ReportWhatsApp.tsx, garantir que NÃO há ícones manuais de interface (apenas o canvas de conexão)
+            if (entry.name === "ReportWhatsApp.tsx") {
+              expect(content).not.toContain('fill="#25D366"');
+              expect(content).toContain("<WhatsApp");
+            }
+          }
+        }
+      }
+    }
+
+    checkSvgs(srcDir);
+  });
+
+  it("todos os botões contendo apenas ícone possuem aria-label e title acessíveis em português", () => {
+    const srcDir = path.resolve("./src");
+
+    function walkTsx(dir: string): string[] {
+      let results: string[] = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          results = results.concat(walkTsx(full));
+        } else if (/\.tsx$/.test(entry.name) && !entry.name.endsWith(".test.tsx")) {
+          results.push(full);
+        }
+      }
+      return results;
+    }
+
+    const files = walkTsx(srcDir);
+    const unaccessibleButtons: Array<{ file: string; tag: string }> = [];
+
+    for (const file of files) {
+      const content = fs.readFileSync(file, "utf8");
+      let pos = 0;
+      while ((pos = content.indexOf("<button", pos)) !== -1) {
+        let tagEnd = -1;
+        let inQuote: string | null = null;
+        let braceDepth = 0;
+        for (let i = pos + 7; i < content.length; i++) {
+          const ch = content[i];
+          if (inQuote) {
+            if (ch === inQuote && content[i - 1] !== "\\") inQuote = null;
+          } else if (ch === '"' || ch === "'" || ch === "`") {
+            inQuote = ch;
+          } else if (ch === "{") {
+            braceDepth++;
+          } else if (ch === "}") {
+            braceDepth--;
+          } else if (ch === ">" && braceDepth === 0) {
+            tagEnd = i;
+            break;
+          }
+        }
+        if (tagEnd === -1) {
+          pos += 7;
+          continue;
+        }
+
+        const openTag = content.substring(pos, tagEnd + 1);
+        const closePos = content.indexOf("</button>", tagEnd);
+        if (closePos === -1) {
+          pos = tagEnd + 1;
+          continue;
+        }
+
+        const inner = content.substring(tagEnd + 1, closePos);
+        pos = closePos + 9;
+
+        const hasIcon = /<(Icon|[A-Z][a-zA-Z0-9]*|svg)\b/.test(inner);
+        if (!hasIcon) continue;
+
+        const textWithoutTags = inner.replace(/<[^>]+>/g, " ").trim();
+        const staticText = textWithoutTags.replace(/\{[^}]*\}/g, " ").trim();
+
+        const exprs = textWithoutTags.match(/\{[\s\S]*?\}/g) || [];
+        let hasDynamicText = false;
+        for (const expr of exprs) {
+          if (
+            /["'`][a-zA-ZÀ-ÿ]{2,}/.test(expr) ||
+            /\b(label|title|children)\b/.test(expr)
+          ) {
+            hasDynamicText = true;
+            break;
+          }
+        }
+
+        if (staticText.length === 0 && !hasDynamicText) {
+          const hasAria = /aria-label\s*=/.test(openTag);
+          const hasTitle = /title\s*=/.test(openTag);
+          const hasLabelledBy = /aria-labelledby\s*=/.test(openTag);
+
+          if ((!hasAria || !hasTitle) && !hasLabelledBy) {
+            unaccessibleButtons.push({
+              file: path.relative(srcDir, file),
+              tag: openTag.replace(/\s+/g, " "),
+            });
+          }
+        }
+      }
+    }
+
+    expect(
+      unaccessibleButtons,
+      `Botões com apenas ícone sem aria-label ou title: ${JSON.stringify(unaccessibleButtons, null, 2)}`
+    ).toHaveLength(0);
   });
 });

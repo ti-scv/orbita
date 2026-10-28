@@ -32,6 +32,7 @@ export const Calendar = icons["Calendar"];
 export const CalendarClock = icons["CalendarClock"];
 export const CalendarDays = icons["CalendarDays"];
 export const Check = icons["Check"];
+export const CheckCheck = icons["CheckCheck"];
 export const CheckCircle2 = icons["CheckCircle2"];
 export const ChevronDown = icons["ChevronDown"];
 export const ChevronLeft = icons["ChevronLeft"];
