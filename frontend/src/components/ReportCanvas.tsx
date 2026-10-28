@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { AlertTriangle, PanelRightOpen } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
+import { OriginContext } from "./report-canvas/data/ColumnOrigin";
 import JsonEditorDialog from "./report-canvas/dialogs/JsonEditorDialog";
 import { query, request } from "../api";
 import ParameterEditor from "./report-canvas/data/ParameterEditor";
@@ -403,7 +404,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   } as CSSProperties;
 
   return (
-    <CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
+    <OriginContext.Provider value={{reportId: report.id, unit}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
       <EditorShell
         canSave={!session.loading && !session.busy}
         onSave={() => void session.handleSaveCanvas()}
@@ -682,6 +683,6 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         }}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-    </CanvasErrorBoundary>
+    </CanvasErrorBoundary></OriginContext.Provider>
   );
 }

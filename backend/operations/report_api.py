@@ -641,6 +641,11 @@ class CatalogViewSet(ReportViewSet):
         from operations.report_canvas.api import configure
         return configure(self, request)
 
+    @action(detail=True, methods=["post"], url_path="canvas-column-origin")
+    def canvas_column_origin(self, request, pk=None):
+        from operations.report_canvas.origin import column_origin
+        return column_origin(self, request)
+
     @action(detail=True, methods=["post"], url_path="canvas-validate")
     def canvas_validate(self, request, pk=None):
         from operations.report_canvas.api import validate_json

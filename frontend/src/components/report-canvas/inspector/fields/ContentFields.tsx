@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { ArrowDown, ArrowUp, Braces, Image as ImageIcon, Plus, Upload } from "lucide-react";
 import { estimateTableHeight } from "../../stage/geometry";
+import ColumnOrigin from "../../data/ColumnOrigin";
 import ColumnBadge from "../../data/ColumnBadge";
 import type {
   AggregateMode,
@@ -1055,6 +1056,7 @@ export default function ContentFields({
                             {sourceOrigin || block.source_id || "Sem fonte"} › {item.name}
                           </small>
                         </div>
+                        <ColumnOrigin source={sources.find(s => s.id === block.source_id)} column={item.name} type={item.info?.type} />
                         {isMissing && <span className="cv-col-missing-tag">Ausente</span>}
                         {item.checked && selectedTableCols.length > 1 && (
                           <div className="cv-well-actions">

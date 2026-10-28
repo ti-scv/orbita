@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Copy, Check, RefreshCw, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { CanvasSource, SourcePreview } from "../model";
+import ColumnOrigin from "./ColumnOrigin";
 import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
 import { formatCellValue } from "./columnTypes";
@@ -105,6 +106,7 @@ export default function DataDrawer({
 
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>
+      <details><summary>Origem das colunas</summary>{columns.map(col => <div key={col.name}><span>{col.name} </span><ColumnOrigin source={source} column={col.name} type={col.type} /></div>)}</details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
           <h3 className="cv-drawer-title" title={`Dados: ${source.label || source.id}`}>

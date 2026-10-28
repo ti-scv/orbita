@@ -49,3 +49,8 @@ Item 2: 9 testes de backend (incluindo prévias existentes e erro real SQLite) e
 Botão compacto JSON na barra do editor abre InlineDialog com texto editável, foco/teclado, validar/aplicar com confirmação, desfazer texto e desfazer aplicação pelo histórico. Endpoint canvas-validate não grava nem executa fontes: usa as mesmas validações do Salvar (esquema, fontes/ativos da unidade e prontidão quando ativado). JSON malformado tem linha/coluna exatas; erros de esquema apontam o bloco/fonte quando identificado ou o documento (linha 1). Nenhuma aplicação salva automaticamente.
 
 Item 3: 2 testes de backend e 2 de interface aprovados (validação sem gravação, sintaxe/esquema, isolamento de unidade, confirmação e anúncio acessível).
+
+## Rodada 3 — item 4
+Ação compacta Origem na lista de fontes expandida, lista de colunas do bloco e gaveta (seção recolhida independente da tabela/paginação). InlineDialog somente leitura mostra fonte/relatório, coluna/tipo, conexão por nome e engine (sem host/login/senha), SQL com ocorrências da coluna destacadas e cópia. Banco de rotinas nativas é indicado como definido pela rotina, sem inventar uma conexão para composições; informa rotina/conjunto em lugar de SQL inexistente. A lista de fontes mostra última leitura da prévia quando registrada. Endpoint apenas lê metadados e impede acesso entre unidades; nunca executa fonte nem grava.
+
+Item 4: teste de backend e 2 testes de interface aprovados (metadados, isolamento, destaque sem metacaracteres, cópia e fechamento por Escape).

@@ -20,6 +20,7 @@ import type {
   ColumnInfo,
   SourcePreview,
 } from "../model";
+import ColumnOrigin from "./ColumnOrigin";
 import ColumnBadge from "./ColumnBadge";
 import { formatCellValue } from "./columnTypes";
 import DataDrawer from "./DataDrawer";
@@ -515,6 +516,7 @@ export default function DataPanel({
                                 </span>
                               )}
 
+                              <ColumnOrigin source={src} column={col.name} type={col.type} loadedAt={previewState?.loadedAt} />
                               {/* Menu Usar como... */}
                               <div className="cv-use-as-dropdown">
                                 <button
