@@ -894,7 +894,7 @@ export default function ReportWorkspace({
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <strong>{r.name || r.report_name}</strong>
+                      <strong>{String(r.name || r.report_name || "").replace(/^\p{Ll}/u, c => c.toLocaleUpperCase("pt-BR"))}</strong>
                       {isReports && r.category && <small className="report-category">{r.category}</small>}
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}
@@ -931,7 +931,7 @@ export default function ReportWorkspace({
                         <>
                           {r.engine === "sqlite"
                             ? "Arquivo local"
-                            : r.host || "Destino pendente"}
+                            : r.engine === "postgres" ? "PostgreSQL" : r.engine === "oracle" ? "Oracle" : "Banco configurado"}
                           <small>{r.engine === "postgres" && r.database === "orbita" ? "PostgreSQL do Orbita" : r.database ? "Banco configurado" : "Destino pendente"}</small>
                         </>
                       ) : tab === "recipients" || tab === "grants" ? (
