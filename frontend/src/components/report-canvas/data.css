@@ -907,3 +907,7 @@
 .cv-count-help summary { cursor: pointer; list-style: none; }
 .cv-count-help summary::-webkit-details-marker { display: none; }
 .cv-count-help p { position: absolute; z-index: 30; top: 100%; left: 0; width: 240px; padding: 8px; margin: 4px 0; background: var(--cv-surface); color: var(--cv-text); border: 1px solid var(--cv-line); border-radius: 6px; }
+
+.cv-root .cv-source-tabs { height: auto; align-items: stretch; }
+.cv-root .cv-source-tabs .cv-segmented-btn { height: auto; min-height: var(--cv-h-control); min-width: 0; }
+.cv-root .cv-source-sub { white-space: normal; overflow-wrap: anywhere; }

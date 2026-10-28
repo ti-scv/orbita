@@ -316,3 +316,13 @@ def test_source_preview_reports_effective_values_and_defaults(env):
     assert response.data["effective_parameters"][0]["value"] == 5
     assert response.data["effective_parameters"][0]["default"] is False
     assert len(response.data["rows"]) == 2
+
+
+def test_wrong_unit_returns_friendly_404(env):
+    e, report, _ = env
+    other = Unit.objects.create(slug="outra", name="Outra")
+    Membership.objects.create(unit=other, user=e["user"], role="admin")
+    for suffix in ("", "canvas/"):
+        response = e["client"].get(f"/api/v1/reports/{report.pk}/{suffix}?unit=outra")
+        assert response.status_code == 404
+        assert str(response.data["detail"]) == "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista."

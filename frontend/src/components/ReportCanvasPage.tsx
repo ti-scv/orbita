@@ -53,7 +53,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
         })
         .catch((err: unknown) => {
           if (alive) {
-            setError((err as Error).message || "Não foi possível carregar os dados do relatório.");
+            setError((err as {status?: number}).status === 404 || /No ReportDefinition matches/i.test((err as Error).message) ? "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista." : (err as Error).message || "Não foi possível carregar os dados do relatório.");
           }
         });
     }
@@ -97,7 +97,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
               {specificMessage}
             </p>
             <div className="cv-route-error-actions">
-              <button
+              {error.startsWith("Este relatório não existe") ? <button type="button" className="cv-btn cv-btn-primary" onClick={back}>Trocar unidade</button> : <button
                 type="button"
                 className="cv-btn cv-btn-primary"
                 aria-label="Tentar novamente"
@@ -105,7 +105,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
               >
                 <RefreshCw size={14} aria-hidden="true" />
                 <span>Tentar novamente</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className="cv-btn"

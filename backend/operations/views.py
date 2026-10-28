@@ -1198,6 +1198,13 @@ class CampaignViewSet(ScopedRead):
 
 
 class ReportViewSet(ConfigViewSet):
+    def get_object(self):
+        from django.http import Http404
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404("Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista.")
+
     queryset = m.ReportDefinition.objects.filter(**active_conditions()).order_by("name")
     serializer_class = s.ReportSerializer
 

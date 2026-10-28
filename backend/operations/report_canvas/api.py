@@ -13,6 +13,7 @@ from contextlib import ExitStack
 from datetime import date, datetime
 from decimal import Decimal
 from types import SimpleNamespace
+from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -96,7 +97,10 @@ class CanvasAssetSchema(serializers.Serializer):
 
 def context_report(view, request):
     unit = get_unit(request, ["admin"])
-    return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
+    try:
+        return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
+    except Http404:
+        raise Http404("Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista.")
 
 
 def response(report):

@@ -199,7 +199,7 @@ export function createSourceModalState(
       id: makeId(defaultType === "report" ? "dados" : "manual", existingIds),
       label: "",
       type: defaultType,
-      reportId: availableSources[0] ? String(availableSources[0].id) : "",
+      reportId: "",
       parametersJson: "{}",
       columnsJson: '["Mes", "Total"]',
       rowsJson: '[["Jan", 10], ["Fev", 20]]',

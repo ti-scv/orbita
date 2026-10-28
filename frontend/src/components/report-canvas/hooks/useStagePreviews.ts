@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchSourcePreviewRequest, hashSourceSpec } from "../api/useSourcePreview";
+import { fetchSourcePreviewRequest, hashSourceSpec, getCachedSourcePreview, setCachedSourcePreview } from "../api/useSourcePreview";
 import type { SourcePreviewState } from "../api/useSourcePreview";
 import type { CanvasSource } from "../model";
 import { isParameterBinding } from "../model";
@@ -14,7 +14,7 @@ export interface StagePreviewState extends SourcePreviewState {
   changedParameters?: string[];
 }
 
-export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date()) {
+export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date(), preferUnit = false) {
   const fields = testParameters(schema);
   const values: Record<string,string> = {};
   if (source.type !== "report") return {fields, values};
@@ -30,6 +30,7 @@ export function previewParameters(source: CanvasSource, schema: Record<string, u
     let value = bound ? ownerSchema[configured.parameter]?.default : configured;
     value = (value === "" ? undefined : value) ?? field.default ?? ownerSchema[field.name]?.default;
     const key = field.name.toLowerCase().replace(/^wpa_/, "");
+    if (preferUnit && configured == null && /^(unit|unit_slug|unidade)$/.test(key) && unit && (!field.options || field.options.some(option => option.value === unit))) value = unit;
     if ((value == null || value === "") && /^(unit|unit_slug|unidade)$/.test(key) && unit && (!field.options || field.options.some(option => option.value === unit))) value = unit;
     if (field.options && value != null && value !== "" && !field.options.some(option => option.value === String(value))) {
       value = field.options.some(option => option.value === String(field.default)) ? field.default : undefined;
@@ -124,8 +125,11 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
         return;
       }
       const resolved = {...source, parameters: {...source.parameters, ...selected}} as typeof source;
-      const data = await fetchSourcePreviewRequest(snapshot.reportId, snapshot.unit, resolved,
+      const scope = `${snapshot.unit}:${snapshot.reportId}`;
+      const cached = retry ? undefined : getCachedSourcePreview(resolved, {}, 50, scope);
+      const data = cached || await fetchSourcePreviewRequest(snapshot.reportId, snapshot.unit, resolved,
         {}, 50, controller.signal);
+      if (!controller.signal.aborted && !cached) setCachedSourcePreview(resolved, data, {}, 50, scope);
       put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, changedParameters, assumed: !parameters });
     } catch (err: any) {
       put({ status: "error", data: null, loadedAt: null, fields, values, changedParameters,

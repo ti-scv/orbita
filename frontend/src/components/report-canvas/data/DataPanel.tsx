@@ -168,6 +168,11 @@ export default function DataPanel({
     [reportId, unit, cacheScope, onLoadStagePreview],
   );
 
+  useEffect(() => {
+    if (!active) return;
+    for (const source of sources) if (!previews[source.id]) void handleLoadPreview(source);
+  }, [active, sources, previews, handleLoadPreview]);
+
   const toggleExpand = (src: CanvasSource) => {
     if (expandedSourceId === src.id) {
       setExpandedSourceId(null);
@@ -508,14 +513,11 @@ export default function DataPanel({
                                 );
                                 e.dataTransfer.effectAllowed = "copy";
                               }}
-                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${formatColumnTypeLabel(shownType)}`}
+                              title={previewData ? `Arraste para campos do inspetor ou use o menu. Tipo: ${shownType === "unknown" && !(col.sample || []).some(v => v != null && v !== "") ? "Sem valores" : formatColumnTypeLabel(shownType)}` : "Arraste para campos do inspetor ou use o menu."}
                             >
                               <div className="cv-column-left">
-                                <ColumnBadge
-                                  type={hasPreview ? shownType : "unknown"}
-                                  looksLike={col.looks_like}
-                                />
-                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{formatColumnTypeLabel(shownType)}</span>
+                                {hasPreview && <ColumnBadge type={shownType} looksLike={col.looks_like} />}
+                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{previewState?.status === "loading" || !previewState?.status ? "Carregando tipo…" : !previewData ? "Tipo indisponível" : shownType === "unknown" && !(col.sample || []).some(v => v != null && v !== "") ? "Sem valores" : formatColumnTypeLabel(shownType)}</span>
                               </div>
 
                               {sampleVal && (

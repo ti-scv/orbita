@@ -13,7 +13,6 @@ import {
   Database,
   Plus,
   RefreshCw,
-  Search,
   Table,
   Target,
   Trash2,
@@ -72,7 +71,6 @@ export default function SourceDialog({
   const sourceFormId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [searchCatalog, setSearchCatalog] = useState("");
   const [schema, setSchema] = useState<Record<string, unknown>>({});
   const [schemaStatus, setSchemaStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
@@ -114,16 +112,7 @@ export default function SourceDialog({
     return res.ok ? null : res.error;
   }, [existingSources, sourceModal?.id, sourceModal?.originalId]);
 
-  // Filter available catalog reports
-  const filteredCatalog = useMemo(() => {
-    if (!searchCatalog.trim()) return availableSources;
-    const term = searchCatalog.toLowerCase().trim();
-    return availableSources.filter(
-      (s) =>
-        s.name.toLowerCase().includes(term) ||
-        s.code.toLowerCase().includes(term),
-    );
-  }, [availableSources, searchCatalog]);
+  const filteredCatalog = useMemo(() => [...availableSources].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")), [availableSources]);
 
   const currentParamsMap = useMemo(() => {
     try {
@@ -401,7 +390,7 @@ export default function SourceDialog({
     try {
       let draft = constructDraftSource();
       if (draft.type === "report") {
-        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit);
+        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), isCreate);
         draft = {...draft, parameters: {...draft.parameters, ...collectTestParameters(fields, values)} as Extract<CanvasSource, {type: "report"}>["parameters"]};
       }
       const preview = await fetchSourcePreviewRequest(
@@ -444,7 +433,7 @@ export default function SourceDialog({
             type="button"
             className="cv-btn-compact"
             onClick={handleTestPreview}
-            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "report" && schemaStatus !== "ready")}
+            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "report" && (!sourceModal.reportId || schemaStatus !== "ready"))}
             title="Executar consulta e verificar dados retornados"
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
@@ -454,14 +443,27 @@ export default function SourceDialog({
             type="submit"
             form={sourceFormId}
             className="cv-btn-compact primary"
-            disabled={Boolean(idError) || invalidDate}
+            disabled={Boolean(idError) || invalidDate || !sourceModal.label?.trim() || (sourceModal.type === "goals" && !monthlyGoals.length)}
+            title={!sourceModal.label?.trim() ? "Informe o nome da fonte." : sourceModal.type === "goals" && !monthlyGoals.length ? "Cadastre metas mensais antes de adicionar esta fonte." : undefined}
           >
             {isCreate ? "Adicionar" : "Salvar"}
           </button>
         </>
       }
     >
-      <form id={sourceFormId} className="cv-subform" onSubmit={event => { if (invalidDate) { event.preventDefault(); return; } onSubmit(event); }}>
+      <form id={sourceFormId} className="cv-subform" onSubmit={event => {
+        if (invalidDate || !sourceModal.label?.trim() || (sourceModal.type === "goals" && !monthlyGoals.length) || (sourceModal.type === "report" && (!selectedCatalog || schemaStatus !== "ready"))) {
+          event.preventDefault();
+          onChange({...sourceModal, error: !selectedCatalog && sourceModal.type === "report" ? "Escolha um relatório." : "Confira os campos obrigatórios antes de adicionar."});
+          event.currentTarget.querySelector<HTMLElement>(!selectedCatalog && sourceModal.type === "report" ? '[role=combobox]' : 'input[required]')?.focus();
+          return;
+        }
+        if (sourceModal.type === "report") {
+          try { const {fields, values} = previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate); collectTestParameters(fields, values); }
+          catch (error) { event.preventDefault(); onChange({...sourceModal, error: (error as Error).message}); event.currentTarget.querySelector<HTMLElement>('.cv-params-section input, .cv-params-section select')?.focus(); return; }
+        }
+        onSubmit(event);
+      }}>
         {sourceModal.error && (
           <p className="inline-error" role="alert">
             <AlertCircle size={14} />
@@ -469,15 +471,20 @@ export default function SourceDialog({
           </p>
         )}
 
-        {sourceModal.type === "report" && selectedCatalog && <p className="cv-source-sub">Fonte: {selectedCatalog.name}</p>}
         {/* 2. Tipo de Fonte (Segmented control) */}
         <div className="op-field">
           <span>1. De onde vêm os dados?</span>
-          <div className="cv-segmented" role="tablist">
+          <div className="cv-segmented cv-source-tabs" role="tablist" aria-label="Origem dos dados" onKeyDown={e => {
+            const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]"));
+            const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            const next = e.key === "ArrowRight" ? (index + 1) % tabs.length : e.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
+            if (next >= 0) { e.preventDefault(); tabs[next].focus(); }
+          }}>
             <button
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "report"}
+              tabIndex={sourceModal.type === "report" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "report" ? "active" : ""}`}
               onClick={() => handleTypeChange("report")}
             >
@@ -488,6 +495,7 @@ export default function SourceDialog({
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "inline"}
+              tabIndex={sourceModal.type === "inline" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "inline" ? "active" : ""}`}
               onClick={() => handleTypeChange("inline")}
             >
@@ -498,6 +506,7 @@ export default function SourceDialog({
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "goals"}
+              tabIndex={sourceModal.type === "goals" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "goals" ? "active" : ""}`}
               onClick={() => handleTypeChange("goals")}
             >
@@ -507,8 +516,8 @@ export default function SourceDialog({
           </div>
         </div>
 
-        {sourceModal.type === "report" && (
-          <p className="cv-source-sub">
+        {sourceModal.type === "report" && selectedCatalog && (
+          <p className="cv-source-sub" title={selectedCatalog.name}>
             Origem: {selectedCatalog?.name || `Relatório #${sourceModal.reportId}`}. Colunas: {(
               selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns
               || selectedCatalog?.columns || []
@@ -524,44 +533,14 @@ export default function SourceDialog({
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-                  <div style={{ position: "relative", flex: 1 }}>
-                    <Search
-                      size={12}
-                      style={{
-                        position: "absolute",
-                        left: 8,
-                        top: 8,
-                        color: "var(--cv-text-3)",
-                      }}
-                    />
-                    <input
-                      type="search"
-                      placeholder="Buscar por nome ou código..."
-                      value={searchCatalog}
-                      onChange={(e) => setSearchCatalog(e.target.value)}
-                      style={{ paddingLeft: 26, height: "28px", fontSize: "12px", width: "100%" }}
-                    />
-                  </div>
-                </div>
-                <Select
-                  required
-                  value={sourceModal.reportId}
-                  onChange={(e) =>
-                    onChange({
-                      ...sourceModal,
-                      reportId: e.target.value,
-                      dataset: undefined,
-                      testPreview: null,
-                    })
-                  }
-                >
-                  <option value="">Selecione um relatório</option>
-                  {filteredCatalog.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}{s.available === false ? " · Pendente" : ""}
-                    </option>
-                  ))}
+                <Select required value={sourceModal.reportId} onChange={e => {
+                  const chosen = availableSources.find(item => item.id === Number(e.target.value));
+                  onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
+                    label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
+                    parametersJson: "{}", testPreview: null, testError: null});
+                }}>
+                  <option value="">Escolha um relatório</option>
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id}>{s.name}{s.available === false ? " · Pendente" : ""}</option>)}
                 </Select>
               </label>
 
@@ -584,13 +563,14 @@ export default function SourceDialog({
               )}
             </div>
 
-            {schemaStatus === "loading" && <p role="status">Carregando opções do relatório…</p>}
-            {schemaStatus === "error" && <p role="alert">Não foi possível carregar as opções do relatório. Feche a janela e tente novamente.</p>}
-            {schemaStatus === "ready" && (() => {
-              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit);
+            {sourceModal.reportId && schemaStatus === "loading" && <p role="status">Carregando opções do relatório…</p>}
+            {sourceModal.reportId && schemaStatus === "error" && <p role="alert">Não foi possível carregar as opções do relatório. Feche a janela e tente novamente.</p>}
+            {sourceModal.reportId && schemaStatus === "ready" && (() => {
+              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit, new Date(), isCreate);
               return fields.length ? <div className="cv-params-section"><strong>Valores para a prévia</strong>
                 {fields.map(field => <label className="op-field" key={field.name}>
-                  <span>{field.label}{field.required !== false ? " *" : ""}</span>
+                  <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
+                  {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
                   {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
                     <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
@@ -831,8 +811,7 @@ export default function SourceDialog({
         {sourceModal.type === "goals" && (
           <div className="cv-table-editor">
             <p className="cv-hint" style={{ margin: "4px 0" }}>
-              Utiliza as metas mensais cadastradas neste relatório com as colunas fixas:{" "}
-              <code>year</code>, <code>month</code> e <code>value</code>.
+              Utiliza as metas mensais cadastradas neste relatório: ano, mês e valor.
             </p>
             {monthlyGoals.length > 0 ? (
               <div className="cv-table-editor-scroll" style={{ maxHeight: 160 }}>
@@ -857,7 +836,7 @@ export default function SourceDialog({
               </div>
             ) : (
               <p className="cv-hint" style={{ color: "var(--cv-warning)" }}>
-                Nenhuma meta cadastrada nas configurações do relatório.
+                Nenhuma meta cadastrada. Cadastre metas nas configurações do relatório para adicionar esta fonte.
               </p>
             )}
           </div>
@@ -869,6 +848,7 @@ export default function SourceDialog({
             <span>Nome da fonte</span>
             <input
               type="text"
+              required
               maxLength={60}
               placeholder="Ex.: Faturamento Mensal"
               value={sourceModal.mode === "edit" && sourceModal.label ? friendlySourceName({...constructDraftSource(), label: sourceModal.label}, selectedCatalog) : sourceModal.label || ""}
@@ -877,6 +857,8 @@ export default function SourceDialog({
           </label>
 
         </div>
+
+        {!sourceModal.label?.trim() && <p className="cv-hint">Informe o nome da fonte para adicionar.</p>}
 
         {/* Prévia */}
         {testing && (
@@ -903,14 +885,14 @@ export default function SourceDialog({
                 {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)}{" "}
                 {sourceModal.testPreview.elapsed_ms != null ? `(${sourceModal.testPreview.elapsed_ms} ms)` : ""}
               </span>
-              <span className="cv-chip ready">
+              {sourceModal.testPreview.rows.length ? <span className="cv-chip ready">
                 <Check size={10} /> Teste com sucesso
-              </span>
+              </span> : <span role="status">A consulta funcionou, mas não trouxe nenhuma linha para esses filtros. Confira unidade e período.</span>}
             </div>
 
             {sourceModal.testPreview.effective_parameters != null && <div>
               <strong>Parâmetros aplicados:</strong>{" "}
-              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${friendlyParameterValue(p.name, p.value)}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
             </div>}
             {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 
