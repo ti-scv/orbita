@@ -178,7 +178,7 @@ describe("Renderização estática dos módulos extraídos (preservação estrut
     expect(html).toContain("Rascunho");
     expect(html).toContain("v2");
     expect(html).toContain('role="toolbar"');
-    expect(html).toContain("Carregando estrutura do Canvas…");
+    expect(html).toContain("Montando a página…");
   });
 
   it("renderiza TopBar, LeftRail, Stage e Inspector com os atributos e classes esperados", () => {

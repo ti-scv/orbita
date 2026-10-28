@@ -152,6 +152,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     if (session.loading) return;
     if (draftCheckedRef.current) return;
     draftCheckedRef.current = true;
+    requestAnimationFrame(() => performance.mark("canvas-primeira-renderizacao"));
     const draft = loadDraftFromStorage(unit, report.id, displayVersion);
     if (
       draft &&
@@ -404,7 +405,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   } as CSSProperties;
 
   return (
-    <OriginContext.Provider value={{reportId: report.id, unit, lastReads: Object.fromEntries(Object.entries(stagePreviews.states).map(([id, state]) => [id, state.loadedAt]))}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
+    <OriginContext.Provider value={{reportId: report.id, unit, sources: session.availableSources, lastReads: Object.fromEntries(Object.entries(stagePreviews.states).map(([id, state]) => [id, state.loadedAt]))}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
       <EditorShell
         canSave={!session.loading && !session.busy}
         onSave={() => void session.handleSaveCanvas()}
@@ -484,7 +485,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
           onDismiss={() => session.setBanner(null)}
         />
         {session.loading ? (
-          <WorkspaceSkeleton />
+          <WorkspaceSkeleton label="Montando a página…" />
         ) : (
           <div className="cv-workspace" style={workspaceStyle}>
             <LeftRail

@@ -20,7 +20,7 @@ export interface ReportCanvasPageProps {
 export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPageProps) {
   const [report, setReport] = useState<ReportSummary | null>(null);
   const [initialCanvas, setInitialCanvas] = useState<CanvasGetResponse | undefined>();
-  const [loadingStep, setLoadingStep] = useState("Carregando dados e estrutura do relatório…");
+  const [loadingStep, setLoadingStep] = useState("Carregando relatório…");
   const [error, setError] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -40,12 +40,13 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     setReport(null);
     setInitialCanvas(undefined);
     setError("");
-    setLoadingStep("Carregando dados e estrutura do relatório…");
+    setLoadingStep("Carregando relatório…");
     if (admin) {
+      performance.mark("canvas-abertura-inicio");
       void loadReportCanvas().catch(() => {});
       Promise.all([
-        request<ReportSummary>(query(`reports/${id}`, { unit })).then(value => { if (alive) setLoadingStep("Dados recebidos. Carregando estrutura do Canvas…"); return value; }),
-        request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })),
+        request<ReportSummary>(query(`reports/${id}`, { unit })).then(value => { performance.mark("canvas-definicao-pronta"); if (alive) setLoadingStep("Carregando fontes…"); return value; }),
+        request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })).then(value => { performance.mark("canvas-fontes-prontas"); return value; }),
       ])
         .then(([res, canvas]) => {
           if (alive) { setInitialCanvas(canvas); setReport(res); }
@@ -125,5 +126,5 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     return <ShellSkeleton label={loadingStep} />;
   }
 
-  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} initialCanvas={initialCanvas} onClose={back} /></Suspense></CanvasErrorBoundary>;
+  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Montando a página…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} initialCanvas={initialCanvas} onClose={back} /></Suspense></CanvasErrorBoundary>;
 }

@@ -335,7 +335,7 @@ describe("Shell do editor — TopBar, LeftRail, painéis, StatusBar e Banner", (
     const loadingHtml = renderToStaticMarkup(<ReportCanvasPage id={50} unit="ame" admin={true} />);
     expect(loadingHtml).toContain("cv-skel-workspace");
     expect(loadingHtml).toContain("cv-skel-paper");
-    expect(loadingHtml).toContain("Carregando dados e estrutura do relatório…");
+    expect(loadingHtml).toContain("Carregando relatório…");
 
     const errorHtml = renderToStaticMarkup(<ReportCanvasPage id={50} unit="ame" admin={false} />);
     expect(errorHtml).toContain('role="alert"');
