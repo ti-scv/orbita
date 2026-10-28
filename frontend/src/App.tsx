@@ -485,7 +485,7 @@ function Workspace({
         className={`sidebar ${mobile ? "open" : ""}`}
       >
         <div className="sidebar-heading">
-          <div className="brand" aria-label="SCV Messenger">
+          <div className="brand" role="img" aria-label="SCV Messenger">
             <BrandLogo wordmark={!sidebarCollapsed} />
           </div>
           <button

@@ -97,7 +97,7 @@ export default function LeftRail({
         })}
       </div>
 
-      <aside
+      <div
         id={`cv-left-panel-${libraryTab}`}
         role="tabpanel"
         aria-labelledby={`cv-rail-tab-${libraryTab}`}
@@ -106,7 +106,7 @@ export default function LeftRail({
         className="cv-left-panel"
       >
         {children}
-      </aside>
+      </div>
     </>
   );
 }

@@ -993,8 +993,9 @@ export default function ReportWorkspace({
                               <span className="sr-only">{r.pending_items?.length ? `${r.pending_items.length} pendência(s)` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</span>
                             </span>
                           ) : (
-                            <span className="report-ok" title="Revisado" aria-label="Revisado">
+                            <span className="report-ok" title="Revisado">
                               <Check size={14} aria-hidden="true" />
+                              <span className="sr-only">Revisado</span>
                             </span>
                           )}
                         </>
