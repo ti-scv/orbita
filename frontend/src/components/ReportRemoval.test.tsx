@@ -59,6 +59,7 @@ it("exibe vínculos e bloqueia a remoção quando ela não está liberada", asyn
   render(<RemovalButton unit="ame" resource="report-connections" row={{id: 1, name: "Banco", version: 1}} kind="conexão" onChanged={() => {}} />);
   fireEvent.click(screen.getByRole("button", {name: "Remover conexão Banco"}));
   expect(await screen.findByText("Relatório: Vendas")).toBeTruthy();
+  expect(screen.getByText("Usada por 1 relatório.")).toBeTruthy();
   expect(screen.getByText("A remoção ainda não foi liberada neste ambiente.")).toBeTruthy();
   expect((screen.getByRole("button", {name: /^Remover$/}) as HTMLButtonElement).disabled).toBe(true);
 });
