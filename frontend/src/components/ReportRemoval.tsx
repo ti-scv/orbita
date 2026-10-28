@@ -47,7 +47,8 @@ export function RemovalButton({ unit, resource, row, kind, onChanged, dirty = fa
       {loading && <p>Consultando vínculos…</p>}
       {kind === "conexão" && reportCount > 0 && <p>Usada por {reportCount} {reportCount === 1 ? "relatório" : "relatórios"}.</p>}
       {kind === "relatório" && scheduleCount > 0 && <p>Tem {scheduleCount} {scheduleCount === 1 ? "agendamento ou programação" : "agendamentos ou programações"}.</p>}
-      {links.length > 0 && <><p>Remoção bloqueada. Resolva estes vínculos antes de remover:</p><ul>{links.map((link) => <li key={link}>{link}</li>)}</ul></>}
+      {!loading && !error && !links.length && kind === "relatório" && <p>Sem agendamentos nem vínculos.</p>}
+      {links.length > 0 && <><p>{available ? "Remoção bloqueada. Resolva estes vínculos antes de remover:" : "Vínculos existentes:"}</p><ul>{links.map((link) => <li key={link}>{link}</li>)}</ul></>}
       {error && <div role="alert" className="inline-error">{error}</div>}
     </InlineDialog>}
   </>;

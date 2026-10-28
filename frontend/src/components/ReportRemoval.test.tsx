@@ -63,3 +63,11 @@ it("exibe vínculos e bloqueia a remoção quando ela não está liberada", asyn
   expect(screen.getByText("A remoção ainda não foi liberada neste ambiente.")).toBeTruthy();
   expect((screen.getByRole("button", {name: /^Remover$/}) as HTMLButtonElement).disabled).toBe(true);
 });
+
+it("explica ausência de vínculos sem repetir bloqueios", async () => {
+  vi.mocked(request).mockResolvedValueOnce({dependencias: [], remocao_disponivel: false});
+  render(<RemovalButton unit="ame" resource="reports" row={{id: 1, name: "Vendas", version: 1}} kind="relatório" onChanged={() => {}} />);
+  fireEvent.click(screen.getByRole("button", {name: "Remover relatório Vendas"}));
+  expect(await screen.findByText("Sem agendamentos nem vínculos.")).toBeTruthy();
+  expect(screen.queryByText(/Remoção bloqueada/)).toBeNull();
+});

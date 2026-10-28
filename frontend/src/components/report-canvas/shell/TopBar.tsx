@@ -382,7 +382,7 @@ export default function TopBar({
           </div>
 
           <div className="cv-topbar-right">
-            {onOpenJson && <button type="button" className="cv-btn-compact" disabled={loading || busy} onClick={onOpenJson}>JSON</button>}
+            {onOpenJson && <button type="button" className="cv-btn-compact" disabled={loading || busy} onClick={onOpenJson}>Código do relatório</button>}
             {hasProblems && (
               <div className="cv-popover-anchor" data-cv-anchor="problems">
                 <button
