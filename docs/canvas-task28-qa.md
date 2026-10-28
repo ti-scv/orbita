@@ -42,3 +42,30 @@ FIM-TAREFA-28 — execução parcial; pendências acima.
 Esses tempos usam respostas sintéticas sem atrasos realistas e não medem a API real nem prévia com/sem cache. Permanecem pendentes máscara e validação da data, parâmetros efetivamente aplicados, tabela completa de estados e testes, cobertura completa de nomes, pré-busca ao abrir a gaveta, investigação de validação e desempenho, medições reais e revisão/correção visual. A tarefa não está concluída.
 
 FIM-TAREFA-28 — continuação parcial; pendências acima.
+
+## Continuação 28c — execução parcial
+
+- A comparação de sobreposições agora considera a parte das caixas visível após o recorte por ancestrais roláveis: a ocorrência anterior era entre um botão de origem recortado e a barra de status, não entre partes visíveis. O truncamento encontrado é o texto longo da origem, intencional, com reticências e tooltip com o nome completo. A matriz sintética final não detectou sobreposições visíveis, cortes sem tooltip/reticências, erros ou rolagem horizontal do documento. O detector não substitui inspeção humana exaustiva nem cobre todos os textos possíveis.
+- Datas fixas: máscara DD/MM/AAAA, conversão para ISO, validação de datas inexistentes e bloqueio da confirmação/prévia enquanto inválidas. Testes unitários cobrem ano bissexto e valores inválidos.
+- Nomes amigáveis foram ampliados para ações, confirmação de exclusão, prévia de tabela, KPI, gráficos, variáveis e erros de prévia. A auditoria completa de todas as mensagens e pontos ainda não foi concluída; os testes verificam o mapeamento de erro.
+- A segunda execução de `scripts/canvas-check.sh` passou em hooks, TypeScript, testes e build (`/tmp/canvas-task28c-check-final.log`). Backend: 34 testes passaram em SQLite isolado (`/tmp/canvas-task28c-backend.log`).
+- Staging reconstruído sem alteração do backend; curl identificou `ReportCanvas-CmlVPY5g.js`. Nenhum salvamento ou ativação de relatório foi feito.
+- `JsonEditorDialog` chama canvas-validate ao clicar em “Validar e aplicar”; não há validação ao digitar. Os logs disponíveis não permitem atribuir os 400 anteriores a uma causa. Curl sem autenticação para session e as quatro rotas GET de relatórios 1 e 6 retornou 401 (0,486 s para session, 0,0036–0,0055 s para as demais); não são medidas de respostas autenticadas. Não se reproduziu nem explicou o 502.
+- Pendentes: indicar valores efetivamente aplicados e padrões na prévia; verificar toda a formatação numérica e todos os nomes/erros; comprovar e testar todos os estados; pré-buscar origens ao abrir colunas; reproduzir e explicar os erros de staging; medir a cadeia autenticada e prévia com e sem cache e com atrasos realistas. Não foi demonstrada a meta de abertura. Os testes de data não cobrem ainda interação no navegador. As capturas a seguir são sintéticas, não evidência dos dados reais.
+
+| Relatório | Largura | Tema | Abertura sintética (ms) | Sobreposições visíveis | Cortes não intencionais |
+|---|---:|---|---:|---:|---:|
+| 6 | 1440 | light | 1186 | 0 | 0 |
+| 6 | 1440 | dark | 1219 | 0 | 0 |
+| 6 | 1280 | light | 1097 | 0 | 0 |
+| 6 | 1280 | dark | 1019 | 0 | 0 |
+| 6 | 1100 | light | 1002 | 0 | 0 |
+| 6 | 1100 | dark | 1033 | 0 | 0 |
+| 1 | 1440 | light | 984 | 0 | 0 |
+| 1 | 1440 | dark | 956 | 0 | 0 |
+| 1 | 1280 | light | 962 | 0 | 0 |
+| 1 | 1280 | dark | 957 | 0 | 0 |
+| 1 | 1100 | light | 1018 | 0 | 0 |
+| 1 | 1100 | dark | 1022 | 0 | 0 |
+
+FIM-TAREFA-28 — execução parcial; pendências acima.
