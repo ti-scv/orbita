@@ -61,7 +61,7 @@ export function unitOptionLabel(name: string, value: string, fallback: string): 
 export function friendlyParameterValue(name: string, value: unknown): string {
   if (value == null || value === "") return /^(end|end_date|data_final)$/i.test(name) ? "sem limite" : "—";
   const text = String(value);
-  if (/^(unidade|unit)$/i.test(name) && text.toLowerCase() === "ame") return "AME Votuporanga";
+  if (/^(unidade|unit)$/i.test(name)) return unitOptionLabel(name, text, text);
   if (/^(tipo_envio)$/i.test(name) && text.toLowerCase() === "appointment") return "Agendamento";
   return displayParameter(value, /^\d{4}-\d{2}-\d{2}$/.test(text) ? "date" : "string");
 }

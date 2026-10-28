@@ -29,3 +29,23 @@ it("gaveta identifica coluna vazia e permite expandir e recolher", () => {
  fireEvent.click(screen.getByRole("button", {name:"Expandir"})); expect(screen.getByRole("button", {name:"Recolher"}).getAttribute("aria-expanded")).toBe("true");
  fireEvent.click(screen.getByRole("button", {name:"Recolher"})); expect(screen.getByRole("button", {name:"Expandir"})).toBeTruthy();
 });
+
+it("padroniza o nome da unidade nos valores e nas opções", async () => {
+ const {unitOptionLabel, friendlyParameterValue} = await import("./parameters");
+ for (const unit of ["scv", "ame", "ame-jales", "ame-santa-fe", "sansaude", "nas"]) {
+   expect(friendlyParameterValue("unidade", unit)).toBe(unitOptionLabel("unidade", unit, unit));
+ }
+ expect(unitOptionLabel("unidade", "scv", "Sansaúde")).toBe("SCV");
+});
+
+it("mostra parâmetro obrigatório e impede envio sem valor", async () => {
+ vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ok: true, status: 200, json: async () => ({parameter_schema: {paciente: {type:"string", label:"Paciente", required:true}}})}));
+ try {
+  mount(); Element.prototype.scrollIntoView = vi.fn();
+  fireEvent.click(screen.getByRole("combobox"));
+  fireEvent.click(screen.getByRole("option", {name: /Agenda · agenda · #1/}));
+  expect(await screen.findByText("Paciente * (obrigatório)")).toBeTruthy();
+  fireEvent.submit(screen.getByRole("dialog").querySelector("form")!);
+  expect(screen.getByRole("alert").textContent).toContain("Informe paciente");
+ } finally { vi.unstubAllGlobals(); }
+});
