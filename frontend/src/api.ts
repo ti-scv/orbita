@@ -33,17 +33,45 @@ export async function request<T>(
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  const response = await fetch(apiUrl(url), {
-    method,
-    credentials: "same-origin",
-    signal,
-    headers: {
-      "Content-Type": "application/json",
-      ...(method !== "GET" ? { "X-CSRFToken": csrfToken } : {}),
-      ...(method === "POST" ? { "Idempotency-Key": generateUUID() } : {}),
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
+  // Only retry read-only operations: a session lookup and source previews.
+  const retryable = (method === "GET" && /\/auth\/session\//.test(url)) ||
+    (method === "POST" && /\/canvas-source-preview\//.test(url));
+  const idempotencyKey = method === "POST" ? generateUUID() : "";
+  let response: Response | undefined;
+  for (let attempt = 0; attempt < (retryable ? 3 : 1); attempt++) {
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    signal?.addEventListener("abort", cancel, { once: true });
+    let timedOut = false;
+    const timer = retryable ? setTimeout(() => { timedOut = true; controller.abort(); }, 15000) : undefined;
+    try {
+      response = await fetch(apiUrl(url), {
+        method,
+        credentials: "same-origin",
+        signal: retryable ? controller.signal : signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(method !== "GET" ? { "X-CSRFToken": csrfToken } : {}),
+          ...(method === "POST" ? { "Idempotency-Key": idempotencyKey } : {}),
+        },
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      });
+      if (!retryable || ![502, 504].includes(response.status)) break;
+      if (attempt === 2) throw Object.assign(new Error("O servidor está temporariamente indisponível. Tente novamente em instantes."), { status: response.status });
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      if (!timedOut || attempt === 2) {
+        if (timedOut) throw new Error("A consulta demorou demais. Tente novamente em instantes.");
+        throw error;
+      }
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+      signal?.removeEventListener("abort", cancel);
+    }
+    await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
+  }
+  if (!response) throw new Error("Não foi possível acessar o servidor. Tente novamente.");
   if (response.status === 204) return undefined as T;
   let data: any;
   try {

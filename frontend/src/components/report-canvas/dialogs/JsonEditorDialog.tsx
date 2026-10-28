@@ -13,6 +13,9 @@ export default function JsonEditorDialog({ layout, validate, onApply, onUndo, ca
   async function apply() {
     setBusy(true); setError("");
     try {
+      let parsed: unknown;
+      try { parsed = JSON.parse(text); } catch { throw new Error("JSON inválido. Confira a sintaxe antes de validar."); }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !Array.isArray((parsed as CanvasLayout).pages) || !Array.isArray((parsed as CanvasLayout).sources)) throw new Error("O JSON precisa conter as listas de páginas e fontes.");
       const next = await validate(text);
       if (window.confirm("Aplicar o JSON ao rascunho do canvas? O relatório só será gravado ao usar Salvar.")) onApply(next);
     } catch (exc) { setError((exc as Error).message); }
