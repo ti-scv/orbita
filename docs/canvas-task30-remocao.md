@@ -33,3 +33,13 @@ A matriz sintética do componente foi executada em servidor de desenvolvimento i
 - A migração `operations/0031_report_removal.py` está pendente de decisão e não foi aplicada ao banco real. Por padrão `REPORT_REMOVAL_ENABLED` fica desligado: os modelos e consultas continuam compatíveis com o banco anterior e remoção, listagem de removidos e restauração respondem 503 com orientação. Após aprovação e aplicação da migração no banco correspondente, é necessário configurar `REPORT_REMOVAL_ENABLED=1` e reiniciar os processos que usam o banco. Não desligar a chave após criar registros removidos, pois o modo de compatibilidade não distingue esses registros. A decisão de migrar e habilitar não foi tomada nesta tarefa.
 - No SQLite, o filtro de dia da semana usa `json_each`, pois o lookup JSON `contains` do Django não é suportado nesse banco; PostgreSQL mantém o lookup original.
 - As capturas `t30-*` são sintéticas. As matrizes anteriores cobriram 1100, 1280 e 1440 px, nos temas claro e escuro; incluem menu e Desfazer no palco, confirmação de relatório, conexões com dependências e seções de removidos. Os resultados automatizados não substituem inspeção visual completa.
+
+### Validação da continuação
+
+- SQLite isolado: os cinco testes de remoção e o teste do filtro de dias passaram. Também foi criado um banco isolado até a migração 0030, com a chave desligada: as consultas funcionaram e a ação retornou 503 com a mensagem de migração pendente.
+- PostgreSQL isolado: a suíte ampla teve 980 testes aprovados, uma falha e sete erros de preparação por falta da chave sintética de credenciais. Os sete testes de SQL operacional passaram em nova execução com chave sintética. A falha restante é `test_preview_exception_does_not_disclose_connection_or_data`: uma exceção inesperada da prévia pode exibir seu texto na resposta. O código correspondente já estava na base da 29d e não foi alterado nesta tarefa; precisa de correção e nova validação.
+- No worktree integrado, `canvas-check.sh` passou em hooks, TypeScript, Vitest e build. Staging 8091 reconstruído com a API indicada; a API foi reiniciada e o bundle `ReportCanvas-B7gtRAoY.js` respondeu HTTP 200. Não houve exclusão real nem migração no banco real.
+- As capturas são dados sintéticos e os resultados automáticos não equivalem a uma inspeção visual completa. A conclusão é parcial pela falha de backend pendente e pela ativação da remoção de cadastros depender da decisão sobre a migração.
+
+FIM-TAREFA-30 — parcial.
+FIM-DO-PROCESSO
