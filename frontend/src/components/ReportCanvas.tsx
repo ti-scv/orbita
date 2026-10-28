@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { AlertTriangle, PanelRightOpen } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
+import ParameterEditor from "./report-canvas/data/ParameterEditor";
 import DataPanel from "./report-canvas/data/DataPanel";
 import SourceDialog from "./report-canvas/data/SourceDialog";
 import PreviewDialog from "./report-canvas/dialogs/PreviewDialog";
@@ -519,6 +520,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 onClosePanel={prefs.closeLeftPanel}
               />
               <div className="cv-panel-slot" hidden={prefs.libraryTab !== "data"}>
+                <ParameterEditor items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
                 <DataPanel
                   stagePreviewStates={stagePreviews.states}
                   onLoadStagePreview={(id) => stagePreviews.load(id, true)}

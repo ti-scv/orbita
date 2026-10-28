@@ -36,3 +36,6 @@ JSON e origem das colunas permanecem pendentes. A tarefa nao esta concluida.
 Teste especifico: task20-preview.test.tsx, dois testes aprovados em Node 24.
 
 Verificacao final: canvas-check.sh concluiu hooks, TypeScript, 511 testes e build com sucesso; o processo excedeu o limite de 90 segundos durante a finalizacao. canvas-stage.sh up excedeu 90 segundos durante o build; nao foi possivel confirmar a nova imagem nem realizar validacao visual. O container de staging existente nao comprova que a alteracao foi publicada nele.
+
+## Rodada 3 — item 1
+Editor de declarações em Dados: contrato atual e cadastro legado; uso real em SQL, fontes, blocos e contrato, duplicidades normalizadas e sugestões da fotografia CSV somente na mesma versão. Renomeação explícita limita-se aos nomes históricos sugeridos, sem reescrever SQL. Exclusão individual/em lote mostra resumo e consumidores; tudo fica pendente até Salvar. A causa era a interface editar apenas vínculos de fonte, não declarações. Nenhum relatório foi alterado por script. Backend: dois testes aprovados. Teste de interface cobre seleção e confirmação.

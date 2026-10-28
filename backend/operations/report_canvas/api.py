@@ -25,6 +25,7 @@ from operations.report_engine import parameters, report_filename
 from .schema import default_layout, validate_layout, validate_complete, fail, fail_at, source_label
 from .engine import definition_snapshot, export, validate_values
 from .registry import SOURCES
+from .parameter_editor import declarations
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ def response(report):
     if mapping and not report.canvas_enabled:
         notice=mapping.get("blocker") or "Modelo Canvas mapeado; geração pendente de homologação da fonte."
     return {
+        "parameter_editor": declarations(report),
         "default_data_mode": "preview" if report.reviewed and report.legacy.get("canvas_legacy_delivery", {}).get("data_mode") == "preview" else "sample",
         "port_notice": notice,
         "monthly_goals": report.monthly_goals,
@@ -154,6 +156,8 @@ def configure(view, request):
             if type(request.data.get("version")) is not int or request.data["version"] != current.version:
                 raise Conflict()
             layout = validate_layout(request.data.get("layout"))
+            from .parameter_editor import apply_edits
+            apply_edits(current, request.data.get("parameter_edits", []))
             enabled = request.data.get("enabled", False)
             fmt = request.data.get("output_format", "pdf")
             if type(enabled) is not bool or fmt not in ("pdf", "xlsx"):
@@ -190,7 +194,7 @@ def configure(view, request):
                 current.reviewed = True
                 current.output_format = fmt
             current.version += 1
-            current.save(update_fields=["canvas_layout", "canvas_enabled", "reviewed", "output_format", "legacy", "version"])
+            current.save(update_fields=["canvas_layout", "canvas_enabled", "reviewed", "output_format", "legacy", "parameter_schema", "version"])
             Audit.objects.create(
                 unit=current.unit,
                 actor=request.user,

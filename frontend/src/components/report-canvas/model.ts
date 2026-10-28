@@ -134,7 +134,11 @@ export interface CanvasAssetMeta {
   mime?: string;
 }
 
+export interface ParameterDeclaration { name: string; status: string; uses: string[]; suggestion: string; historical: boolean }
+export interface ParameterEdit { name: string; rename?: string }
+
 export interface CanvasGetResponse {
+  parameter_editor?: ParameterDeclaration[];
   default_data_mode?: "sample" | "preview";
   port_notice?: string;
   monthly_goals?: Array<{year:number;month:number;value:number}>;

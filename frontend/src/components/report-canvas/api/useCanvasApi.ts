@@ -60,6 +60,7 @@ export async function saveCanvasRequest(
   reportId: number,
   unit: string,
   params: {
+    parameterEdits?: import("../model").ParameterEdit[];
     version: number;
     layout: CanvasLayout;
     enabled: boolean;
@@ -72,6 +73,7 @@ export async function saveCanvasRequest(
       "POST",
       {
         version: Math.max(1, Math.round(Number(params.version) || 1)),
+        parameter_edits: params.parameterEdits || [],
         layout: params.layout,
         enabled: params.enabled,
         output_format: params.outputFormat,

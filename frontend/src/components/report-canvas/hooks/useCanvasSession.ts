@@ -62,6 +62,8 @@ export function useCanvasSession({
   onOpenProblemsPanel,
 }: UseCanvasSessionParams) {
   const api = useCanvasApi({ reportId: report.id, unit });
+  const [parameterDeclarations, setParameterDeclarations] = useState<import("../model").ParameterDeclaration[]>([]);
+  const [parameterEdits, setParameterEdits] = useState<import("../model").ParameterEdit[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
@@ -105,6 +107,8 @@ export function useCanvasSession({
           ? { data: initialCanvas, normalizedLayout: normalizeLayout(initialCanvas.layout) }
           : await api.fetchCanvas();
         if (data.port_notice) setBanner({ tone: "conflict", text: data.port_notice });
+        setParameterDeclarations(data.parameter_editor || []);
+        setParameterEdits([]);
         const nextEnabled = Boolean(data.enabled);
         const nextFormat: OutputFormat = data.output_format === "xlsx" ? "xlsx" : "pdf";
         setVersion(typeof data.version === "number" ? data.version : initialVersionRef.current);
@@ -167,10 +171,13 @@ export function useCanvasSession({
     try {
       const { saved, normalizedLayout } = await api.saveCanvas({
         version,
+        parameterEdits,
         layout: clean,
         enabled,
         outputFormat,
       });
+      setParameterDeclarations(saved.parameter_editor || []);
+      setParameterEdits([]);
       const savedEnabled = Boolean(saved.enabled);
       const savedFormat: OutputFormat = saved.output_format === "xlsx" ? "xlsx" : "pdf";
       setVersion(typeof saved.version === "number" ? saved.version : version + 1);
@@ -217,6 +224,7 @@ export function useCanvasSession({
     store.markSaved,
     validateBeforeSend,
     version,
+    parameterEdits,
   ]);
 
   const preview = usePreviewDialog({
@@ -335,7 +343,8 @@ export function useCanvasSession({
     setEnabled,
     outputFormat,
     setOutputFormat,
-    metaDirty: enabled !== savedMeta.enabled || outputFormat !== savedMeta.outputFormat,
+    parameterDeclarations, parameterEdits, setParameterEdits,
+    metaDirty: parameterEdits.length > 0 || enabled !== savedMeta.enabled || outputFormat !== savedMeta.outputFormat,
     monthlyGoals,
     availableSources,
     assets,
