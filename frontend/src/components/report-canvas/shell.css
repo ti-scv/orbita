@@ -409,10 +409,17 @@
 
 @media (max-width: 1180px) {
   .cv-root .cv-topbar {
-    padding: 0 var(--cv-sp-2);
+    flex-basis: auto;
+    height: auto;
+    padding: var(--cv-sp-2);
   }
   .cv-root .cv-topbar-toolbar {
+    height: auto;
+    flex-wrap: wrap;
     gap: var(--cv-sp-2);
+  }
+  .cv-root .cv-topbar-left {
+    flex: 1 0 100%;
   }
   .cv-root .cv-data-mode-prefix,
   .cv-root .cv-problems-label {
