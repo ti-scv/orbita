@@ -116,3 +116,20 @@ def test_reversal_restores_only_mapping_and_rejects_later_edits(five):
     assert all(KEY not in r.legacy for r in ReportDefinition.objects.all())
     with pytest.raises(CommandError, match='ausente'):
         revert_plan(approved, apply=True)
+
+
+def test_fresh_dry_run_after_apply_preserves_original_plan(five, tmp_path):
+    def sample(r):
+        return mapped_layout(r, COLUMNS[r.pk]), {
+            'read_only': True, 'numeric_parity': 'pending_accepted_legacy_sample', 'sample_rows': 5}
+    first = tmp_path/'first.json'
+    with patch('operations.management.commands.map_legacy_five_canvases.probe', side_effect=sample):
+        call_command('map_legacy_five_canvases', output=str(first), stdout=StringIO())
+    approved = json.loads(first.read_text())
+    apply_plan(approved)
+    second = tmp_path/'second.json'
+    with patch('operations.management.commands.map_legacy_five_canvases.probe') as probe:
+        call_command('map_legacy_five_canvases', output=str(second), stdout=StringIO())
+    probe.assert_not_called()
+    assert json.loads(second.read_text()) == approved
+    assert apply_plan(json.loads(second.read_text())) == []

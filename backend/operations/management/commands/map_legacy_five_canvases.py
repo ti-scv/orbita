@@ -196,6 +196,19 @@ class Command(BaseCommand):
             rows = []
             for r in reports:
                 eligible(r)
+                saved = r.legacy.get(KEY, {})
+                if saved:
+                    previous = {**state(r), **saved['previous']}
+                    row = {'id': r.pk, 'code': r.code, 'unit': 'scv',
+                           'version': saved['previous']['version'],
+                           'before_sha256': sha(previous), 'layout': r.canvas_layout,
+                           'evidence': saved['validation'], 'pending': PENDING}
+                    if (sha(row) != saved['plan_sha256']
+                            or saved['applied_state_sha256'] != sha({
+                                'layout': r.canvas_layout, 'version': r.version})):
+                        raise CommandError('Cadastro editado após mapeamento: ' + str(r.pk))
+                    rows.append(row)
+                    continue
                 try:
                     layout, evidence = probe(r)
                 except Exception as exc:
