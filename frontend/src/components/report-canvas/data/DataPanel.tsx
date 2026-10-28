@@ -24,7 +24,7 @@ import type {
 } from "../model";
 import ColumnOrigin from "./ColumnOrigin";
 import ColumnBadge from "./ColumnBadge";
-import { formatCellValue, formatColumnTypeLabel } from "./columnTypes";
+import { formatCellValue, formatColumnTypeLabel, inferColumnType } from "./columnTypes";
 import DataDrawer from "./DataDrawer";
 import EmptyState from "../common/EmptyState";
 import { findSourceUsages } from "./sourceOps";
@@ -383,12 +383,12 @@ export default function DataPanel({
                       )}
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
-                        <span className="cv-chip ready" tabIndex={0} title="O total considera os parâmetros atuais (período, unidade, tipo de envio). Mostramos só as 50 primeiras na prévia.">
+                        <details className="cv-count-help"><summary className="cv-chip ready">
                           {previewData.total_rows_exact !== false && previewData.rows.length === previewData.total_rows ? `Mostrando todas as ${previewData.rows.length.toLocaleString("pt-BR")} linhas` : `Mostrando ${formatRowCount(previewData.rows.length, previewData)}`}
                           {previewState?.loadedAt && (
                             <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}
-                        </span>
+                        </summary><p>O total considera os parâmetros atuais (período, unidade, tipo de envio). Mostramos só as 50 primeiras na prévia.</p></details>
                       )}
 
                       {!previewData && !previewState?.status && (
@@ -475,6 +475,8 @@ export default function DataPanel({
                           </span>
                         )}
                         {columns.map((col) => {
+                          const inferred = inferColumnType(col.sample || []);
+                          const shownType = inferred !== "unknown" && (col.type === "unknown" || (col.type === "datetime" && inferred === "date")) ? inferred : col.type;
                           const rawSample = col.sample?.[0];
                           const sampleVal = rawSample == null || rawSample === "" ? "" : formatCellValue(rawSample, col.type);
                           const hasPreview = Boolean(previewData);
@@ -498,14 +500,14 @@ export default function DataPanel({
                                 );
                                 e.dataTransfer.effectAllowed = "copy";
                               }}
-                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${formatColumnTypeLabel(col.type)}`}
+                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${formatColumnTypeLabel(shownType)}`}
                             >
                               <div className="cv-column-left">
                                 <ColumnBadge
-                                  type={hasPreview ? col.type : "unknown"}
+                                  type={hasPreview ? shownType : "unknown"}
                                   looksLike={col.looks_like}
                                 />
-                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{formatColumnTypeLabel(col.type)}</span>
+                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{formatColumnTypeLabel(shownType)}</span>
                               </div>
 
                               {sampleVal && (
@@ -514,7 +516,7 @@ export default function DataPanel({
                                 </span>
                               )}
 
-                              <ColumnOrigin source={src} column={col.name} type={col.type} loadedAt={previewState?.loadedAt} />
+                              <ColumnOrigin source={src} column={col.name} type={shownType} loadedAt={previewState?.loadedAt} />
                               {/* Menu Usar como... */}
                               <div className="cv-use-as-dropdown">
                                 <button

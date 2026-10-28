@@ -5,6 +5,7 @@ import ColumnOrigin, { OriginContext, loadOrigin } from "./ColumnOrigin";
 import { fetchSourcePreviewRequest } from "../api/useSourcePreview";
 import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
+import { friendlySourceName } from "./sourceName";
 import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
 
@@ -146,16 +147,16 @@ export default function DataDrawer({
   const countText = `Mostrando ${formatRowCount(displayRows.length, currentPreview || {total_rows: totalCount})} · a partir da ${(offset + 1).toLocaleString("pt-BR")}`;
 
   return (
-    <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${sourceName || source.label || source.id}`}>
+    <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${sourceName || friendlySourceName(source)}`}>
       <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
         <table className="cv-column-metadata"><thead><tr><th>Coluna</th><th>Exemplo</th><th>Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
       </details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
-          <h3 className="cv-drawer-title" title={`Dados: ${sourceName || source.label || source.id}`}>
-            Dados: {sourceName || source.label || source.id}
+          <h3 className="cv-drawer-title" title={`Dados: ${sourceName || friendlySourceName(source)}`}>
+            Dados: {sourceName || friendlySourceName(source)}
           </h3>
-          {!loading && <span className="cv-drawer-count">{countText}</span>}
+          {!loading && <details className="cv-count-help"><summary className="cv-drawer-count">{countText} ⓘ</summary><p>O total considera os parâmetros atuais. A gaveta mostra as linhas da página atual.</p></details>}
           {loading && <span className="cv-chip loading">Atualizando…</span>}
         </div>
         <div className="cv-drawer-controls">

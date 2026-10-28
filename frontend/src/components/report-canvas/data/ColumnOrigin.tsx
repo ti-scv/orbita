@@ -24,7 +24,7 @@ export default function ColumnOrigin({ source, column, type = "unknown", loadedA
   const {reportId, unit, lastReads, sources = []} = useContext(OriginContext);
   const catalog = source?.type === "report" ? sources.find(item => item.id === source.report_id) : undefined;
   const friendlySource = sourceName || catalog?.name || source?.label || "Fonte";
-  const friendlyDataset = datasetName || catalog?.datasets?.find(item => source?.type === "report" && item.id === source.dataset)?.name || "Dados";
+  void datasetName;
   const readAt = loadedAt || (source && lastReads?.[source.id]);
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<OriginDetails | null>(null);
@@ -38,7 +38,7 @@ export default function ColumnOrigin({ source, column, type = "unknown", loadedA
     return () => { current = false; };
   }, [open, source, column, reportId, unit]);
   return <>
-    <span className="cv-origin-text" title={`${friendlySource} › ${friendlyDataset}`}>{source?.type === "report" ? friendlySource : source?.type === "inline" ? `Fixa › ${column}` : `Calculada › ${column}`}</span>
+    <span className="cv-origin-text" title={friendlySource}>{source?.type === "report" ? friendlySource : source?.type === "inline" ? `Fixa › ${column}` : `Calculada › ${column}`}</span>
     <button type="button" className="cv-btn-compact" title="Ver detalhes e consulta da origem" aria-label={`Origem da coluna ${column}`} disabled={!source} onMouseEnter={() => { if (source) void loadOrigin(reportId, unit, source, column).catch(() => {}); }} onFocus={() => { if (source) void loadOrigin(reportId, unit, source, column).catch(() => {}); }} onClick={event => {event.stopPropagation(); setOpen(true);}}>Origem</button>
     {open && <InlineDialog title={`Origem da coluna ${column}`} subtitle="Somente leitura" onClose={() => setOpen(false)} className="cv-root" footer={<button type="button" className="cv-btn-compact" disabled={!data?.query} onClick={async () => { try { await navigator.clipboard.writeText(data?.query || ""); setCopyStatus("Consulta copiada"); } catch { setCopyStatus("Não foi possível copiar a consulta"); } }}>Copiar consulta</button>}>
       {error && <p role="alert">{error}</p>}

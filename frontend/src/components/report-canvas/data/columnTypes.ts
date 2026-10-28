@@ -25,7 +25,7 @@ export function inferValueType(val: unknown): ColumnDataType {
   if (typeof val === "string") {
     const trimmed = val.trim();
     if (trimmed.toLowerCase() === "true" || trimmed.toLowerCase() === "false") return "boolean";
-    if (ISO_DATE_RE.test(trimmed)) return "date";
+    if (ISO_DATE_RE.test(trimmed) || /^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return "date";
     if (ISO_DATETIME_RE.test(trimmed)) return "datetime";
     if (NUMERIC_STRING_RE.test(trimmed)) return "number";
     return "text";

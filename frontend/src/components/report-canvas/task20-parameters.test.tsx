@@ -11,7 +11,7 @@ describe("Parâmetros no rascunho", () => {
   fireEvent.click(screen.getByRole("button", {name:"Selecionar não usados"}));
   expect(screen.getByRole("checkbox").getAttribute("type")).toBe("checkbox");
   fireEvent.click(screen.getByRole("button", {name:"Excluir selecionados"}));
-  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("ANTIGO"));
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("Antigo"));
   expect(change).toHaveBeenCalledWith([{name:"ANTIGO"}]);
  });
 });

@@ -1,3 +1,4 @@
+import { friendlyParameterName, friendlyParameterValue } from "../parameters";
 import { friendlySourceError } from "./sourceName";
 import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
 import { formatRowCount } from "./rowCount";
@@ -877,7 +878,7 @@ export default function SourceDialog({
 
             {sourceModal.testPreview.effective_parameters != null && <div>
               <strong>Parâmetros aplicados:</strong>{" "}
-              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${p.label}: ${formatCellValue(p.value)}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${friendlyParameterValue(p.name, p.value)}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
             </div>}
             {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 
