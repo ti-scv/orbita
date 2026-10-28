@@ -4,12 +4,12 @@ server {
   root /usr/share/nginx/html;
   index index.html;
   client_max_body_size 4m;
-  # Compress static code/styles; API responses can include private report data.
+  # Compress code/styles and JSON reads; do not cache private API responses.
   gzip on;
   gzip_vary on;
   gzip_min_length 1024;
   gzip_comp_level 5;
-  gzip_types text/css application/javascript;
+  gzip_types text/css application/javascript application/json;
   location /assets/ {
     try_files $uri =404;
     expires 1y;
