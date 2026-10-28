@@ -1,3 +1,4 @@
+import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
 import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -408,6 +409,7 @@ export default function SourceDialog({
     }
   };
 
+  const invalidDate = paramItems.some(param => !param.isBinding && isDateParameter(param.key, param.type) && param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)));
   const draftSource = constructDraftSource();
 
   return (
@@ -425,7 +427,7 @@ export default function SourceDialog({
             type="button"
             className="cv-btn-compact"
             onClick={handleTestPreview}
-            disabled={testing || Boolean(idError)}
+            disabled={testing || Boolean(idError) || invalidDate}
             title="Executar consulta e verificar dados retornados"
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
@@ -435,14 +437,14 @@ export default function SourceDialog({
             type="submit"
             form={sourceFormId}
             className="cv-btn-compact primary"
-            disabled={Boolean(idError)}
+            disabled={Boolean(idError) || invalidDate}
           >
             {sourceModal.testError ? "Confirmar sem testar" : "Confirmar fonte"}
           </button>
         </>
       }
     >
-      <form id={sourceFormId} className="cv-subform" onSubmit={onSubmit}>
+      <form id={sourceFormId} className="cv-subform" onSubmit={event => { if (invalidDate) { event.preventDefault(); return; } onSubmit(event); }}>
         {sourceModal.error && (
           <p className="inline-error" role="alert">
             <AlertCircle size={14} />
@@ -663,18 +665,19 @@ export default function SourceDialog({
                               </option>
                             ))}
                           </Select>
+                        ) : isDateParameter(param.key, param.type) ? (
+                          <div>
+                            <input type="text" inputMode="numeric" aria-label={`Valor de ${param.key}`}
+                              aria-invalid={param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue))}
+                              placeholder="DD/MM/AAAA" value={displayFixedDate(param.fixedValue)}
+                              onChange={(e) => { const masked = maskFixedDate(e.target.value); handleParamChange(idx, { fixedValue: parseFixedDate(masked) || masked }); }}
+                              style={{ height: "28px", fontSize: "12px" }} />
+                            {param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)) && <span className="inline-error" role="alert">Informe uma data válida no formato DD/MM/AAAA.</span>}
+                          </div>
                         ) : (
-                          <input
-                            type={/date|data/i.test(param.type) || /^(start|end|data.*|.*_date)$/i.test(param.key) ? "date" : "text"}
-                            aria-label={`Valor de ${param.key}`}
-                            title={/date|data/i.test(param.type) || /^(start|end|data.*|.*_date)$/i.test(param.key) ? "Data: DD/MM/AAAA. Enviada como AAAA-MM-DD." : "Valor fixo"}
-                            placeholder="Valor fixo"
-                            value={param.fixedValue}
-                            onChange={(e) =>
-                              handleParamChange(idx, { fixedValue: e.target.value })
-                            }
-                            style={{ height: "28px", fontSize: "12px" }}
-                          />
+                          <input type="text" aria-label={`Valor de ${param.key}`} title="Valor fixo" placeholder="Valor fixo"
+                            value={param.fixedValue} onChange={(e) => handleParamChange(idx, { fixedValue: e.target.value })}
+                            style={{ height: "28px", fontSize: "12px" }} />
                         )}
 
                         <button
