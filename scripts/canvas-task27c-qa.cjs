@@ -31,18 +31,19 @@ const path = require('node:path');
       page.on('pageerror', error => record.errors.push(error.message));
       async function capture(panel) {
         const metrics = await page.evaluate(() => {
-          const visible = el => { const r=el.getBoundingClientRect(), s=getComputedStyle(el); return r.width>0 && r.height>0 && s.visibility!=='hidden' && s.display!=='none'; };
+          const visibleRect = el => { let r=el.getBoundingClientRect(); let rect={left:Math.max(0,r.left),top:Math.max(0,r.top),right:Math.min(innerWidth,r.right),bottom:Math.min(innerHeight,r.bottom)}; for(let parent=el.parentElement;parent;parent=parent.parentElement) { const s=getComputedStyle(parent), p=parent.getBoundingClientRect(); if (/(hidden|auto|scroll|clip)/.test(s.overflowX)) {rect.left=Math.max(rect.left,p.left);rect.right=Math.min(rect.right,p.right);} if (/(hidden|auto|scroll|clip)/.test(s.overflowY)) {rect.top=Math.max(rect.top,p.top);rect.bottom=Math.min(rect.bottom,p.bottom);} } return rect; };
+          const visible = el => { const r=visibleRect(el), s=getComputedStyle(el); return r.right>r.left && r.bottom>r.top && s.visibility!=='hidden' && s.display!=='none'; };
           const buttons = [...document.querySelectorAll('button')].filter(visible).filter(el => { const r=el.getBoundingClientRect(), top=document.elementFromPoint(Math.max(0,Math.min(innerWidth-1,r.left+r.width/2)),Math.max(0,Math.min(innerHeight-1,r.top+r.height/2))); return top && (el.contains(top) || top.contains(el)); });
           const unnamed = buttons.filter(b => !(b.getAttribute('aria-label') || b.getAttribute('title') || b.innerText.trim())).map(b => b.outerHTML.slice(0,180));
-          const clipped = [...document.querySelectorAll('button,label,.cv-source-label,.cv-origin-text')].filter(visible).filter(e => e.scrollWidth > e.clientWidth + 2 && getComputedStyle(e).overflowX === 'hidden').map(e => e.textContent.trim().slice(0,80));
+          const clipped = [...document.querySelectorAll('button,label,.cv-source-label,.cv-origin-text')].filter(visible).filter(e => e.scrollWidth > e.clientWidth + 2 && getComputedStyle(e).overflowX === 'hidden').map(e => ({text:e.textContent.trim().slice(0,80), intentional:getComputedStyle(e).textOverflow === 'ellipsis' && !!e.getAttribute('title')}));
           const overlaps = [];
           for (let i=0;i<buttons.length;i++) for (let j=i+1;j<buttons.length;j++) {
-            const a=buttons[i].getBoundingClientRect(), b=buttons[j].getBoundingClientRect();
+            const a=visibleRect(buttons[i]), b=visibleRect(buttons[j]);
             if (Math.min(a.right,b.right)-Math.max(a.left,b.left)>2 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>2) overlaps.push([buttons[i].getAttribute('aria-label')||buttons[i].innerText,buttons[j].getAttribute('aria-label')||buttons[j].innerText]);
           }
           return {horizontal:document.documentElement.scrollWidth > innerWidth, unnamed, clipped, overlaps};
         });
-        const filename = `t28b-${id}-${width}-${theme}-${panel}.png`;
+        const filename = `t28c-${id}-${width}-${theme}-${panel}.png`;
         await page.screenshot({path:path.join(dest,filename)}); fs.copyFileSync(path.join(dest,filename),path.join('/tmp/qa-prints',filename));
         record.panels.push({panel,...metrics});
       }
@@ -75,7 +76,7 @@ const path = require('node:path');
         await page.locator('.cv-source-row').first().getByRole('button',{name:/Editar fonte/}).click(); await capture('fonte');
       } catch (error) { record.errors.push(error.message); }
       results.push(record); await context.close();
-      fs.writeFileSync(path.join(dest,process.env.CANVAS_QA_READONLY ? 'inspetor-resultados.json' : 't28b-resultados.json'),JSON.stringify(results,null,2));
+      fs.writeFileSync(path.join(dest,process.env.CANVAS_QA_READONLY ? 'inspetor-resultados.json' : 't28c-resultados.json'),JSON.stringify(results,null,2));
     }
   } finally { await browser.close(); }
   console.log(JSON.stringify(results,null,2));
