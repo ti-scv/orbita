@@ -346,10 +346,10 @@ export default function DataPanel({
                         size={14}
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}
                       />
-                      <span className="cv-source-label" title={src.label || src.id}>
+                      <span className="cv-source-label" title={displayName}>
                         {displayName}
                       </span>
-                      {src.label && <span className="cv-source-id">#{src.id}</span>}
+
                     </button>
                     <span className="cv-source-sub" title={subtitle}>
                       {subtitle}

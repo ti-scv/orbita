@@ -895,3 +895,7 @@
 .cv-root .cv-column-type { font-size: 11px; color: var(--cv-text-2); flex-shrink: 0; }
 .cv-origin-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
 .cv-origin-details dd { margin: 0; overflow-wrap: anywhere; }
+
+.cv-origin-skeleton div { height: 1em; margin: .6em 0; border-radius: 4px; background: var(--cv-line); opacity: .6; }
+.cv-origin-skeleton div:nth-child(2) { width: 75%; }
+.cv-origin-skeleton div:nth-child(3) { width: 55%; }
