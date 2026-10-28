@@ -1,3 +1,4 @@
+import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, FormEvent } from "react";
@@ -884,7 +885,7 @@ export default function SourceDialog({
             <div className="cv-test-preview-head">
               <span>
                 <strong>Prévia confirmada:</strong> {sourceModal.testPreview.columns.length} colunas ·{" "}
-                {sourceModal.testPreview.rows.length} de {sourceModal.testPreview.total_rows} linhas{" "}
+                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)}{" "}
                 {sourceModal.testPreview.elapsed_ms != null ? `(${sourceModal.testPreview.elapsed_ms} ms)` : ""}
               </span>
               <span className="cv-chip ready">

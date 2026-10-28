@@ -73,6 +73,7 @@ class CanvasSourcePreviewResult(serializers.Serializer):
     truncated = serializers.BooleanField()
     elapsed_ms = serializers.IntegerField()
     total_rows_exact = serializers.BooleanField()
+    total_rows_capped = serializers.BooleanField()
     has_more = serializers.BooleanField()
     offset = serializers.IntegerField()
     next_offset = serializers.IntegerField(allow_null=True)

@@ -318,7 +318,7 @@ def connect(connection):
                 c.close()
 
 
-def run_query(report, values, *, session=None, typed=False, preview_limit=None, preview_offset=0, timings=None):
+def run_query(report, values, *, session=None, typed=False, preview_limit=None, preview_offset=0, timings=None, preview_count=False):
     connection = report.connection
     if (
         not connection
@@ -343,7 +343,10 @@ def run_query(report, values, *, session=None, typed=False, preview_limit=None, 
         import sqlparse
         from sqlparse.tokens import Punctuation
         query_sql = "".join(value for kind, value in sqlparse.lexer.tokenize(query_sql) if not (kind == Punctuation and value == ";"))
-        query_sql = "SELECT * FROM (\n" + query_sql + "\n) AS canvas_sample LIMIT " + str(preview_limit) + " OFFSET " + str(preview_offset)
+        if preview_count:
+            query_sql = "SELECT COUNT(*) FROM (SELECT 1 FROM (\n" + query_sql + "\n) AS canvas_count_source LIMIT 10001) AS canvas_count"
+        else:
+            query_sql = "SELECT * FROM (\n" + query_sql + "\n) AS canvas_sample LIMIT " + str(preview_limit) + " OFFSET " + str(preview_offset)
     sql, binds = bound_sql(
         query_sql, parameters(report, values), connection.engine
     )
@@ -363,7 +366,7 @@ def run_query(report, values, *, session=None, typed=False, preview_limit=None, 
             headers = [x[0] for x in cursor.description]
             if len(headers) > 100:
                 raise ValidationError("Limite de 100 colunas excedido.")
-            fetch_limit = preview_limit if preview_limit is not None and connection.engine == "postgres" else connection.max_rows + 1
+            fetch_limit = (1 if preview_count else preview_limit) if preview_limit is not None and connection.engine == "postgres" else connection.max_rows + 1
             fetch_start = time.perf_counter()
             rows = cursor.fetchmany(fetch_limit)
             if timings is not None:

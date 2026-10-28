@@ -161,6 +161,7 @@ export async function fetchSourcePreviewRequest(
     has_more: res.has_more,
     next_offset: res.next_offset,
     total_rows_exact: res.total_rows_exact,
+    total_rows_capped: res.total_rows_capped,
     elapsed_ms: res.elapsed_ms,
     loaded_at: new Date().toISOString(),
   };

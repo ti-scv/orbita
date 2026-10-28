@@ -75,6 +75,7 @@ export interface SourcePreview {
   has_more?: boolean;
   next_offset?: number | null;
   total_rows_exact?: boolean;
+  total_rows_capped?: boolean;
   elapsed_ms?: number;
   loaded_at?: string;
 }

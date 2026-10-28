@@ -14,6 +14,7 @@ from .schema import fail
 class Dataset:
     columns: list
     rows: list
+    total: int | None = None
 
 
 def resolve_report(owner, spec, *, reports_by_id=None):
@@ -120,7 +121,15 @@ class ReportSource:
             if hasattr(context, "timings"):
                 context.timings["connection_ms"] = round((time.perf_counter() - connection_start) * 1000, 2)
         cols,rows=run_query(child,vals,session=context.sessions[child.connection_id],typed=True,**({"preview_limit":preview_limit,"preview_offset":preview_offset,"timings":getattr(context,"timings",None)} if preview_limit is not None and child.connection.engine == "postgres" else {}))
-        return Dataset(cols,rows)
+        total = None
+        if preview_limit is not None and child.connection.engine == "postgres":
+            try:
+                _, count_rows = run_query(child, vals, session=context.sessions[child.connection_id], typed=True, preview_limit=1, preview_count=True)
+                total = int(count_rows[0][0])
+            except Exception:
+                # Keep the sample usable when a bounded count times out or is unsupported.
+                pass
+        return Dataset(cols,rows,total)
 
 SOURCES.register("inline",InlineSource())
 SOURCES.register("goals",GoalsSource())

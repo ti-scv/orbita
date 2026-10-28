@@ -105,6 +105,7 @@ def source_preview(view, request):
 
     read_ms = round((time.perf_counter() - read_start) * 1000, 2)
     serialize_start = time.perf_counter()
+    bounded_total = dataset.total
     total_rows = len(dataset.rows)
     has_more = total_rows > limit if postgres else total_rows > offset + limit
     if not postgres:
@@ -158,8 +159,9 @@ def source_preview(view, request):
         "has_more": has_more,
         "offset": offset,
         "next_offset": offset + limit if has_more else None,
-        "total_rows": offset + total_rows if postgres else total_rows,
-        "total_rows_exact": not postgres or not has_more,
+        "total_rows": (min(bounded_total, 10000) if bounded_total is not None else offset + total_rows) if postgres else total_rows,
+        "total_rows_exact": (bounded_total <= 10000 if bounded_total is not None else not has_more) if postgres else True,
+        "total_rows_capped": bounded_total is not None and bounded_total > 10000,
         "cache_hit": cache_hit,
         "external": external,
         "notice": "Origem externa: o tempo depende do sistema consultado." if external else "",

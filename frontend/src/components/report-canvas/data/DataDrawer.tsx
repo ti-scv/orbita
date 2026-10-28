@@ -5,6 +5,7 @@ import ColumnOrigin, { OriginContext } from "./ColumnOrigin";
 import { fetchSourcePreviewRequest } from "../api/useSourcePreview";
 import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
+import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
 
 export interface DataDrawerProps {
@@ -128,7 +129,7 @@ export default function DataDrawer({
   };
 
   const totalCount = currentPreview?.total_rows ?? rawRows.length;
-  const countText = `${displayRows.length} de ${currentPreview?.total_rows_exact === false ? "pelo menos " : ""}${totalCount.toLocaleString("pt-BR")} linhas · a partir da ${offset + 1}`;
+  const countText = `${formatRowCount(displayRows.length, currentPreview || {total_rows: totalCount})} · a partir da ${offset + 1}`;
 
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${source.label || source.id}`}>

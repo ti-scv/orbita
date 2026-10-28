@@ -1,3 +1,4 @@
+import { formatRowCount } from "./rowCount";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { createPortal } from "react-dom";
@@ -381,7 +382,7 @@ export default function DataPanel({
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
                         <span className="cv-chip ready">
-                          {previewData.rows.length} de {previewData.total_rows_exact === false ? "pelo menos " : ""}{previewData.total_rows} linhas
+                          {formatRowCount(previewData.rows.length, previewData)}
                           {previewState?.loadedAt && (
                             <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}

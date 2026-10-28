@@ -1,3 +1,4 @@
+import { formatRowCount } from "../data/rowCount";
 import { previewPeriod, expandedPreviewParameters } from "../hooks/useStagePreviews";
 import PreviewParameters from "../blocks/PreviewParameters";
 import type { StagePreviewState as SourcePreviewState } from "../hooks/useStagePreviews";
@@ -119,7 +120,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = previewState?.data ? `Prévia · ${rowsCount} de ${previewState.data.total_rows_exact === false ? "pelo menos " : ""}${previewState.data.total_rows} linhas` : `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${formatRowCount(rowsCount, previewState.data)}` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";
@@ -150,7 +151,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = previewState?.data ? `Prévia · ${rowsCount} de ${previewState.data.total_rows_exact === false ? "pelo menos " : ""}${previewState.data.total_rows} linhas` : `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${formatRowCount(rowsCount, previewState.data)}` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";

@@ -28,6 +28,20 @@ def test_postgres_preview_pushes_limit_and_offset_without_changing_export(monkey
     assert cursor.fetchmany.call_args.args == (1001,)
 
 
+def test_postgres_count_is_bounded(monkeypatch):
+    conn = SimpleNamespace(engine="postgres", enabled=True, validated=True, unit_id=1, options={}, max_rows=1000)
+    report = SimpleNamespace(connection=conn, unit_id=1, query_sql="SELECT 1 AS n", parameter_schema={})
+    cursor = Mock()
+    cursor.description = [("count",)]
+    cursor.fetchmany.return_value = [(10001,)]
+    session = Mock()
+    session.cursor.return_value = cursor
+    _, rows = report_engine.run_query(report, {}, session=session, typed=True, preview_limit=1, preview_count=True)
+    assert rows == [[10001]]
+    assert "LIMIT 10001" in cursor.execute.call_args.args[0]
+    assert cursor.fetchmany.call_args.args == (1,)
+
+
 def test_operational_rewrite_is_narrow():
     assert optimize("SELECT 1") == "SELECT 1"
     assert optimize("SELECT 1 -- " + OLD_JOIN) == "SELECT 1 -- " + OLD_JOIN
@@ -105,6 +119,8 @@ def test_postgres_pagination_timeout_and_revoked_source(sample, monkeypatch):
     def run(child, vals, **kw):
         assert child.connection.timeout_seconds == 5
         calls.append(kw)
+        if kw.get("preview_count"):
+            return ["count"], [[65]]
         offset=kw["preview_offset"]
         return ["n"],[[i] for i in range(offset, min(offset+kw["preview_limit"], 65))]
     monkeypatch.setattr(sources,"run_query",run)
@@ -114,8 +130,8 @@ def test_postgres_pagination_timeout_and_revoked_source(sample, monkeypatch):
     assert first.status_code==200
     assert "connection_ms" in first.data["timings"]
     assert len(first.data["rows"])==50
-    assert first.data["total_rows"]==51
-    assert first.data["total_rows_exact"] is False
+    assert first.data["total_rows"]==65
+    assert first.data["total_rows_exact"] is True
     second=client.post(url,{**payload,"offset":50},format="json")
     assert second.data["rows"]==[[i] for i in range(50,65)]
     assert second.data["total_rows"]==65
