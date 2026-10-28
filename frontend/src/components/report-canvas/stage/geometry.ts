@@ -127,7 +127,7 @@ export function createBlockInLayout(params: {
     : [];
 
   const options: BlockOptions = {
-    color: "#075b94",
+    color: ["bar", "line", "pie"].includes(type) ? "#075b94" : "#262626",
     font_size: type === "kpi" ? 28 : type === "text" ? 15 : 13,
   };
   if (type === "kpi") {

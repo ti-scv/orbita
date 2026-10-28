@@ -20,7 +20,7 @@ PALETTE=["#075b94","#14b4cb","#71bfa6","#7289ba","#af76b5","#db9d49"]
 
 
 def style(block,size=None):
-    return ParagraphStyle("Canvas",fontName="Helvetica",fontSize=size or block["options"].get("font_size",14)*0.75,leading=(size or block["options"].get("font_size",14)*0.75)*1.25,textColor=colors.HexColor(block["options"].get("color","#075b94")),spaceAfter=0)
+    return ParagraphStyle("Canvas",fontName="Helvetica",fontSize=size or block["options"].get("font_size",14)*0.75,leading=(size or block["options"].get("font_size",14)*0.75)*1.25,textColor=colors.HexColor(("#262626" if block.get("type") in {"bar","line","pie"} else block["options"].get("color","#262626"))),spaceAfter=0)
 
 
 def text(c,b,w,h):
@@ -39,7 +39,7 @@ def kpi(c,b,w,h):
     if b.get("title"):draw_paragraph(c,b,b["title"],w,h)
     value=b["value"]
     label="Sem dados" if value is None else f"{value:,.{b['options'].get('precision',0)}f}".replace(",","_").replace(".",",").replace("_",".")
-    c.setFillColor(colors.HexColor(b["options"].get("color","#075b94")));c.setFont("Helvetica-Bold",b["options"].get("font_size",40)*.75);c.drawString(0,max(4,h/2-10),label)
+    c.setFillColor(colors.HexColor(b["options"].get("color","#262626")));c.setFont("Helvetica-Bold",b["options"].get("font_size",40)*.75);c.drawString(0,max(4,h/2-10),label)
 
 
 def image(c,b,w,h):
@@ -58,12 +58,12 @@ def line_chart(c,b,w,h):
     pad=(high-low)*.08;low-=pad;high+=pad
     for i in range(5):
         value=low+(high-low)*i/4;y=bottom+(top-bottom)*i/4
-        c.setStrokeColor(colors.HexColor("#dce5ed"));c.setLineWidth(.4);c.line(left,y,right,y)
-        c.setFillColor(colors.HexColor("#526980"));c.setFont("Helvetica",7);c.drawRightString(left-4,y-2,f"{value:.2f}")
+        c.setStrokeColor(colors.HexColor("#d4d4d4"));c.setLineWidth(.4);c.line(left,y,right,y)
+        c.setFillColor(colors.HexColor("#595959"));c.setFont("Helvetica",7);c.drawRightString(left-4,y-2,f"{value:.2f}")
     step=(right-left)/max(1,len(rows)-1);stride=max(1,math.ceil(len(rows)/12))
     for i,r in enumerate(rows):
         if i%stride==0:
-            c.setFillColor(colors.HexColor("#526980"));c.setFont("Helvetica",6);c.drawCentredString(left+i*step,bottom-12,str(r[0]))
+            c.setFillColor(colors.HexColor("#595959"));c.setFont("Helvetica",6);c.drawCentredString(left+i*step,bottom-12,str(r[0]))
     custom_palette = b.get("options", {}).get("series_colors")
     palette = custom_palette if custom_palette else PALETTE
     for series,name in enumerate(cols[1:]):
@@ -122,7 +122,7 @@ def table_parts(b,w,h):
     data=[[Paragraph(escape(display(v)),style(b,b["options"].get("font_size",10)*.75)) for v in row] for row in [cols,*rows]]
     weights=b["options"].get("column_widths") or [1]*len(cols)
     t=LongTable(data,colWidths=[w*v/sum(weights) for v in weights],repeatRows=1,hAlign="LEFT")
-    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#e5eef5")),("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.25,colors.HexColor("#dce5ed")),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3)]))
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#ededed")),("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.25,colors.HexColor("#d4d4d4")),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3)]))
     available=h-(18 if b.get("title") else 0)
     parts=[]
     while True:

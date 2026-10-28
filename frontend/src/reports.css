@@ -958,3 +958,7 @@
 .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close:hover:not(:disabled){background:#dc26261a;border-color:#dc262666;}
 .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close svg{display:block;width:20px;height:20px;stroke:currentColor;stroke-width:2.2;}
 [data-theme="dark"] .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close{color:#f87171;border-color:#f8717140;background:#f8717112;}
+
+.report-mapping-details { display:grid; grid-template-columns:160px minmax(0,1fr); gap:10px 16px; margin:0; }
+.report-mapping-details dt { font-weight:600; }
+.report-mapping-details dd { margin:0; overflow-wrap:anywhere; }

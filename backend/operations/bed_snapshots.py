@@ -142,13 +142,13 @@ def generate(job):
     sheet.append(HEADERS)
     sheet.sheet_view.showGridLines = False
     sheet.freeze_panes = "A2"
-    sheet.sheet_properties.tabColor = "145A86"
+    sheet.sheet_properties.tabColor = "595959"
     sheet.row_dimensions[1].height = 28
     for cell in sheet[1]:
-        cell.font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="145A86")
+        cell.font = Font(name="Arial", size=10, bold=True, color="262626")
+        cell.fill = PatternFill("solid", fgColor="EDEDED")
         cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
-    boundary = Side(style="thin", color="8EB6D0")
+    boundary = Side(style="thin", color="BDBDBD")
     previous_date, band = None, -1
     rows = BedSnapshotRow.objects.filter(unit_id=job.unit_id, run__in=runs).select_related("run").order_by("run__reference_date", "ward_code")
     count = 0
@@ -162,8 +162,8 @@ def generate(job):
             band += 1
         for column in range(1, 5):
             cell = sheet.cell(index, column)
-            cell.font = Font(name="Arial", size=10, color="253949", bold=new_day and column == 4)
-            cell.fill = PatternFill("solid", fgColor="EDF5FB" if band % 2 == 0 else "FFFFFF")
+            cell.font = Font(name="Arial", size=10, color="262626", bold=new_day and column == 4)
+            cell.fill = PatternFill("solid", fgColor="F5F5F5" if band % 2 == 0 else "FFFFFF")
             cell.alignment = Alignment(horizontal="left" if column == 2 else "center", vertical="center", indent=1 if column == 2 else 0)
             if new_day:
                 cell.border = Border(top=boundary)

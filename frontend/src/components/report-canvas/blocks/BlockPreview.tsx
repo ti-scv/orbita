@@ -37,11 +37,11 @@ function BlockPreview({
   showSampleData = false,
 }: BlockPreviewProps) {
   const opt = block.options || {};
-  const primaryColor = validColor(opt.color, "#075b94");
+  const primaryColor = validColor(opt.color, ["bar", "line", "pie"].includes(block.type) ? "#075b94" : "#262626");
   const fontSize = clamp(Number(opt.font_size) || 14, 6, 100);
   const pageDark = isDarkHex(background);
-  const axisColor = pageDark ? "#9fb3c8" : "#526980";
-  const gridColor = pageDark ? "rgba(255,255,255,0.14)" : "#dbe4ee";
+  const axisColor = pageDark ? "#bdbdbd" : "#595959";
+  const gridColor = pageDark ? "rgba(255,255,255,0.14)" : "#d4d4d4";
 
   if (block.type === "text") {
     return (

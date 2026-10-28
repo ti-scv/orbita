@@ -43,7 +43,7 @@ export default function AppearanceFields({
           <ColorField
             id="insp-color"
             label="Cor principal"
-            value={opt.color || "#075b94"}
+            value={opt.color || "#262626"}
             swatches={SWATCH_COLORS}
             onChange={(hex) =>
               onUpdateBlock(

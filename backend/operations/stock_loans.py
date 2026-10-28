@@ -122,14 +122,14 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
     column_labels = [para(x, bold) for x in ("Tipo", "Data", "Código", "Produto", "Unidade", "Qtde.", "Est. atual", "Localização")]
     weights = [72,48,42,135,44,48,55,95]
     widths = [width*v/sum(weights) for v in weights]
-    base_styles = [("BACKGROUND", (0,1),(-1,1), colors.HexColor("#e4eaf0")), ("VALIGN", (0,0),(-1,-1), "TOP"),
+    base_styles = [("BACKGROUND", (0,1),(-1,1), colors.HexColor("#ededed")), ("VALIGN", (0,0),(-1,-1), "TOP"),
               ("LEFTPADDING", (0,0),(-1,-1), 4), ("RIGHTPADDING", (0,0),(-1,-1), 4),
               ("TOPPADDING", (0,0),(-1,-1), 5), ("BOTTOMPADDING", (0,0),(-1,-1), 5)]
     total_qty = Decimal(0); total_stock = Decimal(0); missing_stock = 0
     for supplier, group in groupby(records, key=lambda r: str(r["DS_FORNECEDOR"])):
         group = list(group)
         data = [[para("Fornecedor: " + supplier, bold)] + [""] * 7, column_labels]
-        styles = list(base_styles) + [("SPAN",(0,0),(7,0)),("BACKGROUND",(0,0),(7,0), colors.HexColor("#eef3f6"))]
+        styles = list(base_styles) + [("SPAN",(0,0),(7,0)),("BACKGROUND",(0,0),(7,0), colors.HexColor("#f5f5f5"))]
         qty = Decimal(0); stock = Decimal(0); absent = 0
         for record in group:
             row = []
@@ -146,7 +146,7 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
         idx = len(data)
         label = "Subtotal - " + str(len(group)) + (" item" if len(group) == 1 else " itens")
         data.append([para(label, bold), "", "", "", "", para(display_number(qty), right), para(display_number(stock) if not absent else "Incompleto", right), ""])
-        styles.extend([("SPAN",(0,idx),(4,idx)),("LINEABOVE",(0,idx),(7,idx),.5,colors.HexColor("#aebbc4"))])
+        styles.extend([("SPAN",(0,idx),(4,idx)),("LINEABOVE",(0,idx),(7,idx),.5,colors.HexColor("#bdbdbd"))])
         table=Table(data, colWidths=widths, repeatRows=2, hAlign="LEFT")
         table.setStyle(TableStyle(styles));story.extend([table, Spacer(1,8)])
         total_qty += qty;total_stock += stock;missing_stock += absent
@@ -155,14 +155,14 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
     else:
         totals=[[para("Total geral - " + str(len(records)) + (" item" if len(records) == 1 else " itens"), bold), "", "", "", "", para(display_number(total_qty), right), para(display_number(total_stock) if not missing_stock else "Incompleto", right), ""]]
         table=Table(totals,colWidths=widths,hAlign="LEFT")
-        table.setStyle(TableStyle([entry for entry in base_styles if entry[0] != "BACKGROUND"] + [("SPAN",(0,0),(4,0)),("BACKGROUND",(0,0),(7,0),colors.HexColor("#e4eaf0"))]))
+        table.setStyle(TableStyle([entry for entry in base_styles if entry[0] != "BACKGROUND"] + [("SPAN",(0,0),(4,0)),("BACKGROUND",(0,0),(7,0),colors.HexColor("#ededed"))]))
         story.append(table)
     story += [Spacer(1,10), para("Subtotais e total geral somam as linhas exibidas, conforme o layout legado. O saldo atual pode se repetir por movimento; sua soma não é um saldo consolidado. Quantidades podem ter unidades diferentes.", small)]
     if missing_stock:
         story += [Spacer(1,4), para("Estoque não calculável em " + str(missing_stock) + " linha(s): fator da unidade ou saldo ausente. Totais de estoque identificados como incompletos.", small)]
     def footer(canvas, doc):
         canvas.saveState();canvas.setFont("Helvetica",7)
-        canvas.setFillColor(colors.HexColor("#566473"))
+        canvas.setFillColor(colors.HexColor("#595959"))
         canvas.drawString(28,22,"SCV Messenger | " + env + " | " + generated_at.strftime("%d/%m/%Y %H:%M"))
         canvas.drawRightString(A4[0]-28,22,"Página " + str(doc.page));canvas.restoreState()
     SimpleDocTemplate(out,pagesize=A4,leftMargin=28,rightMargin=28,topMargin=30,bottomMargin=36,
