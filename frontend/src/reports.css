@@ -1018,3 +1018,12 @@
   background: #1e293b;
 }
 
+
+/* Keep actions together; wrap filters before their selected labels are cut. */
+.report-table td:last-child .report-actions { flex-wrap: nowrap; width: max-content; gap: 5px; }
+.report-table td:last-child .report-actions .button { padding: 6px 8px; }
+.report-filters > label { flex: 1 1 185px; min-width: min(185px, 100%); }
+.report-filters .scv-select-trigger { min-width: 0; height: auto; min-height: 37px; }
+.report-filters .scv-select-trigger > span { white-space: normal; overflow: visible; text-overflow: clip; }
+.report-pending-details summary { cursor: pointer; color: var(--text-primary); }
+.report-pending-details ul { padding-left: 16px; margin: 6px 0; font-size: 12px; }
