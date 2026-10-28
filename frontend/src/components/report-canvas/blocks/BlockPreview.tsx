@@ -70,7 +70,7 @@ function BlockPreview({
           <span className="cv-sql-badge">{BLOCK_LABELS[block.type]}</span>
           <span className="cv-sql-meta">
             {block.source_id
-              ? `Fonte "${block.source_id}" não encontrada neste relatório.`
+              ? "Fonte não encontrada neste relatório."
               : "Selecione uma fonte de dados no inspetor à direita."}
           </span>
         </div>

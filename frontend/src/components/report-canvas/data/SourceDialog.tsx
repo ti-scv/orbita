@@ -1,3 +1,4 @@
+import { friendlySourceError } from "./sourceName";
 import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
 import { formatRowCount } from "./rowCount";
 import { formatCellValue } from "./columnTypes";
@@ -397,8 +398,7 @@ export default function SourceDialog({
       if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testPreview: preview, testError: null });
     } catch (err: any) {
       if (controller.signal.aborted) return;
-      const friendlyName = selectedCatalog ? `${selectedCatalog.name} › ${selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}` : sourceModal.label || "Fonte";
-      const msg = (err?.message || "Falha ao carregar prévia.").replaceAll(`Fonte "${sourceModal.id}"`, `Fonte "${friendlyName}"`);
+      const msg = friendlySourceError(err?.message || "Falha ao carregar prévia.", constructDraftSource(), selectedCatalog);
       if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testError: msg, testPreview: null });
     } finally {
       if (testAbort.current === controller) {

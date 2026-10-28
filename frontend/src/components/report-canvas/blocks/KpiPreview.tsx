@@ -1,3 +1,4 @@
+import { friendlySourceName } from "../data/sourceName";
 import type { AggregateMode, CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
 import { clamp } from "../model";
 
@@ -32,9 +33,7 @@ export default function KpiPreview({
   showSampleData,
 }: KpiPreviewProps) {
   const opt = block.options || {};
-  const sourceLabel = catalog
-    ? `${catalog.name} (${catalog.code})`
-    : (source as any).label || (source.type === "report" ? `Relatório #${source.report_id}` : source.id);
+  const sourceLabel = friendlySourceName(source, catalog);
   const unit = (opt as any).unit || (opt as any).suffix || "";
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
@@ -46,7 +45,7 @@ export default function KpiPreview({
             —
           </div>
           <div className="cv-kpi-meta">
-            <span className="cv-kpi-source" title={sourceLabel || source.id}>{source.id}</span>
+            <span className="cv-kpi-source" title={sourceLabel || source.id}>{sourceLabel}</span>
             <span className="cv-kpi-sep">·</span>
             <span className="cv-kpi-aggregation">
               {opt.aggregate === "count" ? "Contagem" : opt.value_field || "coluna padrão"}
@@ -106,7 +105,7 @@ export default function KpiPreview({
         </div>
         <div className="cv-kpi-meta">
           <span className="cv-kpi-source" title={sourceLabel || source.id}>
-            {source.id}
+            {sourceLabel}
           </span>
           <span className="cv-kpi-sep">·</span>
           <span className="cv-kpi-aggregation">{aggregationLabel}</span>

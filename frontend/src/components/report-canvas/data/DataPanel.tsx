@@ -1,3 +1,4 @@
+import { friendlySourceName, friendlySourceError } from "./sourceName";
 import { formatRowCount } from "./rowCount";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
@@ -329,7 +330,7 @@ export default function DataPanel({
                   ? `Tabela manual (${src.columns.length} colunas)`
                   : "Metas mensais (year, month, value)";
 
-            const displayName = src.type === "report" && (!src.label || src.label.toLowerCase() === "dados") ? subtitle : src.label || src.id;
+            const displayName = friendlySourceName(src, sqlItem);
             const usages = layout ? findSourceUsages(layout, src.id) : [];
 
             return (
@@ -366,7 +367,7 @@ export default function DataPanel({
                       {previewState?.status === "error" && (
                         <span
                           className="cv-chip error"
-                          title={previewState.error || "Erro na consulta"}
+                          title={friendlySourceError(previewState.error || "Erro na consulta", src, sqlItem)}
                         >
                           <AlertCircle size={10} /> Erro
                         </span>
@@ -455,8 +456,8 @@ export default function DataPanel({
 
                 {isExpanded && previewState?.status === "error" && (
                   <div role="alert">
-                    <p>Fonte: {displayName}. {(previewState.error || "Não foi possível carregar a prévia.").replaceAll(`Fonte "${src.id}"`, `Fonte "${displayName}"`)}</p>
-                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${displayName}\n${previewState.error}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
+                    <p>Fonte: {displayName}. {friendlySourceError(previewState.error || "Não foi possível carregar a prévia.", src, sqlItem)}</p>
+                    <button type="button" className="cv-btn-compact" onClick={async (event) => { const button = event.currentTarget; try { await navigator.clipboard.writeText(`Fonte: ${displayName}\n${friendlySourceError(previewState.error || "", src, sqlItem)}\nHTTP ${previewState.httpStatus ?? "indisponível"}\nTempo: ${previewState.elapsedMs ?? "indisponível"} ms`); button.textContent = "Detalhes copiados"; } catch { button.textContent = "Não foi possível copiar"; } }}>Copiar detalhes</button>
                     <p>{previewState.httpStatus != null ? `HTTP ${previewState.httpStatus}` : "HTTP indisponível"} · {previewState.elapsedMs != null ? `${previewState.elapsedMs} ms` : "tempo indisponível"}</p>
                     <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>
                   </div>
@@ -600,7 +601,7 @@ export default function DataPanel({
           key={drawerSource.id}
           source={drawerSource}
           datasetName={drawerSource.type === "report" ? availableSources.find(item => item.id === drawerSource.report_id)?.datasets?.find(item => item.id === drawerSource.dataset)?.name : undefined}
-          sourceName={drawerSource.label && drawerSource.label.toLowerCase() !== "dados" ? drawerSource.label : availableSources.find(item => drawerSource.type === "report" && item.id === drawerSource.report_id)?.name || drawerSource.label || "Dados"}
+          sourceName={friendlySourceName(drawerSource, drawerSource.type === "report" ? availableSources.find(item => item.id === drawerSource.report_id) : undefined)}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
           loadedAt={previews[drawerSource.id]?.loadedAt}
           loading={previews[drawerSource.id]?.status === "loading"}
@@ -627,7 +628,7 @@ export default function DataPanel({
             <header className="observation-header">
               <h2 id="confirm-delete-title">Remover fonte de dados</h2>
               <p className="inline-dialog-subtitle">
-                Confirmação de exclusão da fonte "{sourceToDelete.label || sourceToDelete.id}"
+                Confirmação de exclusão da fonte "{friendlySourceName(sourceToDelete, sourceToDelete.type === "report" ? availableSources.find(item => item.id === sourceToDelete.report_id) : undefined)}"
               </p>
             </header>
 

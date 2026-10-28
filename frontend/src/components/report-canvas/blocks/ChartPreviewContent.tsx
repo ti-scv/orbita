@@ -1,3 +1,4 @@
+import { friendlySourceName } from "../data/sourceName";
 import {
   Bar,
   BarChart,
@@ -41,9 +42,7 @@ export default function ChartPreview({
   showSampleData,
 }: ChartPreviewProps) {
   const opt = block.options || {};
-  const sourceLabel = catalog
-    ? `${catalog.name} (${catalog.code})`
-    : (source as any).label || (source.type === "report" ? `Relatório #${source.report_id}` : source.id);
+  const sourceLabel = friendlySourceName(source, catalog);
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
     return (
@@ -52,7 +51,7 @@ export default function ChartPreview({
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge" style={{ color: primaryColor }}>
             <Database size={11} />
-            {BLOCK_LABELS[block.type]} · Dados ({source.id})
+            {BLOCK_LABELS[block.type]} · Dados
           </span>
           <span className="cv-sql-meta">{sourceLabel}</span>
           <span className="cv-sql-meta">
@@ -83,7 +82,7 @@ export default function ChartPreview({
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge">
-            {BLOCK_LABELS[block.type]} · {source.id}
+            {BLOCK_LABELS[block.type]} · {sourceLabel}
           </span>
           <span className="cv-sql-meta">{sourceLabel}</span>
           <span className="cv-sql-meta">
@@ -168,7 +167,7 @@ export default function ChartPreview({
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge">
-            {BLOCK_LABELS[block.type]} · {source.id}
+            {BLOCK_LABELS[block.type]} · {sourceLabel}
           </span>
           <span className="cv-sql-meta">{sourceLabel}</span>
           <span className="cv-sql-meta">Nenhum dado para exibir neste período.</span>
@@ -327,7 +326,7 @@ export default function ChartPreview({
               return (
                 <div className="cv-sql-placeholder">
                   <span className="cv-sql-badge">
-                    {BLOCK_LABELS[block.type]} · {source.id}
+                    {BLOCK_LABELS[block.type]} · {sourceLabel}
                   </span>
                   <span className="cv-sql-meta">{sourceLabel}</span>
                   <span className="cv-sql-meta">

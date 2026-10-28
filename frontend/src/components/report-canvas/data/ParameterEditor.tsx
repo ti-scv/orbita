@@ -1,7 +1,11 @@
+import { useContext } from "react";
+import { OriginContext } from "./ColumnOrigin";
+import { friendlySourceName } from "./sourceName";
 import { useState } from "react";
 import type { CanvasLayout, ParameterDeclaration, ParameterEdit } from "../model";
 
 export default function ParameterEditor({ items, edits, onChange, layout }: { layout?: CanvasLayout; items: ParameterDeclaration[]; edits: ParameterEdit[]; onChange: (edits: ParameterEdit[]) => void }) {
+  const { sources: catalog = [] } = useContext(OriginContext);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const visible = items.filter(i => !edits.some(e => e.name === i.name)).map(item => {
@@ -9,7 +13,7 @@ export default function ParameterEditor({ items, edits, onChange, layout }: { la
     const uses = item.uses.filter(use => !use.startsWith("Fonte ") && !use.startsWith("Bloco "));
     for (const source of layout.sources) if (source.type === "report") {
       for (const [key, value] of Object.entries(source.parameters || {})) {
-        if ((typeof value === "object" && value !== null && "parameter" in value && value.parameter === item.name) || (!item.historical && key === item.name)) uses.push(`Fonte ${source.label || source.id}: ${key}`);
+        if ((typeof value === "object" && value !== null && "parameter" in value && value.parameter === item.name) || (!item.historical && key === item.name)) uses.push(`Fonte ${friendlySourceName(source, catalog.find(item => item.id === source.report_id))}: ${key}`);
       }
     }
     for (const page of layout.pages) for (const block of page.blocks) {

@@ -1,4 +1,6 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { friendlySourceName } from "../../data/sourceName";
+import { OriginContext } from "../../data/ColumnOrigin";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { ArrowDown, ArrowUp, Braces, Image as ImageIcon, Plus, Upload } from "lucide-react";
 import { estimateTableHeight } from "../../stage/geometry";
@@ -242,6 +244,7 @@ export default function ContentFields({
   );
 
   // Text variable insertion options
+  const { sources: sourceCatalog = [] } = useContext(OriginContext);
   const variableItems = useMemo(() => {
     if (block.type !== "text") return [];
     const items: Array<{ token: string; desc: string }> = [
@@ -267,12 +270,12 @@ export default function ContentFields({
       for (const col of cols.slice(0, 20)) {
         items.push({
           token: `{{${src.id}.${col}}}`,
-          desc: `${src.label || src.id} › ${col}`,
+          desc: `${friendlySourceName(src, src.type === "report" ? sourceCatalog.find(item => item.id === src.report_id) : undefined)} › ${col}`,
         });
       }
     }
     return items;
-  }, [block.source_id, block.type, columnInfos, parameterSchema, sources]);
+  }, [block.source_id, block.type, columnInfos, parameterSchema, sources, sourceCatalog]);
 
   const textHasInterpolation = Boolean(block.type === "text" && /\{\{.+?\}\}/.test(block.text || ""));
   const interpolatedPreview = useMemo(() => {
