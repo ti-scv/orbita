@@ -821,9 +821,10 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
                 headers, rows = run_query(report, request.data.get("parameters", {}))
             except ValidationError:
                 raise
-            except Exception:  # noqa: BLE001 - do not expose driver credentials or source data
+            except Exception as exc:  # noqa: BLE001 - details belong only in the server log
+                from operations.report_canvas.diagnostics import safe_error
                 raise ValidationError(
-                    "Falha na consulta; confira a conexão, SQL e parâmetros."
+                    "Não foi possível testar o relatório. " + safe_error(exc)
                 ) from None
             Audit.objects.create(
                 unit=report.unit,
