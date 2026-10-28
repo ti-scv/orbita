@@ -68,9 +68,17 @@ def validate_parameters(values):
 
 def local_report_content(job):
     """Render unit-scoped data after the caller has verified report access."""
-    if job.report.handler not in HANDLERS or job.report.source != "local":
-        raise ValidationError("Fonte externa ainda não homologada.")
-    headers, rows = local_report_data(job.report, job.parameters)
+    from operations.operational_sql import is_internal
+    if job.report.source == "sql" and is_internal(job.report.connection):
+        if job.format == "pdf":
+            from operations.report_canvas.engine import export
+            return export(job.report, job.report.canvas_layout, job.parameters, job.report.monthly_goals, "pdf")
+        from operations.report_engine import run_query
+        headers, rows = run_query(job.report, job.parameters)
+    else:
+        if job.report.handler not in HANDLERS or job.report.source != "local":
+            raise ValidationError("Fonte externa ainda não homologada.")
+        headers, rows = local_report_data(job.report, job.parameters)
     if job.format == "pdf":
         from xml.sax.saxutils import escape
 

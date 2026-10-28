@@ -328,9 +328,17 @@ def run_query(report, values, *, session=None, typed=False):
     ):
         raise ValidationError("Conexão desativada ou não validada.")
     sql_contract(report.query_sql, report.parameter_schema, connection.engine)
+    from operations.operational_sql import is_internal, prepare_values, validate_sql
+    if is_internal(connection):
+        validate_sql(report.query_sql, connection)
+        values = prepare_values(report, values)
     sql, binds = bound_sql(
         report.query_sql, parameters(report, values), connection.engine
     )
+    # SQL*Plus accepts a trailing delimiter, while Oracle's driver does not.
+    # Remove it only when it is the final non-whitespace character.
+    if connection.engine == "oracle" and sql.rstrip().endswith(";"):
+        sql = sql.rstrip()[:-1]
     with (nullcontext(session) if session is not None else connect(connection)) as c:
         cursor = c.cursor()
         try:

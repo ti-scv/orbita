@@ -79,7 +79,11 @@ class ReportSource:
                 if name not in context.parameters:fail("Parâmetro de origem não informado: "+name)
                 value=context.parameters[name]
             defaults[key]=value
-        vals={**defaults,**{k:v for k,v in context.parameters.items() if k in child.parameter_schema}}
+        runtime={k:v for k,v in context.parameters.items() if k in child.parameter_schema}
+        if context.report.source == "composite" and runtime.get("unidade") == "_origens":
+            # Consolidated compositions retain each source's independently scoped connection.
+            runtime.pop("unidade")
+        vals={**defaults,**runtime}
         from .native import datasets,read
         if datasets(child):return read(context,child,s.get("dataset","rows"),vals)
         if child.connection_id not in context.sessions:

@@ -189,15 +189,23 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
             self.context[key] = parents
         return self.context[key].get(obj.code, [])
     description = serializers.CharField(required=False, allow_blank=True, max_length=16000, trim_whitespace=False)
+    category = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
+    def _save_metadata(self, validated_data, legacy):
+        updates = {}
+        if "description" in validated_data:
+            updates["report_description"] = validated_data.pop("description")
+        if "category" in validated_data:
+            updates["report_category"] = validated_data.pop("category").strip()
+        if updates:
+            validated_data["legacy"] = {**legacy, **validated_data.get("legacy", {}), **updates}
 
     def update(self, instance, validated_data):
-        if "description" in validated_data:
-            validated_data["legacy"] = {**instance.legacy, "report_description": validated_data.pop("description")}
+        self._save_metadata(validated_data, instance.legacy or {})
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        if "description" in validated_data:
-            validated_data["legacy"] = {**validated_data.get("legacy", {}), "report_description": validated_data.pop("description")}
+        self._save_metadata(validated_data, {})
         return super().create(validated_data)
 
     technical_description = serializers.SerializerMethodField()
@@ -293,6 +301,7 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
         from operations.report_parameters import normalized_schema
 
         data["parameter_schema"] = normalized_schema(obj.parameter_schema)
+        data["category"] = (obj.legacy or {}).get("report_category", "")
         if "report_description" in obj.legacy:
             data["description"] = obj.legacy["report_description"]
         elif data.get("technical_description"):
@@ -730,6 +739,11 @@ class CatalogViewSet(ReportViewSet):
             raise ValidationError("Conexão de outra unidade.")
         if obj.app_connection_id and obj.app_connection.unit_id != obj.unit_id:
             raise ValidationError("Conexão do app de outra unidade.")
+        if obj.source == "sql" and obj.connection_id:
+            from operations.operational_sql import is_internal, validate_sql
+            if is_internal(obj.connection):
+                validate_sql(obj.query_sql, obj.connection)
+
         if obj.source not in {
             "app",
             "local",

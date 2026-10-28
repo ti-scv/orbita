@@ -295,7 +295,7 @@ def eligible_grants(unit, address, group):
 
 def ordered_parameters(report):
     schema = report.parameter_schema
-    keys = sorted(schema, key=lambda key: (schema[key].get("order", 10000), key))
+    keys = sorted((key for key in schema if not (schema[key].get("use_default") is True and schema[key].get("required") is False and "default" in schema[key])), key=lambda key: (schema[key].get("order", 10000), key))
     dependencies = {key: schema[key].get("not_before") for key in keys}
     for start, end in [
         ("data_inicial", "data_final"),

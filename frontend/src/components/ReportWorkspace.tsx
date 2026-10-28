@@ -274,6 +274,7 @@ function seed(tab: Tab, row?: Row): Row {
     return {
       name: "",
       code: "",
+      category: "",
       source: "sql",
       connection: "",
       query_sql: "",
@@ -451,7 +452,7 @@ export default function ReportWorkspace({
     return () => {
       alive = false;
     };
-  }, [unit, admin, tab]);
+  }, [unit, admin, tab, revision]);
   useEffect(() => {
     if (!admin) {
       setInventory(null);
@@ -499,7 +500,7 @@ export default function ReportWorkspace({
     if (isReports && !row) value.catalog_kind = tab === "components" ? "component" : "report";
     setForm(
       kind === "run" || kind === "preview"
-        ? { report: row?.id || "", recipient: "", parameters: {} }
+        ? { report: row?.id || "", recipient: "", parameters: Object.fromEntries(Object.entries(row?.parameter_schema || {}).filter(([, spec]) => (spec as Row).default != null).map(([key, spec]) => [key, (spec as Row).default])) }
         : kind === "verify"
           ? { evidence: "" }
           : value,
@@ -589,6 +590,7 @@ export default function ReportWorkspace({
           "manual_enabled",
           "request_message",
           "description",
+          "category",
           "monthly_goals",
         ],
         connections: [
@@ -663,7 +665,7 @@ export default function ReportWorkspace({
     else url.searchParams.delete("componentCategory");
     history.replaceState(history.state, "", url);
   }
-  const selected = catalog.find((r) => r.id === Number(form.report)) || (modal?.kind === "preview" ? modal.row : undefined);
+  const selected = ((modal?.kind === "run" || modal?.kind === "preview") && modal.row.id === Number(form.report) ? modal.row : undefined) || catalog.find((r) => r.id === Number(form.report));
   const scopedRows = loadedScope === `${unit}:${tab}` ? rows : [];
   const filtered =
     !isReports && tab !== "grants" && search
@@ -678,7 +680,13 @@ export default function ReportWorkspace({
       <Select
         required
         value={form.report || ""}
-        onChange={(e) => update("report", Number(e.target.value))}
+        onChange={(e) => {
+          const id = Number(e.target.value);
+          if (modal?.kind === "run" || modal?.kind === "preview") {
+            const report = catalog.find(r => r.id === id) || modal.row;
+            setForm(current => ({...current, report:id, parameters:Object.fromEntries(Object.entries(report?.parameter_schema || {}).filter(([, spec]) => (spec as Row).default != null).map(([key, spec]) => [key, (spec as Row).default]))}));
+          } else update("report", id);
+        }}
       >
         <option value="">Selecione</option>
         {(modal?.kind === "preview" ? [modal.row] : catalog).map((r) => (
@@ -885,6 +893,7 @@ export default function ReportWorkspace({
                   <tr key={r.id}>
                     <td>
                       <strong>{r.name || r.report_name}</strong>
+                      {isReports && r.category && <small className="report-category">{r.category}</small>}
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}
                       <small>
@@ -980,16 +989,11 @@ export default function ReportWorkspace({
                               title={(r.pending_items || []).join("\n")}
                             >
                               <AlertTriangle size={15} />
-                              {r.pending_items?.length
-                                ? `${r.pending_items.length} pendência${r.pending_items.length > 1 ? "s" : ""}`
-                                : tab === "connections"
-                                  ? "Validar conexão"
-                                  : "Verificar destinatário"}
+                              <span className="sr-only">{r.pending_items?.length ? `${r.pending_items.length} pendência(s)` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</span>
                             </span>
                           ) : (
-                            <span className="report-ok">
-                              <Check size={14} />
-                              Revisado
+                            <span className="report-ok" title="Revisado" aria-label="Revisado">
+                              <Check size={14} aria-hidden="true" />
                             </span>
                           )}
                         </>
@@ -1211,10 +1215,10 @@ export default function ReportWorkspace({
                 )}
                 {Object.keys(selected?.parameter_schema || {}).length > 0 && (
                   <div className="report-form-grid">
-                    {Object.entries(selected?.parameter_schema || {}).map(
+                    {Object.entries(selected?.parameter_schema || {}).sort(([,a],[,b]) => ((a as Row).order ?? 1000) - ((b as Row).order ?? 1000)).map(
                       ([key, spec]) => (
-                        <Field label={({start:"Data inicial", start_date:"Data inicial", end:"Data final", end_date:"Data final", data_inicial:"Data inicial", data_final:"Data final"} as Record<string,string>)[key.toLowerCase()] || key.replaceAll("_", " ")} key={key}>
-                          <input
+                        <Field label={(spec as Row).label || ({start:"Data inicial", start_date:"Data inicial", end:"Data final", end_date:"Data final", data_inicial:"Data inicial", data_final:"Data final", unidade:"Unidade", tipo_envio:"Tipo de envio"} as Record<string,string>)[key.toLowerCase()] || key.replaceAll("_", " ")} key={key}>
+                          {Array.isArray((spec as Row).choices) ? <Select value={form.parameters?.[key] ?? (spec as Row).default ?? ""} onChange={e => update("parameters", {...form.parameters, [key]: e.target.value})}>{(spec as Row).choices.map((choice: Row) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Select> : <input
                             required={(spec as Row).required !== false}
                             type={
                               (spec as Row).type === "date"
@@ -1224,14 +1228,14 @@ export default function ReportWorkspace({
                                   ? "number"
                                   : "text"
                             }
-                            value={form.parameters?.[key] ?? ""}
+                            value={form.parameters?.[key] ?? (spec as Row).default ?? ""}
                             onChange={(e) =>
                               update("parameters", {
                                 ...form.parameters,
                                 [key]: e.target.value,
                               })
                             }
-                          />
+                          />}
                         </Field>
                       ),
                     )}
@@ -1271,6 +1275,10 @@ export default function ReportWorkspace({
                     <div className="report-form-grid report-form-grid-title">
                       {input("name", "Nome", "text", true)}
                       {input("code", "Código", "text", true)}
+                      <Field label="Categoria">
+                        <input list="report-category-options" maxLength={100} value={form.category || ""} onChange={e => update("category", e.target.value)} />
+                        <datalist id="report-category-options">{Array.from(new Set(catalog.map(r => String(r.category || "").trim()).filter(Boolean))).sort().map(category => <option key={category} value={category} />)}</datalist>
+                      </Field>
                     </div>
                     {(form.code === "legacy123-310" || (form.monthly_goals || []).length > 0) && (
                       <ReportMonthlyGoals value={form.monthly_goals || []} onChange={(value) => update("monthly_goals", value)} />
@@ -1393,6 +1401,18 @@ export default function ReportWorkspace({
                         </div>
                       </details>
                     )}
+                    {modal.row.legacy?.external_mapping && <details className="report-collapsible">
+                      <summary>Origem e dependências</summary>
+                      <div className="report-collapsible-body">
+                        <dl className="report-mapping-details">
+                          <dt>Família</dt><dd>{modal.row.legacy.external_mapping.family}</dd>
+                          <dt>Origem</dt><dd>{modal.row.legacy.external_mapping.target}</dd>
+                          <dt>Rotina legada</dt><dd>{modal.row.legacy.external_mapping.legacy_procedure || "—"}</dd>
+                          <dt>Campos mapeados</dt><dd>{modal.row.legacy.external_mapping.columns?.length || 0}</dd>
+                          <dt>Situação</dt><dd>{modal.row.legacy.external_mapping.blocker || "Fonte integrada"}</dd>
+                        </dl>
+                      </div>
+                    </details>}
                     <details className="report-collapsible">
                       <summary>Descrição</summary>
                       <div className="report-collapsible-body">
