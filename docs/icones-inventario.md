@@ -341,3 +341,5 @@ Conforme especificado na revisão de arquitetura e design:
 ## Atualização 31i — componentes do redesenho
 
 A importação `lucide-react` é resolvida pelo pacote `src/components/icons` tanto pelo Vite quanto pelo TypeScript. Assim os ícones de remoção, conexões, barra do editor, menus e estados adicionados nas tarefas 30–31g usam as mesmas definições e herdam a cor do contexto. O inventário acima registra o levantamento original; o código e a varredura automatizada são a referência para novos usos. As exceções gráficas continuam limitadas aos elementos descritos acima.
+
+Os símbolos antes usados em parâmetros, menu de ações, unidade remota, importação cruzada e mensagem protegida foram substituídos por `LockKeyhole`, `X`, `MoreHorizontal`, `Cloud` e `MessageSquare` do pacote central.

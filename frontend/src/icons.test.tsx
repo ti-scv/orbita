@@ -285,6 +285,7 @@ describe("Auditoria Estática de Ícones do Frontend", () => {
           checkSvgs(fullPath);
         } else if (/\.tsx$/.test(entry.name) && !entry.name.endsWith(".test.tsx")) {
           const content = fs.readFileSync(fullPath, "utf8");
+          expect(content, `Símbolo de ícone fora do pacote: ${fullPath}`).not.toMatch(/[✕🔒💬☁⋯]/u);
           const hasSvg = /<svg\b/i.test(content);
           if (hasSvg) {
             expect(

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { RemovalButton } from "./ReportRemoval";
-import { AlertTriangle, PanelRightOpen } from "lucide-react";
+import { AlertTriangle, PanelRightOpen, MoreHorizontal } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import { OriginContext } from "./report-canvas/data/ColumnOrigin";
@@ -481,7 +481,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         <TopBar
           onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
-          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary role="button" aria-haspopup="menu" aria-label="Ações do relatório" title="Ações do relatório">⋯</summary><div role="menu" aria-label="Ações do relatório" className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" active={!!report.enabled} row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} menuItem showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
+          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary role="button" aria-haspopup="menu" aria-label="Ações do relatório" title="Ações do relatório"><MoreHorizontal size={18} /></summary><div role="menu" aria-label="Ações do relatório" className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" active={!!report.enabled} row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} menuItem showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
           reportActive={Boolean(report.enabled)}

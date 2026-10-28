@@ -1,3 +1,4 @@
+import { LockKeyhole, X } from "lucide-react";
 import { friendlyParameterName } from "../parameters";
 import { useContext } from "react";
 import { OriginContext } from "./ColumnOrigin";
@@ -36,10 +37,10 @@ export default function ParameterEditor({ items, edits, onChange, layout, change
       <p>{selected.length ? `${selected.length} selecionados: ${selected.map(friendlyParameterName).join(", ")}. ` : ""}Alterações serão gravadas ao salvar o relatório.</p>
       <button type="button" className="cv-btn-compact" disabled={!selected.length} onClick={() => remove(selected)}>Excluir selecionados</button>
       {visible.map(i => <div className="cv-parameter-row" key={i.name}>
-        {i.uses.length ? <span role="img" title="Em uso: remova dos blocos antes de excluir" aria-label="Em uso: remova dos blocos antes de excluir">🔒</span> : <input type="checkbox" aria-label={`Selecionar ${friendlyParameterName(i.name)}`} checked={selected.includes(i.name)} onChange={e => setSelected(e.target.checked ? [...selected, i.name] : selected.filter(n => n !== i.name))} />}
+        {i.uses.length ? <span role="img" title="Em uso: remova dos blocos antes de excluir" aria-label="Em uso: remova dos blocos antes de excluir"><LockKeyhole size={14} /></span> : <input type="checkbox" aria-label={`Selecionar ${friendlyParameterName(i.name)}`} checked={selected.includes(i.name)} onChange={e => setSelected(e.target.checked ? [...selected, i.name] : selected.filter(n => n !== i.name))} />}
         <strong>{friendlyParameterName(i.name)}</strong>
         <span className="cv-chip" title={i.uses.join("; ")}>{i.uses.length ? `Usado em ${i.uses.length} ${i.uses.length === 1 ? "local" : "locais"}` : "Não usado"}</span>
-        {!i.uses.length && <button type="button" className="cv-btn-compact" title="Excluir parâmetro" aria-label={`Excluir parâmetro ${friendlyParameterName(i.name)}`} onClick={() => remove([i.name])}>✕</button>}
+        {!i.uses.length && <button type="button" className="cv-btn-compact" title="Excluir parâmetro" aria-label={`Excluir parâmetro ${friendlyParameterName(i.name)}`} onClick={() => remove([i.name])}><X size={14} /></button>}
         {i.suggestion && <button type="button" className="cv-btn-compact" onClick={() => { if (window.confirm(`Renomear ${friendlyParameterName(i.name)} para ${friendlyParameterName(i.suggestion)}? Isso altera apenas o cadastro legado; não reescreve consultas.`)) onChange([...edits, { name: i.name, rename: i.suggestion }]); }}>Renomear para {friendlyParameterName(i.suggestion)}</button>}
       </div>)}
       {!!edits.length && <><p>Rascunho: {edits.map(e => e.rename ? `${friendlyParameterName(e.name)} → ${friendlyParameterName(e.rename)}` : `Excluir ${friendlyParameterName(e.name)}`).join("; ")}</p><button type="button" className="cv-btn-compact" onClick={() => onChange([])}>Desfazer alterações dos parâmetros</button></>}

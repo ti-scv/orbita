@@ -9,6 +9,7 @@ import {
   Clock,
   Database,
   MessageSquare,
+  LockKeyhole,
   Phone,
   Reply,
   Search,
@@ -1006,7 +1007,7 @@ function Editor({
                       <div className="whatsapp-chat-wallpaper">
                         <div className="whatsapp-encryption-notice">
                           <span>
-                            🔒 Mensagem protegida com criptografia de ponta a
+                            <LockKeyhole size={14} /> Mensagem protegida com criptografia de ponta a
                             ponta
                           </span>
                         </div>

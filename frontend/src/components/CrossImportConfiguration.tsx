@@ -4,6 +4,7 @@ import type { DragEvent, FormEvent } from "react";
 import FormAction from "./FormAction";
 import { query, request } from "../api";
 import {
+  MessageSquare,
   ArrowRight,
   CheckCircle2,
   ChevronDown,
@@ -642,7 +643,7 @@ export function CrossImportForm({
               {selected && (
                 <div className="cross-field-tags">
                   <span className="cross-badge cross-badge-template">
-                    💬 {paramCount} parâmetro{paramCount === 1 ? "" : "s"}
+                    <MessageSquare size={14} /> {paramCount} parâmetro{paramCount === 1 ? "" : "s"}
                   </span>
                 </div>
               )}
