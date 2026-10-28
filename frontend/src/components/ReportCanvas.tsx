@@ -404,7 +404,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   } as CSSProperties;
 
   return (
-    <OriginContext.Provider value={{reportId: report.id, unit}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
+    <OriginContext.Provider value={{reportId: report.id, unit, lastReads: Object.fromEntries(Object.entries(stagePreviews.states).map(([id, state]) => [id, state.loadedAt]))}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
       <EditorShell
         canSave={!session.loading && !session.busy}
         onSave={() => void session.handleSaveCanvas()}
@@ -526,7 +526,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
                 onClosePanel={prefs.closeLeftPanel}
               />
               <div className="cv-panel-slot" hidden={prefs.libraryTab !== "data"}>
-                <ParameterEditor items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
+                <ParameterEditor layout={layout} items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
                 <DataPanel
                   stagePreviewStates={stagePreviews.states}
                   onLoadStagePreview={(id) => stagePreviews.load(id, true)}

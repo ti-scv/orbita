@@ -54,3 +54,6 @@ Item 3: 2 testes de backend e 2 de interface aprovados (validação sem gravaç�
 Ação compacta Origem na lista de fontes expandida, lista de colunas do bloco e gaveta (seção recolhida independente da tabela/paginação). InlineDialog somente leitura mostra fonte/relatório, coluna/tipo, conexão por nome e engine (sem host/login/senha), SQL com ocorrências da coluna destacadas e cópia. Banco de rotinas nativas é indicado como definido pela rotina, sem inventar uma conexão para composições; informa rotina/conjunto em lugar de SQL inexistente. A lista de fontes mostra última leitura da prévia quando registrada. Endpoint apenas lê metadados e impede acesso entre unidades; nunca executa fonte nem grava.
 
 Item 4: teste de backend e 2 testes de interface aprovados (metadados, isolamento, destaque sem metacaracteres, cópia e fechamento por Escape).
+
+## Revisão integrada
+Os locais de uso de fontes/blocos acompanham o layout ainda não salvo; exclusões e renomeações têm desfazer próprio. Última leitura também aparece na gaveta e no inspetor quando registrada. Verificação adicional cobre salvamento explícito das declarações em fixture, duplicidade, sugestão na versão correta e cancelamento de exclusão usada. Mudanças concorrentes da tarefa 21 em api.source_preview, sources e report_engine foram preservadas fora dos commits desta tarefa.

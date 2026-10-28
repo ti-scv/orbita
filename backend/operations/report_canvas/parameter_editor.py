@@ -48,6 +48,7 @@ def apply_edits(report, edits):
     for edit in edits:
         if not isinstance(edit, dict) or set(edit) - {"name", "rename"}: fail("Alteração de parâmetro inválida.")
         name = edit.get("name")
+        if not isinstance(name, str): fail("Nome do parâmetro inválido.")
         records = legacy.get("parameters", [])
         if name not in schema and not any(r.get("NOME") == name for r in records): fail("Parâmetro não encontrado: " + str(name))
         target = edit.get("rename")
