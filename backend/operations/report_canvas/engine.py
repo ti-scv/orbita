@@ -31,7 +31,7 @@ def assets_for(report,layout,*,metadata_only=False):
 def definition_snapshot(report,layout=None,*,reports_by_id=None):
     layout=validate_layout(report.canvas_layout if layout is None else layout)
     validate_complete(layout)
-    if not any(p["blocks"] for p in layout["pages"]):fail("Adicione ao menos um bloco ao Canvas.")
+    if not any(p["blocks"] for p in layout["pages"]):fail("Adicione ao menos um bloco ao relatório.")
     sources={}
     signatures={}
     for s in layout["sources"]:
@@ -46,13 +46,13 @@ def definition_snapshot(report,layout=None,*,reports_by_id=None):
 def check_snapshot(job):
     current=definition_snapshot(job.report)
     if current != job.snapshot.get("canvas"):
-        raise PermissionDenied("Layout, fonte ou imagem do Canvas alterados.")
+        raise PermissionDenied("Desenho, fonte ou imagem do relatório alterados.")
 
 
 def report_readiness(report,*,reports_by_id=None):
     try:
         definition_snapshot(report,reports_by_id=reports_by_id)
-        if report.output_format not in {"pdf","xlsx"}:fail("Canvas exporta PDF ou XLSX.")
+        if report.output_format not in {"pdf","xlsx"}:fail("O relatório exporta PDF ou Excel (XLSX).")
     except ValidationError as exc:return error_messages(exc)
     return []
 
@@ -65,7 +65,7 @@ def build(report,layout,parameters,goals):
         used={b.get("source_id") for p in layout["pages"] for b in p["blocks"]}
         for s in layout["sources"]:
             if s["id"] in used:ctx.datasets[s["id"]]=SOURCES[s["type"]].read(ctx,s)
-        if sum(len(d.rows) for d in ctx.datasets.values())>30000:fail_at("Limite total de 30.000 linhas no Canvas.", code="canvas_lines_limit")
+        if sum(len(d.rows) for d in ctx.datasets.values())>30000:fail_at("Limite total de 30.000 linhas no relatório.", code="canvas_lines_limit")
         size=sum(len(json.dumps(d.rows,default=str).encode()) for d in ctx.datasets.values())
         if size>10*1024*1024:fail_at("Fontes excedem o limite de 10 MB.", code="canvas_size_limit")
         pages=[{**p,"blocks":[BLOCKS[b["type"]].prepare(b,ctx) for b in p["blocks"]]} for p in layout["pages"]]
@@ -75,7 +75,7 @@ def build(report,layout,parameters,goals):
 
 def export(report,layout,parameters,goals,output_format):
     from . import pdf, xlsx  # Registers built-in strategies. No I/O during registration.
-    if output_format not in EXPORTERS:fail("Formato não suportado pelo Canvas.")
+    if output_format not in EXPORTERS:fail("Formato não suportado pelo relatório.")
     document,count=build(report,layout,parameters,goals)
     result=EXPORTERS[output_format].render(document)
     if len(result)>7*1024*1024:fail("Arquivo excede 7 MB.")

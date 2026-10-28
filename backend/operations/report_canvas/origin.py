@@ -17,7 +17,7 @@ def column_origin(view, request):
     if not isinstance(column, str) or not column or len(column) > 100: fail("Coluna inválida.")
     name = source.get("label") or source["id"]
     if source["type"] == "inline":
-        return Response({"source": name, "column": column, "database": "Dados manuais do canvas", "query": "", "expression": "Valor informado na tabela manual"})
+        return Response({"source": name, "column": column, "database": "Dados manuais do relatório", "query": "", "expression": "Valor informado na tabela manual"})
     if source["type"] == "goals":
         return Response({"source": name, "column": column, "database": "Cadastro de metas do relatório no Orbita", "query": "", "expression": "Campo de meta mensal: " + column})
     child = ReportDefinition.objects.filter(pk=source["report_id"], unit=owner.unit, **active_conditions()).select_related("connection").first()

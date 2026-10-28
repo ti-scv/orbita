@@ -143,7 +143,7 @@ def response(report):
         notice = "Portabilidade pendente: a fonte deste relatório ainda não foi integrada."
     mapping=report.legacy.get("external_mapping",{})
     if mapping and not report.canvas_enabled:
-        notice=mapping.get("blocker") or "Modelo Canvas mapeado; geração pendente de homologação da fonte."
+        notice=mapping.get("blocker") or "Modelo do relatório mapeado; geração pendente de homologação da fonte."
     return {
         "parameter_editor": declarations(report),
         "default_data_mode": "preview" if report.reviewed and report.legacy.get("canvas_legacy_delivery", {}).get("data_mode") == "preview" else "sample",
@@ -176,7 +176,7 @@ def validate_configuration(report, raw_layout, enabled=False, fmt="pdf"):
     assets_for(report, layout)
     if enabled:
         if report.catalog_kind != "report" or report.review_queue:
-            fail("Ative Canvas apenas em relatórios finais revisados.")
+            fail("Ative o modelo apenas em relatórios finais revisados.")
         definition_snapshot(report, layout)
     return layout
 
@@ -185,11 +185,11 @@ def validate_json(view, request):
     report = context_report(view, request)
     text = request.data.get("json")
     if not isinstance(text, str) or len(text.encode()) > 750000:
-        fail("Informe o JSON do canvas com até 750 KB.")
+        fail("Informe o código do relatório com até 750 KB.")
     try:
         value = json.loads(text)
     except json.JSONDecodeError as exc:
-        return Response({"detail": f"JSON inválido na linha {exc.lineno}, coluna {exc.colno}: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.", "line": exc.lineno, "column": exc.colno}, status=400)
+        return Response({"detail": f"Código inválido na linha {exc.lineno}, coluna {exc.colno}: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.", "line": exc.lineno, "column": exc.colno}, status=400)
     from .parameter_editor import apply_edits
     apply_edits(report, request.data.get("parameter_edits", []))
     try:
