@@ -115,6 +115,7 @@ describe("Novo Estilo de Ícones Duotone (Traço Uniforme + Preenchimento Suave)
       expect(defString).not.toContain("#a76b0b");
       expect(defString).not.toContain("#f9e5a9");
       expect(defString).not.toContain("yellow");
+      expect(defString).not.toMatch(/#[0-9a-f]{3,8}\b|\b(?:rgb|hsl)a?\s*\(/i);
 
       expect(def.stroke.length).toBeGreaterThan(0);
     }
@@ -228,6 +229,13 @@ describe("Regra de Cores: WhatsApp e Usuário / Avatar", () => {
 });
 
 describe("Auditoria Estática de Ícones do Frontend", () => {
+  it("as importações lucide usam o pacote central no build e no typecheck", () => {
+    const vite = fs.readFileSync(path.resolve("./vite.config.ts"), "utf8");
+    const tsconfig = JSON.parse(fs.readFileSync(path.resolve("./tsconfig.json"), "utf8"));
+    expect(vite).toMatch(/"lucide-react"\s*:\s*fileURLToPath\(new URL\("\.\/src\/components\/icons"/);
+    expect(tsconfig.compilerOptions.paths["lucide-react"]).toEqual(["src/components/icons"]);
+  });
+
   it("nenhum componente importa bibliotecas externas concorrentes de ícones", () => {
     const srcDir = path.resolve("./src");
     const forbiddenLibraries = [
@@ -288,6 +296,8 @@ describe("Auditoria Estática de Ícones do Frontend", () => {
             if (entry.name === "ReportWhatsApp.tsx") {
               expect(content).not.toContain('fill="#25D366"');
               expect(content).toContain("<WhatsApp");
+              expect(content.match(/<svg\b/gi)).toHaveLength(1);
+              expect(content).toContain('className="report-channel-connected-canvas"');
             }
           }
         }
