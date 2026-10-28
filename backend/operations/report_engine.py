@@ -137,8 +137,12 @@ def parameters(report, values):
     from decimal import Decimal, InvalidOperation
 
     schema = report.parameter_schema
-    if not isinstance(values, dict) or set(values) - set(schema):
-        raise ValidationError("Parâmetros não cadastrados.")
+    if not isinstance(values, dict):
+        raise ValidationError("Parâmetros devem ser um objeto.")
+    unknown = sorted(set(values) - set(schema))
+    if unknown:
+        names = ", ".join(schema) or "nenhum"
+        raise ValidationError(f'O parâmetro "{unknown[0]}" não existe nesta fonte. Parâmetros válidos: {names}.')
     result = {}
     for name, spec in schema.items():
         value = values.get(name, spec.get("default"))
