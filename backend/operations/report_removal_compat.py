@@ -9,7 +9,7 @@ def active_conditions():
 
 class RemovalUnavailable(APIException):
     status_code = 503
-    default_detail = "A remoção e a restauração ainda não estão disponíveis. A migração necessária está pendente."
+    default_detail = "A remoção ainda não foi liberada neste ambiente."
     default_code = "removal_unavailable"
 
 

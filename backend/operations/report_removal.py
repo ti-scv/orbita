@@ -18,7 +18,7 @@ from django.conf import settings
 def dependencies(obj):
     if isinstance(obj, (m.ReportConnection, m.ReportApplicationConnection)):
         key = "connection" if isinstance(obj, m.ReportConnection) else "app_connection"
-        reports = m.ReportDefinition.objects.filter(unit=obj.unit, **{key: obj}).order_by("name")
+        reports = m.ReportDefinition.objects.filter(unit=obj.unit, **{key: obj}).only("name", "catalog_kind").order_by("name")
         return [f"{'Fonte' if row.catalog_kind == 'component' else 'Relatório'}: {row.name}" for row in reports]
     items = []
     for row in m.ReportSchedule.objects.filter(unit=obj.unit, report=obj).select_related("access__user"):
@@ -29,7 +29,7 @@ def dependencies(obj):
         Q(source_report=obj) | Q(output_report=obj) | Q(consumers=obj)
     ).distinct()
     items.extend(f"Coleta: {row.name}" for row in snapshots)
-    for parent in m.ReportDefinition.objects.filter(unit=obj.unit).exclude(pk=obj.pk):
+    for parent in m.ReportDefinition.objects.filter(unit=obj.unit).exclude(pk=obj.pk).only("name", "components", "canvas_layout"):
         components = parent.components if isinstance(parent.components, list) else []
         layout = parent.canvas_layout if isinstance(parent.canvas_layout, dict) else {}
         sources = layout.get("sources", [])
@@ -45,7 +45,7 @@ class ReversibleRemovalMixin:
         return self.scope_removals(super().get_queryset())
 
     def scope_removals(self, qs):
-        if self.action in {"restore", "remove", "removal_dependencies"} or (self.action == "list" and self.request.query_params.get("removidos") == "1"):
+        if self.action in {"restore", "remove"}:
             require_removal()
         if not settings.REPORT_REMOVAL_ENABLED:
             return qs
@@ -54,10 +54,16 @@ class ReversibleRemovalMixin:
             return qs.filter(removed_at__isnull=False)
         return qs.filter(removed_at__isnull=True)
 
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get("removidos") == "1" and not settings.REPORT_REMOVAL_ENABLED:
+            get_unit(request, ["admin"])
+            return Response({"count": 0, "next": None, "previous": None, "results": [], "remocao_disponivel": False})
+        return super().list(request, *args, **kwargs)
+
     @action(detail=True, methods=["get"], url_path="dependencias")
     def removal_dependencies(self, request, pk=None):
         get_unit(request, ["admin"])
-        return Response({"dependencias": dependencies(self.get_object())})
+        return Response({"dependencias": dependencies(self.get_object()), "remocao_disponivel": settings.REPORT_REMOVAL_ENABLED})
 
     @action(detail=True, methods=["post"], url_path="remover")
     def remove(self, request, pk=None):

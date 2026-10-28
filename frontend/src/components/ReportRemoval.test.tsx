@@ -14,7 +14,7 @@ it("confirma a remoção e exibe erro sem fechar o diálogo", async () => {
   vi.mocked(request).mockResolvedValueOnce({ dependencias: [] }).mockRejectedValueOnce(new Error("Falha ao remover"));
   render(<RemovalButton unit="ame" resource="reports" row={{id: 1, name: "Vendas", version: 2}} kind="relatório" onChanged={() => {}} />);
   fireEvent.click(screen.getByRole("button", {name: "Remover relatório Vendas"}));
-  expect(await screen.findByText(/Você poderá restaurar/)).toBeTruthy();
+  expect(await screen.findByText(/Ele deixará de aparecer/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", {name: /^Remover$/}));
   expect((await screen.findByRole("alert")).textContent).toContain("Falha ao remover");
   expect(screen.getByRole("dialog")).toBeTruthy();
@@ -51,4 +51,14 @@ it("remove um relatório após confirmação", async () => {
   fireEvent.click(confirm);
   await waitFor(() => expect(changed).toHaveBeenCalledOnce());
   expect(vi.mocked(request)).toHaveBeenCalledWith("reports/1/remover", "POST", {version: 2});
+});
+
+
+it("exibe vínculos e bloqueia a remoção quando ela não está liberada", async () => {
+  vi.mocked(request).mockResolvedValueOnce({dependencias: ["Relatório: Vendas"], remocao_disponivel: false});
+  render(<RemovalButton unit="ame" resource="report-connections" row={{id: 1, name: "Banco", version: 1}} kind="conexão" onChanged={() => {}} />);
+  fireEvent.click(screen.getByRole("button", {name: "Remover conexão Banco"}));
+  expect(await screen.findByText("Relatório: Vendas")).toBeTruthy();
+  expect(screen.getByText("A remoção ainda não foi liberada neste ambiente.")).toBeTruthy();
+  expect((screen.getByRole("button", {name: /^Remover$/}) as HTMLButtonElement).disabled).toBe(true);
 });
