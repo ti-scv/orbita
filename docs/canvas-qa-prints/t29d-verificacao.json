@@ -1,0 +1,24 @@
+{
+  "utc": "2026-10-28T14:06:17.233822+00:00",
+  "code_commit": "c2c7430",
+  "tests": 574,
+  "test_files": 53,
+  "canvas_check": "SUCESSO",
+  "hooks": "OK",
+  "typescript": "OK",
+  "build": "OK",
+  "scenarios": 18,
+  "states": 216,
+  "screenshots_individually_reviewed": 108,
+  "axe_wcag_aa_violations": 0,
+  "identifier_leaks": 0,
+  "real_validation_calls": 27,
+  "real_validation_unexpected": 0,
+  "origin_cold_cases": 9,
+  "origin_cold_max_details_ms": 113.9,
+  "log_sha256": "193503edf0a0f6aae9e1c11f8b4cd872b3345008b94881d4354f1db112c0412b",
+  "backend_tests": {
+    "previous_session": 42,
+    "rerun": false
+  }
+}

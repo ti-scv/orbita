@@ -1,0 +1,446 @@
+[
+  {
+    "id": 1,
+    "case": "valid",
+    "utc": 1793195787.1497521,
+    "ms": 51,
+    "status": 200,
+    "expected": 200,
+    "body_keys": [
+      "json",
+      "enabled",
+      "output_format",
+      "parameter_edits"
+    ],
+    "body_sha256": "d69aec85afdded8152fd44e78421178a72c01d4ae20e3625c79b7a14db27779b",
+    "response": {
+      "layout": "omitido: relatório real validado sem gravação"
+    }
+  },
+  {
+    "id": 1,
+    "case": "missing_json",
+    "utc": 1793195787.201115,
+    "ms": 21,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [],
+    "body_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 1,
+    "case": "non_string_json",
+    "utc": 1793195787.2217064,
+    "ms": 21,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "183f5d24219c78d48239184ff9adf6467c0d377f89e8c632a659b53caac91573",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 1,
+    "case": "syntax",
+    "utc": 1793195787.2427418,
+    "ms": 16,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "f3c81a642108ed1ba4ca32b2bee64968f53abc93619f1787828d864ee1ede094",
+    "response": {
+      "detail": "JSON inválido na linha 1, coluna 2: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.",
+      "line": 1,
+      "column": 2
+    }
+  },
+  {
+    "id": 1,
+    "case": "null",
+    "utc": 1793195787.2590487,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "118515df6a64f28d0a85423b5b9fb9aa2a771ae87e07e8fb1f01a588b0d0ed0c",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 1,
+    "case": "array",
+    "utc": 1793195787.276249,
+    "ms": 18,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "8be573fcda371b509b9c70ad82954275e341d0ad4a2aa4bae9d1a28e87cf61ac",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 1,
+    "case": "empty_object",
+    "utc": 1793195787.2938719,
+    "ms": 20,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "37c73c946f93cc25171c13033a52d9f619e14d890ce9b3ada84260ed2a2cc47f",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 1,
+    "case": "bad_pages",
+    "utc": 1793195787.3138614,
+    "ms": 18,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "8270fdfa24fae80ed6a56309c1edd64756e7b0e3cd136709340b4a149c9d66e9",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Informe entre 1 e 30 páginas.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 1,
+    "case": "bad_sources",
+    "utc": 1793195787.3322253,
+    "ms": 16,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "9468e719c7ca1b96e15f48ea03e15c8ff0dcc0ca6b59fdb01b89cfb4b5352d52",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Limite de 30 fontes por relatório.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 2,
+    "case": "valid",
+    "utc": 1793195787.4006782,
+    "ms": 45,
+    "status": 200,
+    "expected": 200,
+    "body_keys": [
+      "json",
+      "enabled",
+      "output_format",
+      "parameter_edits"
+    ],
+    "body_sha256": "660dc2f68daf6af2297b724af361f38f81b5efeebedc0c0c7a2979222068c0aa",
+    "response": {
+      "layout": "omitido: relatório real validado sem gravação"
+    }
+  },
+  {
+    "id": 2,
+    "case": "missing_json",
+    "utc": 1793195787.4457695,
+    "ms": 14,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [],
+    "body_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 2,
+    "case": "non_string_json",
+    "utc": 1793195787.459532,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "183f5d24219c78d48239184ff9adf6467c0d377f89e8c632a659b53caac91573",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 2,
+    "case": "syntax",
+    "utc": 1793195787.4761672,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "f3c81a642108ed1ba4ca32b2bee64968f53abc93619f1787828d864ee1ede094",
+    "response": {
+      "detail": "JSON inválido na linha 1, coluna 2: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.",
+      "line": 1,
+      "column": 2
+    }
+  },
+  {
+    "id": 2,
+    "case": "null",
+    "utc": 1793195787.493151,
+    "ms": 22,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "118515df6a64f28d0a85423b5b9fb9aa2a771ae87e07e8fb1f01a588b0d0ed0c",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 2,
+    "case": "array",
+    "utc": 1793195787.5151062,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "8be573fcda371b509b9c70ad82954275e341d0ad4a2aa4bae9d1a28e87cf61ac",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 2,
+    "case": "empty_object",
+    "utc": 1793195787.5325904,
+    "ms": 16,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "37c73c946f93cc25171c13033a52d9f619e14d890ce9b3ada84260ed2a2cc47f",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 2,
+    "case": "bad_pages",
+    "utc": 1793195787.5482893,
+    "ms": 18,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "878af1bd5a73728bb4f455ecc1777b5f43fc3b6ba1bd828a5b870fb251f385f7",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Informe entre 1 e 30 páginas.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 2,
+    "case": "bad_sources",
+    "utc": 1793195787.5667927,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "abc8daa878c7dcbd0e749e0ca91fc988348584697d1b02dad589e3a4b8ac28c5",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Limite de 30 fontes por relatório.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 6,
+    "case": "valid",
+    "utc": 1793195787.6267154,
+    "ms": 37,
+    "status": 200,
+    "expected": 200,
+    "body_keys": [
+      "json",
+      "enabled",
+      "output_format",
+      "parameter_edits"
+    ],
+    "body_sha256": "2340bdeea702fb6ebe0f61f4f51ded182bd84614af16d0cfe89ce6162ee1967f",
+    "response": {
+      "layout": "omitido: relatório real validado sem gravação"
+    }
+  },
+  {
+    "id": 6,
+    "case": "missing_json",
+    "utc": 1793195787.6635597,
+    "ms": 15,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [],
+    "body_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 6,
+    "case": "non_string_json",
+    "utc": 1793195787.6783955,
+    "ms": 14,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "183f5d24219c78d48239184ff9adf6467c0d377f89e8c632a659b53caac91573",
+    "response": [
+      "Informe o JSON do canvas com até 750 KB."
+    ]
+  },
+  {
+    "id": 6,
+    "case": "syntax",
+    "utc": 1793195787.692647,
+    "ms": 19,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "f3c81a642108ed1ba4ca32b2bee64968f53abc93619f1787828d864ee1ede094",
+    "response": {
+      "detail": "JSON inválido na linha 1, coluna 2: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.",
+      "line": 1,
+      "column": 2
+    }
+  },
+  {
+    "id": 6,
+    "case": "null",
+    "utc": 1793195787.7113454,
+    "ms": 22,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "118515df6a64f28d0a85423b5b9fb9aa2a771ae87e07e8fb1f01a588b0d0ed0c",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 6,
+    "case": "array",
+    "utc": 1793195787.7338343,
+    "ms": 21,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "8be573fcda371b509b9c70ad82954275e341d0ad4a2aa4bae9d1a28e87cf61ac",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 6,
+    "case": "empty_object",
+    "utc": 1793195787.75479,
+    "ms": 18,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "37c73c946f93cc25171c13033a52d9f619e14d890ce9b3ada84260ed2a2cc47f",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Layout inválido ou versão não suportada.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 6,
+    "case": "bad_pages",
+    "utc": 1793195787.772695,
+    "ms": 17,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "01a5bc28976bea57b1d041a1cf08d39ec1554aab5f00b386a3ada72fe65ae181",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Informe entre 1 e 30 páginas.",
+      "line": 1,
+      "column": 1
+    }
+  },
+  {
+    "id": 6,
+    "case": "bad_sources",
+    "utc": 1793195787.7901804,
+    "ms": 16,
+    "status": 400,
+    "expected": 400,
+    "body_keys": [
+      "json"
+    ],
+    "body_sha256": "59b8a423673f59ef00678181963ef4ac15a78a82981f8007d45be0f486a8375a",
+    "response": {
+      "detail": "Esquema inválido, linha 1, coluna 1: Limite de 30 fontes por relatório.",
+      "line": 1,
+      "column": 1
+    }
+  }
+]
