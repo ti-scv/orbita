@@ -4,7 +4,7 @@ import type {
   CatalogSqlSource,
   SourceDialogState,
 } from "../model";
-import { IDENT_RE, clampBlockToPage, isParameterBinding, makeId } from "../model";
+import { BLOCK_LABELS, IDENT_RE, clampBlockToPage, isParameterBinding, makeId } from "../model";
 
 export interface SourceUsage {
   pageId: string;
@@ -58,8 +58,8 @@ export function findSourceUsages(layout: CanvasLayout, sourceId: string): Source
           pageId: page.id,
           pageName: page.name,
           blockId: block.id,
-          blockTitle: block.title || `Bloco ${block.id}`,
-          blockType: block.type,
+          blockTitle: block.title || BLOCK_LABELS[block.type],
+          blockType: BLOCK_LABELS[block.type],
         });
       }
     }

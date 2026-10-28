@@ -381,6 +381,8 @@ export default function BlockInspector({
                 type="button"
                 role="menuitem"
                 className="cv-insp-menu-item is-danger"
+                aria-label={`Remover ${block.title || COMPONENT_NAMES[block.type]}`}
+                title={`Remover ${block.title || COMPONENT_NAMES[block.type]}`}
                 onClick={() => {
                   setMenuOpen(false);
                   onRemoveBlock(block.id);
