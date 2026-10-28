@@ -94,6 +94,7 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
       if (!controller.signal.aborted) setEntries(prev => ({ ...prev, [sourceId]: {key, state} }));
     };
     put({ status: "loading", data: null, error: null, loadedAt: null });
+    const startedAt = performance.now();
     let fields: TestParameter[] = [], values: Record<string,string> = {};
     try {
       const report = source.report_id === snapshot.reportId
@@ -113,6 +114,8 @@ export function useStagePreviews(reportId: number, unit: string, sources: Canvas
       put({ status: "ready", data, error: null, loadedAt: new Date(), fields, values, assumed: !parameters });
     } catch (err: any) {
       put({ status: "error", data: null, loadedAt: null, fields, values,
+        httpStatus: typeof err?.status === "number" ? err.status : undefined,
+        elapsedMs: Math.round(performance.now() - startedAt),
         error: `Não foi possível carregar a prévia. ${previewError(err?.message)}` });
     } finally { if (pending.current.get(key) === controller) pending.current.delete(key); }
   }, []);

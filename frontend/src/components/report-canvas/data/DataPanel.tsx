@@ -52,6 +52,8 @@ interface SourcePreviewEntry {
   data: SourcePreview | null;
   error: string | null;
   loadedAt: Date | null;
+  httpStatus?: number;
+  elapsedMs?: number;
 }
 
 export default function DataPanel({
@@ -118,6 +120,7 @@ export default function DataPanel({
       }));
 
       const signal = previewAbortRef.current?.signal;
+      const startedAt = performance.now();
       try {
         const result = await fetchSourcePreviewRequest(
           reportId,
@@ -153,6 +156,8 @@ export default function DataPanel({
             data: null,
             error: unavail ? "Prévia de dados indisponível nesta versão do servidor" : msg,
             loadedAt: null,
+            httpStatus: typeof status === "number" ? status : undefined,
+            elapsedMs: Math.round(performance.now() - startedAt),
           },
         }));
       }
@@ -450,6 +455,13 @@ export default function DataPanel({
                   </div>
                 </div>
 
+                {isExpanded && previewState?.status === "error" && (
+                  <div role="alert">
+                    <p>Fonte: {src.label || src.id}. Não foi possível carregar a prévia.</p>
+                    <p>{previewState.httpStatus != null ? `HTTP ${previewState.httpStatus}` : "HTTP indisponível"} · {previewState.elapsedMs != null ? `${previewState.elapsedMs} ms` : "tempo indisponível"}</p>
+                    <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>
+                  </div>
+                )}
                 {/* Lista Expandida de Colunas */}
                 {isExpanded && (
                   <div className="cv-column-list">

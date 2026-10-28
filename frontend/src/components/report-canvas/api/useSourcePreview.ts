@@ -10,6 +10,8 @@ export interface SourcePreviewState {
   data: SourcePreview | null;
   error: string | null;
   errorCode?: string;
+  httpStatus?: number;
+  elapsedMs?: number;
   loadedAt: Date | null;
 }
 

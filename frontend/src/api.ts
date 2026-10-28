@@ -51,13 +51,16 @@ export async function request<T>(
       `O servidor retornou uma resposta inválida (HTTP ${response.status}). Tente novamente.`,
     );
   }
-  if (!response.ok)
-    throw new Error(
+  if (!response.ok) {
+    const error = new Error(
       typeof data.detail === "string"
         ? data.detail
         : Object.values(data).flat().join(" ") ||
             "Não foi possível concluir a operação.",
     );
+    Object.assign(error, { status: response.status });
+    throw error;
+  }
   return data as T;
 }
 export async function initCsrf() {

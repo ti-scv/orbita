@@ -23,3 +23,14 @@ Pendente: painel nas duas listas, consulta, banco, destaque e data da leitura. A
 Nao foram criados ou salvos relatorios. Node 18 do host nao atende ao Vitest do projeto; a verificacao oficial usa Node 24 em conteiner. A alteracao nao constitui a entrega completa da tarefa.
 
 O teste especifico passou em Node 24. `canvas-check.sh` ficou parado em `npm ci` e o build de staging ficou parado em `npm run build`; ambos foram interrompidos sem resultado. Staging nao foi validado visualmente.
+
+
+## Continuidade da tarefa 20
+
+A auditoria foi lida. A classificacao depende do ID e da versao da definicao; nao e seguro aplicar a fotografia a declaracoes alteradas. A edicao das declaracoes e os selos permanecem pendentes. Nenhum relatorio foi modificado.
+
+Na lista de fontes expandida, a falha da previa agora mostra a fonte, o HTTP quando disponivel, o tempo e o botao Tentar de novo. A API de frontend preserva o status nos erros. Teste: expandir uma fonte com falha e acionar Tentar de novo; o teste automatizado usa dados simulados e abertura pelo teclado. Ainda faltam diagnostico seguro da mensagem real e Copiar detalhes. A implementacao do endpoint fica em backend/operations/report_canvas, que esta fora do escopo permitido; nao foi alterada.
+
+JSON e origem das colunas permanecem pendentes. A tarefa nao esta concluida.
+
+Teste especifico: task20-preview.test.tsx, dois testes aprovados em Node 24.
