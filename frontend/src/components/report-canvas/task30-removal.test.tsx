@@ -54,3 +54,14 @@ it("Delete remove somente fora dos campos de texto e permite desfazer e refazer"
   expect(screen.queryByRole("group", { name: /Primeiro/ })).toBeNull();
 });
 
+
+
+it("relatório ativo não permite remover com Delete nem pelo inspetor", async () => {
+  render(<ReportCanvas unit="ame" report={{ id: 6, name: "QA", version: 1, enabled: true }} onClose={() => {}} />);
+  const first = await screen.findByRole("group", { name: /Primeiro/ });
+  fireEvent.focus(first);
+  fireEvent.keyDown(first, { key: "Delete" });
+  expect(screen.getByRole("group", { name: /Primeiro/ })).toBeTruthy();
+  fireEvent.contextMenu(first);
+  expect(screen.queryByRole("menuitem", { name: /Remover.*Primeiro/ })).toBeNull();
+});

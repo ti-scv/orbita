@@ -103,3 +103,15 @@ export function getColumnTypeAriaLabel(type?: ColumnDataType, looksLike?: string
   const label = formatColumnTypeLabel(type, looksLike);
   return `Tipo de dado: ${label}`;
 }
+
+export function formatTableCell(value: unknown, column: string): string {
+  if (/(telefone|whatsapp|celular|phone)/i.test(column) && value != null) {
+    const digits = String(value).replace(/\D/g, "");
+    const local = digits.length === 12 || digits.length === 13 ? (digits.startsWith("55") ? digits.slice(2) : "") : digits;
+    if (local.length === 10 || local.length === 11) {
+      const prefix = digits.length > 11 ? "+55 " : "";
+      return `${prefix}(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}`;
+    }
+  }
+  return formatCellValue(value);
+}

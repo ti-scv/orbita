@@ -1,5 +1,5 @@
 import { friendlySourceName } from "../data/sourceName";
-import { formatCellValue } from "../data/columnTypes";
+import { formatTableCell } from "../data/columnTypes";
 import type { CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
 import ColumnBadge from "../data/ColumnBadge";
 import { inferColumnType } from "../data/columnTypes";
@@ -119,7 +119,7 @@ export default function TablePreview({
                   <tr key={ri}>
                     {indices.map((ci, k) => (
                       <td key={k}>
-                        {formatCellValue(r[ci])}
+                        {formatTableCell(r[ci], chosenCols[k])}
                       </td>
                     ))}
                   </tr>
