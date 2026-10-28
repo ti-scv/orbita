@@ -228,6 +228,7 @@
 }
 
 .cv-root .cv-report-title {
+  margin: 0;
   font-family: var(--cv-font-head);
   font-size: var(--cv-fs-lg);
   font-weight: var(--cv-fw-semibold);

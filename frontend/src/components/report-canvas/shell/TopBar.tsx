@@ -285,9 +285,9 @@ export default function TopBar({
             </button>
 
             <div className="cv-topbar-identity">
-              <span className="cv-report-title" tabIndex={0} title={reportName}>
+              <h1 className="cv-report-title" title={reportName}>
                 {reportName}
-              </span>
+              </h1>
               <span
                 className={`cv-status-chip ${enabled ? "is-active" : "is-draft"}`}
                 title={enabled ? "Estado: Ativo" : "Estado: Rascunho"}
