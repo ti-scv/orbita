@@ -77,6 +77,7 @@ export interface TopBarProps {
   onChangeDataMode: (mode: CanvasDataMode) => void;
   onChangeEnabled: (enabled: boolean) => void;
   onChangeOutputFormat: (format: OutputFormat) => void;
+  onOpenJson?: () => void;
   onOpenPreview: () => void;
   onSave: () => void;
   onSaveAndClose?: () => void;
@@ -128,6 +129,7 @@ export default function TopBar({
   onChangeDataMode,
   onChangeEnabled,
   onChangeOutputFormat,
+  onOpenJson,
   onOpenPreview,
   onSave,
   onSaveAndClose,
@@ -373,6 +375,7 @@ export default function TopBar({
           </div>
 
           <div className="cv-topbar-right">
+            {onOpenJson && <button type="button" className="cv-btn-compact" disabled={loading || busy} onClick={onOpenJson}>JSON</button>}
             {hasProblems && (
               <div className="cv-popover-anchor" data-cv-anchor="problems">
                 <button

@@ -44,3 +44,8 @@ Editor de declarações em Dados: contrato atual e cadastro legado; uso real em 
 A causa do diagnóstico perdido está em source_preview: qualquer exceção de driver era convertida em “conexão indisponível”, inclusive coluna/tabela inexistente e erro de SQL. O hook também substituía mensagens contendo “connection”. ReportSource agora preserva causa segura e ID/rótulo da fonte tanto na prévia de fonte quanto na exportação. Mensagens de PostgreSQL usam message_primary/SQLSTATE; URLs, DSN e segredos conhecidos são removidos antes da resposta. Painel mostra mensagem, HTTP, fonte, tempo, Copiar detalhes e Tentar de novo; HTTP também é preservado em resposta não JSON. Reprodução em fixture SQLite executa SELECT com coluna inexistente e verifica a mensagem real. Não há um único relatório com falha identificado no pedido; o diagnóstico individual passa a estar disponível na próxima prévia, sem alterar relatórios.
 
 Item 2: 9 testes de backend (incluindo prévias existentes e erro real SQLite) e 2 testes da interface aprovados.
+
+## Rodada 3 — item 3
+Botão compacto JSON na barra do editor abre InlineDialog com texto editável, foco/teclado, validar/aplicar com confirmação, desfazer texto e desfazer aplicação pelo histórico. Endpoint canvas-validate não grava nem executa fontes: usa as mesmas validações do Salvar (esquema, fontes/ativos da unidade e prontidão quando ativado). JSON malformado tem linha/coluna exatas; erros de esquema apontam o bloco/fonte quando identificado ou o documento (linha 1). Nenhuma aplicação salva automaticamente.
+
+Item 3: 2 testes de backend e 2 de interface aprovados (validação sem gravação, sintaxe/esquema, isolamento de unidade, confirmação e anúncio acessível).

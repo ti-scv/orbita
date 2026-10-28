@@ -63,6 +63,7 @@ class CanvasSourcePreviewSchema(serializers.Serializer):
     source = serializers.DictField()
     parameters = serializers.JSONField(required=False, default=dict)
     limit = serializers.IntegerField(required=False, default=50, min_value=1, max_value=500)
+    offset = serializers.IntegerField(required=False, default=0, min_value=0, max_value=10000)
 
 
 class CanvasSourcePreviewResult(serializers.Serializer):
@@ -71,6 +72,14 @@ class CanvasSourcePreviewResult(serializers.Serializer):
     total_rows = serializers.IntegerField()
     truncated = serializers.BooleanField()
     elapsed_ms = serializers.IntegerField()
+    total_rows_exact = serializers.BooleanField()
+    has_more = serializers.BooleanField()
+    offset = serializers.IntegerField()
+    next_offset = serializers.IntegerField(allow_null=True)
+    cache_hit = serializers.BooleanField()
+    external = serializers.BooleanField()
+    notice = serializers.CharField()
+    timings = serializers.DictField()
 
 
 class CanvasAssetSchema(serializers.Serializer):
@@ -100,21 +109,23 @@ def response(report):
     candidates = ReportDefinition.objects.filter(
         unit=report.unit, reviewed=True, review_queue=False
     ).select_related("connection", "unit").order_by("name")
+    from .sources import external_source
     sources = []
     for child in candidates:
+        display_name = child.name + (" (origem externa)" if external_source(child) else "")
         native = catalog_datasets(child)
         if not child.enabled and not (child.pk == report.pk and (native or child.source == "sql")):
             continue
         if native:
             sources.append({
                 "id": child.pk,
-                "name": child.name,
+                "name": display_name,
                 "code": child.code,
                 "datasets": [{"id": k, "name": labels.get(k, k.replace("_", " ")), "columns": v} for k, v in native.items()],
             })
         elif child.source == "sql" and child.connection_id and child.connection.unit_id == report.unit_id and child.connection.enabled and child.connection.validated:
             from .sql_columns import query_columns
-            sources.append({"id": child.pk, "name": child.name, "code": child.code, "columns": query_columns(child.query_sql, child.connection.engine)})
+            sources.append({"id": child.pk, "name": display_name, "code": child.code, "columns": query_columns(child.query_sql, child.connection.engine)})
     # Draft contracts expose fields for design only. Runtime resolution still
     # requires reviewed, enabled sources and a validated same-unit connection.
     from operations.external_report_mapping import catalog_contract
@@ -145,6 +156,54 @@ def response(report):
     }
 
 
+def validate_configuration(report, raw_layout, enabled=False, fmt="pdf"):
+    layout = validate_layout(raw_layout)
+    if type(enabled) is not bool or fmt not in ("pdf", "xlsx"):
+        fail("Formato ou ativação inválidos.")
+    # Drafts may refer to a source not yet available, but never to another unit's assets/sources.
+    for spec in layout["sources"]:
+        if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit).exists():
+            fail("Fonte de outra unidade ou não encontrada.")
+        if spec["type"] == "report":
+            from .native import datasets
+            child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit).first()
+            if child and datasets(child):
+                from .sources import resolve_report
+                resolve_report(report, spec)
+    from .engine import assets_for
+    assets_for(report, layout)
+    if enabled:
+        if report.catalog_kind != "report" or report.review_queue:
+            fail("Ative Canvas apenas em relatórios finais revisados.")
+        definition_snapshot(report, layout)
+    return layout
+
+
+def validate_json(view, request):
+    report = context_report(view, request)
+    text = request.data.get("json")
+    if not isinstance(text, str) or len(text.encode()) > 750000:
+        fail("Informe o JSON do canvas com até 750 KB.")
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return Response({"detail": f"JSON inválido na linha {exc.lineno}, coluna {exc.colno}: {exc.msg}", "line": exc.lineno, "column": exc.colno}, status=400)
+    from .parameter_editor import apply_edits
+    apply_edits(report, request.data.get("parameter_edits", []))
+    try:
+        layout = validate_configuration(report, value, request.data.get("enabled", False), request.data.get("output_format", "pdf"))
+    except ValidationError as exc:
+        from .schema import error_messages
+        detail = exc.detail if isinstance(exc.detail, dict) else {}
+        identity = detail.get("block_id") or detail.get("source_id")
+        position = text.find(json.dumps(str(identity), ensure_ascii=False)) if identity else 0
+        position = max(0, position)
+        line = text[:position].count("\n") + 1
+        column = position - text.rfind("\n", 0, position)
+        return Response({"detail": f"Esquema inválido, linha {line}, coluna {column}: " + "; ".join(error_messages(exc)), "line": line, "column": column}, status=400)
+    return Response({"layout": layout})
+
+
 def configure(view, request):
     report = context_report(view, request)
     if request.method == "GET":
@@ -162,22 +221,7 @@ def configure(view, request):
             fmt = request.data.get("output_format", "pdf")
             if type(enabled) is not bool or fmt not in ("pdf", "xlsx"):
                 fail("Formato ou ativação inválidos.")
-            # Drafts may refer to a source not yet available, but never to another unit's assets/sources.
-            for spec in layout["sources"]:
-                if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=current.unit).exists():
-                    fail("Fonte de outra unidade ou não encontrada.")
-                if spec["type"] == "report":
-                    from .native import datasets
-                    child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=current.unit).first()
-                    if child and datasets(child):
-                        from .sources import resolve_report
-                        resolve_report(current, spec)
-            from .engine import assets_for
-            assets_for(current, layout)
-            if enabled:
-                if current.catalog_kind != "report" or current.review_queue:
-                    fail("Ative Canvas apenas em relatórios finais revisados.")
-                definition_snapshot(current, layout)
+            validate_configuration(current, layout, enabled, fmt)
             previous = {"layout": current.canvas_layout, "enabled": current.canvas_enabled, "format": current.output_format}
             legacy = dict(current.legacy)
             if enabled and not current.canvas_enabled:

@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import { AlertTriangle, PanelRightOpen } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
 import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
+import JsonEditorDialog from "./report-canvas/dialogs/JsonEditorDialog";
+import { query, request } from "../api";
 import ParameterEditor from "./report-canvas/data/ParameterEditor";
 import DataPanel from "./report-canvas/data/DataPanel";
 import SourceDialog from "./report-canvas/data/SourceDialog";
@@ -80,6 +82,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("content");
   const [displayVersion, setDisplayVersion] = useState<number>(report.version || 1);
   const [hiddenAssetIds, setHiddenAssetIds] = useState<string[]>([]);
+  const [jsonOpen, setJsonOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [problemsPanelOpen, setProblemsPanelOpen] = useState(false);
   const [draftBanner, setDraftBanner] = useState<{
@@ -407,7 +410,9 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
         onToggleLeftPanel={prefs.toggleLeftPanel}
       >
         <input ref={session.fileInputRef} type="file" accept="image/png,image/jpeg" hidden onChange={(e) => void session.handleFileChange(e)} />
+        {jsonOpen && <JsonEditorDialog layout={layout} canUndo={store.canUndo} onUndo={store.undo} onClose={() => setJsonOpen(false)} onApply={next => store.apply("Aplicar JSON", () => next)} validate={async text => { const result = await request<{layout: import("./report-canvas/model").CanvasLayout}>(query(`reports/${report.id}/canvas-validate`, {unit}), "POST", {json: text, enabled: session.enabled, output_format: session.outputFormat, parameter_edits: session.parameterEdits}); return result.layout; }} />}
         <TopBar
+          onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
           version={displayVersion}
           enabled={session.enabled}

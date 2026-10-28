@@ -641,6 +641,11 @@ class CatalogViewSet(ReportViewSet):
         from operations.report_canvas.api import configure
         return configure(self, request)
 
+    @action(detail=True, methods=["post"], url_path="canvas-validate")
+    def canvas_validate(self, request, pk=None):
+        from operations.report_canvas.api import validate_json
+        return validate_json(self, request)
+
     @extend_schema(request=CanvasPreviewSchema, responses=CanvasPreviewResult)
     @action(detail=True, methods=["post"], url_path="canvas-preview")
     def canvas_preview(self, request, pk=None):
