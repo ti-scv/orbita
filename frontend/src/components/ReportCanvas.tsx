@@ -75,7 +75,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
   const [activePageId, setActivePageId] = useState("p1");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [showGrid] = useState(false);
-  const [showSampleData, setShowSampleData] = useState(true);
+  const [showSampleData, setShowSampleData] = useState(initialCanvas?.default_data_mode !== "preview");
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("content");
   const [displayVersion, setDisplayVersion] = useState<number>(report.version || 1);
   const [hiddenAssetIds, setHiddenAssetIds] = useState<string[]>([]);

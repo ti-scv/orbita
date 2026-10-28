@@ -154,6 +154,13 @@ describe("Cliente de API do Canvas com request mockado (load, save, preview, con
 });
 
 describe("Renderização estática dos módulos extraídos (preservação estrutural e classes CSS)", () => {
+  it.each(["preview", "sample"] as const)("respeita o modo inicial %s validado", (mode) => {
+    const html = renderToStaticMarkup(<ThemeProvider><ReportCanvas unit="scv"
+      report={{id:354,name:"Leitos",version:2}} onClose={() => {}}
+      initialCanvas={{version:2,layout:createDefaultLayout(),enabled:false,output_format:"pdf",sources:[],assets:[],default_data_mode:mode}}
+    /></ThemeProvider>);
+    expect(html).toMatch(new RegExp(`aria-label="Dados reais"[^>]*aria-pressed="${mode === "preview"}"`));
+  });
   it("renderiza ReportCanvas inicial com classe cv-root no shell e controles principais", () => {
     const html = renderToStaticMarkup(
       <ThemeProvider>
