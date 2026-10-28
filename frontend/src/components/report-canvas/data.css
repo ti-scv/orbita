@@ -899,3 +899,6 @@
 .cv-origin-skeleton div { height: 1em; margin: .6em 0; border-radius: 4px; background: var(--cv-line); opacity: .6; }
 .cv-origin-skeleton div:nth-child(2) { width: 75%; }
 .cv-origin-skeleton div:nth-child(3) { width: 55%; }
+
+.cv-root .cv-column-left { flex-wrap: wrap; }
+.cv-root .cv-column-name, .cv-root .cv-column-row .cv-origin-text { white-space: normal; overflow: visible; overflow-wrap: anywhere; }

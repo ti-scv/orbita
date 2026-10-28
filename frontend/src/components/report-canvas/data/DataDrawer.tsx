@@ -143,7 +143,7 @@ export default function DataDrawer({
   };
 
   const totalCount = currentPreview?.total_rows ?? rawRows.length;
-  const countText = `${formatRowCount(displayRows.length, currentPreview || {total_rows: totalCount})} (com os parâmetros atuais) · a partir da ${(offset + 1).toLocaleString("pt-BR")}`;
+  const countText = `Mostrando ${formatRowCount(displayRows.length, currentPreview || {total_rows: totalCount})} · a partir da ${(offset + 1).toLocaleString("pt-BR")}`;
 
   return (
     <div className="cv-data-drawer cv-root" role="dialog" aria-label={`Dados da fonte ${sourceName || source.label || source.id}`}>

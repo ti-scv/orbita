@@ -2,6 +2,8 @@ export function isDateParameter(key: string, type: string): boolean {
   return /date|data/i.test(type) || /^(start|end|data.*|.*_date)$/i.test(key);
 }
 export function maskFixedDate(value: string): string {
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
   const digits = value.replace(/\D/g, "").slice(0, 8);
   return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean).join("/");
 }

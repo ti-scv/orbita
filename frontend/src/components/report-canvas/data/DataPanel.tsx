@@ -325,10 +325,10 @@ export default function DataPanel({
 
             const subtitle =
               src.type === "report"
-                ? `${sqlItem?.name || "Relatório"} › ${sqlItem?.datasets?.find(item => item.id === src.dataset)?.name || "Dados"}`
+                ? sqlItem?.name || "Relatório"
                 : src.type === "inline"
                   ? `Tabela manual (${src.columns.length} colunas)`
-                  : "Metas mensais (year, month, value)";
+                  : "Metas mensais";
 
             const displayName = friendlySourceName(src, sqlItem);
             const usages = layout ? findSourceUsages(layout, src.id) : [];
@@ -383,8 +383,8 @@ export default function DataPanel({
                       )}
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
-                        <span className="cv-chip ready">
-                          {formatRowCount(previewData.rows.length, previewData)} (com os parâmetros atuais)
+                        <span className="cv-chip ready" tabIndex={0} title="O total considera os parâmetros atuais (período, unidade, tipo de envio). Mostramos só as 50 primeiras na prévia.">
+                          {previewData.total_rows_exact !== false && previewData.rows.length === previewData.total_rows ? `Mostrando todas as ${previewData.rows.length.toLocaleString("pt-BR")} linhas` : `Mostrando ${formatRowCount(previewData.rows.length, previewData)}`}
                           {previewState?.loadedAt && (
                             <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}
@@ -498,7 +498,7 @@ export default function DataPanel({
                                 );
                                 e.dataTransfer.effectAllowed = "copy";
                               }}
-                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${col.type}`}
+                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${formatColumnTypeLabel(col.type)}`}
                             >
                               <div className="cv-column-left">
                                 <ColumnBadge
@@ -521,8 +521,8 @@ export default function DataPanel({
                                   type="button"
                                   className="cv-icon-btn"
                                   style={{ width: 22, height: 22 }}
-                                  title="Usar coluna no bloco selecionado"
-                                  aria-label={`Usar coluna ${col.name}`}
+                                  title="Mais ações da coluna"
+                                  aria-label="Mais ações da coluna"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveMenuCol(isMenuOpen ? null : { sourceId: src.id, colName: col.name });

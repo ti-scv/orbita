@@ -165,7 +165,7 @@ export default function SourceDialog({
     (s) => s.id === Number(sourceModal.reportId),
   );
 
-  const friendlyDefault = selectedCatalog ? `${selectedCatalog.name} › ${selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}` : "";
+  const friendlyDefault = selectedCatalog?.name || "";
 
   // Handle label change and auto slug
   const handleLabelChange = (val: string) => {
@@ -452,7 +452,7 @@ export default function SourceDialog({
           </p>
         )}
 
-        {sourceModal.type === "report" && selectedCatalog && <p className="cv-source-sub">Fonte: {selectedCatalog.name} › {selectedCatalog.datasets?.find(item => item.id === sourceModal.dataset)?.name || "Dados"}</p>}
+        {sourceModal.type === "report" && selectedCatalog && <p className="cv-source-sub">Fonte: {selectedCatalog.name}</p>}
         {/* 1. Nome amigável e Identificador técnico */}
         <div className="cv-grid-2">
           <label className="op-field">
@@ -467,43 +467,6 @@ export default function SourceDialog({
             />
           </label>
 
-          <label className="op-field">
-            <span style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Identificador técnico (avançado)</span>
-              {!showAdvancedId && (
-                <button
-                  type="button"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--cv-accent)",
-                    cursor: "pointer",
-                    fontSize: "11px",
-                    padding: 0,
-                  }}
-                  onClick={() => setShowAdvancedId(true)}
-                >
-                  Editar id
-                </button>
-              )}
-            </span>
-            <input
-              type="text"
-              hidden={!showAdvancedId}
-              required={showAdvancedId}
-              maxLength={50}
-              className="cv-font-mono"
-              placeholder="Ex.: faturamento_mensal"
-              value={sourceModal.id}
-              onChange={(e) => handleIdChange(e.target.value)}
-              disabled={!showAdvancedId && isCreate}
-            />
-            {idError && (
-              <span className="inline-error" style={{ fontSize: "11px", marginTop: "2px" }}>
-                {idError}
-              </span>
-            )}
-          </label>
         </div>
 
         {/* 2. Tipo de Fonte (Segmented control) */}
@@ -594,7 +557,7 @@ export default function SourceDialog({
                   <option value="">Selecione um relatório</option>
                   {filteredCatalog.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name} · {s.code}{s.available === false ? " · Pendente" : ""}
+                      {s.name}{s.available === false ? " · Pendente" : ""}
                     </option>
                   ))}
                 </Select>
@@ -950,7 +913,44 @@ export default function SourceDialog({
 
         {/* 7. Detalhes avançados (JSON somente leitura) */}
         <details className="cv-details-advanced">
-          <summary>Detalhes avançados (JSON da especificação)</summary>
+          <summary>Detalhes avançados</summary>
+          <label className="op-field">
+            <span style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Identificador técnico (avançado)</span>
+              {!showAdvancedId && (
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--cv-accent)",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    padding: 0,
+                  }}
+                  onClick={() => setShowAdvancedId(true)}
+                >
+                  Editar id
+                </button>
+              )}
+            </span>
+            <input
+              type="text"
+              required={showAdvancedId}
+              maxLength={50}
+              className="cv-font-mono"
+              placeholder="Ex.: faturamento_mensal"
+              value={sourceModal.id || sourceModal.originalId || ""}
+              onChange={(e) => handleIdChange(e.target.value)}
+              readOnly={!showAdvancedId}
+            />
+            {idError && (
+              <span className="inline-error" style={{ fontSize: "11px", marginTop: "2px" }}>
+                {idError}
+              </span>
+            )}
+          </label>
+
           <pre className="cv-json-preview">{JSON.stringify(draftSource, null, 2)}</pre>
         </details>
       </form>
