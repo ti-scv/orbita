@@ -1,0 +1,75 @@
+........................................................................ [  7%]
+........................................................................ [ 14%]
+........................................................................ [ 21%]
+........................................................................ [ 28%]
+........................................................................ [ 35%]
+........................................................................ [ 42%]
+........................................................................ [ 49%]
+........................................................................ [ 56%]
+.............................................s.......................... [ 63%]
+........................................................................ [ 71%]
+........................................................................ [ 78%]
+........................................................................ [ 85%]
+........................................................................ [ 92%]
+........................................................................ [ 99%]
+.....                                                                    [100%]
+=============================== warnings summary ===============================
+tests/test_acceptance.py: 5 warnings
+tests/test_agenda.py: 7 warnings
+tests/test_app_reporting.py: 2 warnings
+tests/test_appointment_groups.py: 4 warnings
+tests/test_appointment_response_actions.py: 8 warnings
+tests/test_bed_snapshots.py: 3 warnings
+tests/test_campaign_sending.py: 3 warnings
+tests/test_canvas_source_preview.py: 5 warnings
+tests/test_canvas_task08.py: 10 warnings
+tests/test_canvas_task20_json.py: 2 warnings
+tests/test_canvas_task20_origin.py: 2 warnings
+tests/test_canvas_task20_parameters.py: 1 warning
+tests/test_canvas_task21_performance.py: 4 warnings
+tests/test_canvas_task31b_security.py: 2 warnings
+tests/test_canvas_task31d.py: 1 warning
+tests/test_cross_controls.py: 1 warning
+tests/test_cross_select_all.py: 3 warnings
+tests/test_cross_standardization.py: 4 warnings
+tests/test_django_admin.py: 1 warning
+tests/test_external_pdf.py: 4 warnings
+tests/test_federation.py: 14 warnings
+tests/test_flow.py: 6 warnings
+tests/test_fpo_reference.py: 1 warning
+tests/test_import_conflicts.py: 1 warning
+tests/test_instance_users.py: 6 warnings
+tests/test_logs.py: 2 warnings
+tests/test_meta_configuration.py: 12 warnings
+tests/test_meta_costs.py: 9 warnings
+tests/test_occupancy_indicators.py: 2 warnings
+tests/test_operational_appointments.py: 7 warnings
+tests/test_operations.py: 18 warnings
+tests/test_oracle_absences.py: 2 warnings
+tests/test_oracle_agendas.py: 25 warnings
+tests/test_oracle_configuration.py: 12 warnings
+tests/test_oracle_send_regression.py: 17 warnings
+tests/test_postprocedure_agendas.py: 2 warnings
+tests/test_real_pilot.py: 10 warnings
+tests/test_recipient_manual_reports.py: 11 warnings
+tests/test_regressions.py: 1 warning
+tests/test_reminder_refresh.py: 1 warning
+tests/test_report_canvas.py: 8 warnings
+tests/test_report_canvas_ports.py: 2 warnings
+tests/test_report_catalog.py: 22 warnings
+tests/test_report_descriptions.py: 1 warning
+tests/test_report_goals.py: 1 warning
+tests/test_report_pagination.py: 3 warnings
+tests/test_report_removal.py: 5 warnings
+tests/test_report_removal_compat31.py: 1 warning
+tests/test_report_whatsapp.py: 5 warnings
+tests/test_simulated_source.py: 4 warnings
+tests/test_snapshot_datasets.py: 4 warnings
+tests/test_stock_loans.py: 1 warning
+tests/test_unit_directory.py: 2 warnings
+tests/test_webhooks.py: 3 warnings
+  /usr/local/lib/python3.12/site-packages/django/core/handlers/base.py:61: UserWarning: No directory at: /app/staticfiles/
+    mw_instance = middleware(adapted_handler)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1012 passed, 1 skipped, 293 warnings in 282.56s (0:04:42)

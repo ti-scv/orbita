@@ -1,0 +1,72 @@
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  7.063MB
+
+Step 1/12 : FROM node:24-alpine AS build
+ ---> 06d7adf3e0ef
+Step 2/12 : WORKDIR /app
+ ---> Using cache
+ ---> 07df46f03f4a
+Step 3/12 : COPY package*.json ./
+ ---> Using cache
+ ---> 28835d256a8a
+Step 4/12 : RUN npm ci
+ ---> Using cache
+ ---> 7cd0b29b6b8c
+Step 5/12 : COPY . .
+ ---> 31edc5b0377f
+Step 6/12 : RUN npm run build
+ ---> Running in 17b3c7795a25
+
+> orbita-panel@0.1.0 build
+> tsc -b && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 2325 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                1.46 kB │ gzip:   0.67 kB
+dist/assets/ReportCanvasPage-zk2t_boC.css     27.73 kB │ gzip:   5.29 kB
+dist/assets/ReportCanvas-DQDtmDqG.css         74.42 kB │ gzip:  10.71 kB
+dist/assets/index-C488Cqty.css               198.84 kB │ gzip:  34.23 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+dist/assets/OverviewWorkspace-D1pYHQym.js      6.20 kB │ gzip:   2.18 kB
+dist/assets/MetaCosts-DjuR0Y13.js              7.28 kB │ gzip:   2.87 kB
+dist/assets/ReportCanvasPage-BpzU7cMb.js       7.56 kB │ gzip:   2.26 kB
+dist/assets/ChartPreviewContent-BjlYKl0p.js   11.78 kB │ gzip:   4.09 kB
+dist/assets/index-pXHMkmFH.js                 12.44 kB │ gzip:   4.44 kB
+dist/assets/tiny-invariant-DPdtyPfw.js       127.12 kB │ gzip:  44.48 kB
+dist/assets/charts-Dk2n8IsD.js               288.77 kB │ gzip:  72.94 kB
+dist/assets/ReportCanvas-DN-2E6rh.js         300.66 kB │ gzip:  88.19 kB
+dist/assets/index-BFRcd5FR.js                592.36 kB │ gzip: 168.38 kB
+✓ built in 17.95s
+ ---> Removed intermediate container 17b3c7795a25
+ ---> 75f201fba985
+Step 7/12 : FROM nginx:alpine
+ ---> a3554c0d0b48
+Step 8/12 : ENV API_UPSTREAM=api:8000
+ ---> Using cache
+ ---> 977b77fb58e8
+Step 9/12 : ENV NGINX_ENVSUBST_FILTER=^API_UPSTREAM$
+ ---> Using cache
+ ---> f62201f74319
+Step 10/12 : COPY nginx.stage.conf.template /etc/nginx/templates/default.conf.template
+ ---> Using cache
+ ---> 4690b8b6d462
+Step 11/12 : COPY --from=build /app/dist /usr/share/nginx/html
+ ---> 5760e1cc8917
+Step 12/12 : EXPOSE 80
+ ---> Running in 14e71e2fca6c
+ ---> Removed intermediate container 14e71e2fca6c
+ ---> 26df1fd4fd10
+Successfully built 26df1fd4fd10
+Successfully tagged orbita-panel-canvas-stage:latest
+Container orbita-canvas-stage removido.
+Staging orbita-canvas-stage em http://127.0.0.1:8091 (API: orbita-canvas-task26-api:8000)
