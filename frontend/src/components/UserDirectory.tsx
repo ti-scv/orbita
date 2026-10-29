@@ -44,6 +44,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roles, setRoles] = useState<Record<string, PermissionRole[]>>({});
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   }, [options, editable, revision]);
   useEffect(() => {
     let active = true;
+    setLoading(true); setError("");
     async function load() {
       const [opts, first] = await Promise.all([
         request<Options>(query("users/options", {unit})),
@@ -68,7 +70,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
       }
       if(active) {setOptions(opts);setRows(found);}
     }
-    load().catch(e=>active&&setError(e.message));
+    load().catch(e=>active&&setError(e.message)).finally(()=>{if(active) setLoading(false);});
     return ()=>{active=false;};
   }, [unit, revision, search]);
   async function save(row:UserRow|undefined, body:unknown) {
@@ -85,7 +87,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
       {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
-    </tbody></table></div>{!rows.length&&<p className="directory-empty">Nenhum usuário encontrado.</p>}
+    </tbody></table></div>{loading ? <p role="status">Carregando usuários…</p> : !error && !rows.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
   </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit} onChanged={() => setRevision(v => v + 1)}/>}</>;
 }
 

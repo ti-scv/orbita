@@ -17,8 +17,9 @@ export async function loadPermissionRoles(unit: string): Promise<PermissionRole[
   }
 }
 export default function PermissionRoles({unit, onChanged}: {unit: string; onChanged?: () => void}) {
+  const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<PermissionRole[]>([]), [revision, setRevision] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState("");
-  useEffect(() => { let active = true; setRoles([]); setError(""); loadPermissionRoles(unit).then(r => {if (active) setRoles(r);}).catch(e => {if (active) setError(e.message);}); return () => {active = false;}; }, [unit, revision]);
+  useEffect(() => { let active = true; setRoles([]); setError(""); setLoading(true); loadPermissionRoles(unit).then(r => {if (active) setRoles(r);}).catch(e => {if (active) setError(e.message);}).finally(() => {if (active) setLoading(false);}); return () => {active = false;}; }, [unit, revision]);
   async function save(row: PermissionRole | undefined, name: string, permissions: SectionPermissions) {
     setBusy(true); setError("");
     try { await request(query(row ? `permission-roles/${row.id}` : "permission-roles", {unit}), row ? "PATCH" : "POST", {name, permissions}); setRevision(v => v + 1); onChanged?.(); }
@@ -27,7 +28,7 @@ export default function PermissionRoles({unit, onChanged}: {unit: string; onChan
   return <Panel title="Tipos de usuário" action={<RoleForm key={`new:${revision}`} revision={revision} busy={busy} error={error} save={save}/> }>
     {error && <p className="inline-error" role="alert">{error}</p>}
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Tipo</th><th>Permissões</th><th>Ações</th></tr></thead><tbody>{roles.map(row => <tr key={row.id}><td>{row.name}</td><td>{Object.entries(roleLabels).map(([key,label]) => <small className="directory-detail" key={key}>{label}: {(row.permissions[key] || (["overview","groups","issues"].includes(key) ? row.permissions.messages : "none")) === "write" ? "Ver e editar" : (row.permissions[key] || (["overview","groups","issues"].includes(key) ? row.permissions.messages : "none")) === "read" ? "Somente leitura" : "Sem acesso"}</small>)}</td><td><RoleForm key={`${row.id}:${revision}`} row={row} revision={revision} busy={busy} error={error} save={save}/></td></tr>)}</tbody></table></div>
-    {!roles.length && <p className="directory-empty">Nenhum tipo cadastrado.</p>}
+    {loading ? <p role="status">Carregando tipos…</p> : !error && !roles.length && <p className="directory-empty">Nenhum tipo cadastrado.</p>}
   </Panel>;
 }
 function RoleForm({row, revision, busy, error, save}: {row?: PermissionRole; revision: number; busy: boolean; error: string; save: (row: PermissionRole | undefined, name: string, permissions: SectionPermissions) => Promise<void>}) {
