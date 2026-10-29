@@ -1035,3 +1035,11 @@
 /* Keep origin and database names readable at browser zoom levels. */
 .report-workspace .report-table td:nth-child(2) { min-width: 145px; word-break: normal; overflow-wrap: normal; }
 .report-workspace .report-table td:nth-child(2) small { word-break: normal; overflow-wrap: normal; }
+
+.report-composition { margin: 1rem 0; min-width: 0; }
+.report-composition h3 { font-size: 1rem; margin: 1rem 0 .5rem; }
+.report-composition-list { margin: .5rem 0; padding: 0; list-style-position: inside; }
+.report-composition-list li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem; border-bottom: 1px solid var(--border, #8886); }
+.report-composition-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.report-composition-list small { opacity: .75; }
+.report-composition-actions { display: flex; flex-wrap: wrap; gap: .35rem; }

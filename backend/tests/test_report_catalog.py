@@ -1021,3 +1021,24 @@ def test_parameter_audit_removal_persists_restores_and_checks_version(report_env
     assert post(e["client"], path, {"version": response.data["version"], "operation": "remove", "key": "invalid"}).status_code == 400
     Membership.objects.filter(user=e["user"], unit=e["unit"]).update(role="operator")
     assert post(e["client"], path, {"version": response.data["version"], "operation": "remove_all"}).status_code == 403
+
+
+def test_composition_catalog_is_scoped_and_configuration_preserves_parts(report_env):
+    e = report_env
+    child = e["report"]
+    child.name = "Mesmo nome"
+    child.catalog_kind = "component"
+    child.save()
+    second = ReportDefinition.objects.create(unit=e["unit"], code="second", name="Mesmo nome", source="sql")
+    other_unit = Unit.objects.create(slug="outra33e", name="Outra unidade")
+    other = ReportDefinition.objects.create(unit=other_unit, code="outside", name="Mesmo nome", source="sql")
+    parent = ReportDefinition.objects.create(unit=e["unit"], code="comp33e", name="Composto", source="composite", components=[{"code": child.code, "parameters": {"minimo": 3}}])
+    listing = e["client"].get("/api/v1/reports/?unit=ame&section=all")
+    ids = {r["id"] for r in listing.data["results"]}
+    assert {child.pk, second.pk, parent.pk} <= ids
+    assert other.pk not in ids
+    parts = [{"code": second.code}, {"code": child.code, "parameters": {"minimo": 3}}]
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 200, response.data
+    parent.refresh_from_db()
+    assert parent.components == parts

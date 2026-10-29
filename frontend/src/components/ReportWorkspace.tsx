@@ -265,11 +265,11 @@ function Field({
     </label>
   );
 }
-async function all(resource: string, unit: string): Promise<Row[]> {
+async function all(resource: string, unit: string, section?: string): Promise<Row[]> {
   const result: Row[] = [];
   for (let page = 1; page <= 100; page++) {
     const data = await request<{ results: Row[]; next: string | null }>(
-      query(resource, { unit, page: String(page) }),
+      query(resource, { unit, page: String(page), ...(section ? { section } : {}) }),
     );
     result.push(...data.results);
     if (!data.next) return result;
@@ -372,6 +372,8 @@ export default function ReportWorkspace({
   const [recipientKindFilter, setRecipientKindFilter] = useState("");
   const [scheduleFilters, setScheduleFilters] = useState<ScheduleFilters>({search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
   const [catalog, setCatalog] = useState<Row[]>([]),
+    [compositionCatalog, setCompositionCatalog] = useState<Row[]>([]),
+    [compositionLoading, setCompositionLoading] = useState(false),
     [connections, setConnections] = useState<Row[]>([]),
     [recipients, setRecipients] = useState<Row[]>([]),
     [users, setUsers] = useState<Row[]>([]);
@@ -382,7 +384,8 @@ export default function ReportWorkspace({
     } | null>(null),
     [form, setForm] = useState<Row>({}),
     [json, setJson] = useState("{}"),
-    [components, setComponents] = useState("[]"),
+    [components, setComponents] = useState<Row[]>([]),
+    [componentSearch, setComponentSearch] = useState(""),
     [keywords, setKeywords] = useState(""),
     [preview, setPreview] = useState<Row | null>(null),
     [inventory, setInventory] = useState<Row | null>(null);
@@ -462,6 +465,16 @@ export default function ReportWorkspace({
     };
   }, [unit, admin, tab, revision, modal?.kind, isReports]);
   useEffect(() => {
+    if (modal?.kind !== "edit" || modal.tab !== "reports" || form.source !== "composite") return;
+    let alive = true;
+    setCompositionCatalog([]);
+    setCompositionLoading(true);
+    all("reports", unit, "all").then(items => { if (alive) setCompositionCatalog(items); })
+      .catch(e => { if (alive) setError(e.message); })
+      .finally(() => { if (alive) setCompositionLoading(false); });
+    return () => { alive = false; };
+  }, [unit, modal?.kind, modal?.tab, form.source]);
+  useEffect(() => {
     if (!admin) {
       setInventory(null);
       return;
@@ -522,7 +535,8 @@ export default function ReportWorkspace({
         2,
       ),
     );
-    setComponents(JSON.stringify(value.components || [], null, 2));
+    setComponents(value.components || []);
+    setComponentSearch("");
     setKeywords((value.keywords || []).join("\n"));
     setError("");
     setModal({ kind, row: row || {}, tab: editTab });
@@ -639,7 +653,7 @@ export default function ReportWorkspace({
         data.connection = form.source !== "app" && form.connection ? Number(form.connection) : null;
         data.app_connection = form.app_connection ? Number(form.app_connection) : null;
         data.parameter_schema = JSON.parse(json);
-        data.components = JSON.parse(components);
+        data.components = components;
         data.keywords = keywords
           .split("\n")
           .map((x) => x.trim())
@@ -1367,14 +1381,34 @@ export default function ReportWorkspace({
                       </Field>
                     )}
                     {form.source === "composite" && (
-                      <Field label="Componentes (código e parâmetros)">
-                        <textarea
-                          className="report-code"
-                          rows={5}
-                          value={components}
-                          onChange={(e) => setComponents(e.target.value)}
-                        />
-                      </Field>
+                      <section className="report-composition" aria-label="Composição">
+                        <Field label="Buscar relatórios por nome">
+                          <input value={componentSearch} onChange={e => setComponentSearch(e.target.value)} />
+                        </Field>
+                        {compositionLoading && <p role="status">Carregando relatórios…</p>}
+                        {componentSearch.trim() && !compositionLoading && !compositionCatalog.some(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.code === r.code)) && <p role="status">Nenhum relatório encontrado.</p>}
+                        {componentSearch.trim() && <ul className="report-composition-list" aria-label="Resultados da busca">
+                          {compositionCatalog.filter(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.code === r.code)).map(r => <li key={r.id}>
+                            <span>{r.name} <small>· {unit} · ID {r.id} · {r.code}</small></span>
+                            <button type="button" className="button" aria-label={`Adicionar ${r.name} ID ${r.id}`} onClick={() => setComponents(current => [...current, {code: r.code}])}>Adicionar</button>
+                          </li>)}
+                        </ul>}
+                        <h3>Relatórios adicionados</h3>
+                        {components.length === 0 ? <p>Nenhum relatório adicionado.</p> : <ol className="report-composition-list">
+                          {components.map((component, index) => {
+                            const report = compositionCatalog.find(r => r.code === component.code);
+                            const name = report?.name || `Relatório não localizado (${component.code || "sem código"})`;
+                            return <li key={index}>
+                              <span>{name} <small>· {unit}{report ? ` · ID ${report.id}` : ""} · {component.code}</small></span>
+                              <div className="report-composition-actions">
+                                <button type="button" className="button" disabled={index === 0} aria-label={`Subir ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>Subir</button>
+                                <button type="button" className="button" disabled={index === components.length - 1} aria-label={`Descer ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; })}>Descer</button>
+                                <button type="button" className="button" aria-label={`Remover ${name} posição ${index + 1}`} onClick={() => setComponents(current => current.filter((_, i) => i !== index))}>Remover</button>
+                              </div>
+                            </li>;
+                          })}
+                        </ol>}
+                      </section>
                     )}
                     {form.catalog_kind !== "component" && <Field label="Mensagem ao selecionar o relatório">
                       <textarea rows={2} maxLength={2000} value={form.request_message || ""} onChange={e => update("request_message", e.target.value)} />

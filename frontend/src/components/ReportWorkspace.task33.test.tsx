@@ -62,3 +62,30 @@ it("confirma remoção, mostra o resultado persistido e restaura a detecção", 
   expect(vi.mocked(request).mock.calls.filter(call => call[0] === "reports/1/parameter-audit").map(call => (call[2] as any).version)).toEqual([2, 3, 4, 5]);
   confirm.mockRestore();
 });
+
+it("busca, adiciona, ordena e remove relatórios preservando os dados da composição salva", async () => {
+  const row = { id: 1, name: "Composto", code: "composto", version: 2, source: "composite", output_format: "pdf", parameter_schema: {}, components: [{code: "antigo", parameters: {limite: 3}, extra: "preservado"}, {code: "ausente", goal: 2}], keywords: [] };
+  const reports = [row, {id: 2, name: "Vendas", code: "antigo"}, {id: 3, name: "Vendas", code: "novo"}, {id: 4, name: "Vendas", code: "outro"}];
+  vi.mocked(request).mockImplementation(async (path: string, method?: string) => {
+    if (path === "reports/inventory") return {};
+    if (path === "reports/1") return {parameter_audit: {items: [], component_issues: []}};
+    if (path === "reports/1/configure" && method === "POST") return {id: 1};
+    if (path.endsWith("/users")) return [];
+    return {results: path === "reports" ? reports : [], count: reports.length, next: null};
+  });
+  render(<ReportWorkspace unit="ame" admin operate />);
+  fireEvent.click(await screen.findByRole("button", {name: "Editar Composto"}));
+  const dialog = screen.getByRole("dialog", {name: /Editar · Relatórios/});
+  await within(dialog).findByText(/ID 2/);
+  expect(within(dialog).getByText(/Relatório não localizado \(ausente\)/)).toBeTruthy();
+  expect(within(dialog).queryByLabelText("Componentes (código e parâmetros)")).toBeNull();
+  fireEvent.change(within(dialog).getByLabelText("Buscar relatórios por nome"), {target: {value: "vendas"}});
+  fireEvent.click(within(dialog).getByRole("button", {name: "Adicionar Vendas ID 3"}));
+  expect(within(dialog).getByRole("button", {name: "Adicionar Vendas ID 4"})).toBeTruthy();
+  fireEvent.click(within(dialog).getByRole("button", {name: "Subir Vendas posição 3"}));
+  fireEvent.click(within(dialog).getByRole("button", {name: /Remover Relatório não localizado.*posição 3/}));
+  fireEvent.click(within(dialog).getByRole("button", {name: /Salvar/}));
+  await vi.waitFor(() => expect(vi.mocked(request).mock.calls.some(call => call[0] === "reports/1/configure")).toBe(true));
+  const saved = vi.mocked(request).mock.calls.find(call => call[0] === "reports/1/configure")![2] as any;
+  expect(saved.components).toEqual([{code: "antigo", parameters: {limite: 3}, extra: "preservado"}, {code: "novo"}]);
+});
