@@ -243,3 +243,23 @@ A branch `feature/canvas-fila35` foi integrada à `feature/canvas-fila35b`, pres
 Antes do merge, a suíte completa do backend passou com **1.276 aprovados e 1 ignorado** em PostgreSQL isolado, transporte simulado e chaves fictícias. No resultado do merge, a suíte completa repetiu **1.276 aprovados e 1 ignorado**; o frontend passou com **650 testes**, TypeScript, ESLint e build de produção em Node 24. O build apresenta o aviso de bundle acima de 500 kB. Os testes usaram bancos descartáveis independentes e remoção de relatórios habilitada.
 
 A API e o frontend do staging isolado 8100 foram reconstruídos com o merge. `/`, `/configuracoes`, `/relatorios`, `/mensagens`, `/grupos` e `/health/` responderam HTTP 200; isso não substitui uma verificação autenticada no navegador. A inicialização da API não encontrou migrações a aplicar; o aviso preexistente de divergência de modelos em `operations` continua. No banco descartável, continuam presentes a conexão `QA 35g simulada` (`qa35g-falsa`, URL fictícia `http://127.0.0.1:1`), o vínculo remoto de `qa23u`, os usuários `qa23u` e `qa25u` e os tipos `qa23 A`, `qa23 B`, `qa25 X` e `qa25 Y`. A API anterior foi preservada como `orbita-api-fila35b-anterior35h6`. Não houve push nem uso do banco real ou do staging 8091.
+
+## Revisão 35j — QA27
+
+O formulário identifica em português as seções limitadas, sem expor os valores internos de permissão. O aviso após salvar fica abaixo da busca de usuários, mantendo sua posição quando o aviso aparece. O menu e o agrupamento de Relatórios usam a lâmpada duotone do projeto, que herda a cor do tema.
+
+A inicialização abortava CSRF e sessão após oito segundos, antes mesmo de esgotar a tolerância da própria consulta de sessão. Esse limite pode explicar o erro de QA27 em conexão lenta, mas a ocorrência original não foi reproduzida e sua causa não foi comprovada. Agora são feitas até duas tentativas de 20 segundos, separadas por 500 ms, antes de oferecer nova tentativa manual; 401 continua abrindo o login. A atualização periódica da sessão só encerra a sessão em 401, preservando-a em falhas transitórias. Não foi realizada reprodução autenticada com falha de rede induzida nem conferência visual dos dois temas nesta revisão.
+
+### Migrações desde 32c69c7
+
+Comparação dos arquivos de migração da árvore atual com 32c69c7:
+
+| Migração core | Efeito | Reversibilidade |
+| --- | --- | --- |
+| 0008_report_whatsapp_permission | Acrescenta reportWhatsApp às permissões locais, remotas e de conexão quando ausente; guarda os valores inseridos. | Reversível condicionalmente: remove o valor inserido apenas se não tiver sido alterado desde a migração; elimina a tabela de backup ao reverter. |
+| 0009_permission_roles | Cria tipos de permissão por unidade, com nome único por unidade. | Reversão estrutural possível, mas apaga os tipos cadastrados; requer reverter antes as dependências posteriores. |
+| 0010_preserve_task35_access | Consolida os níveis efetivos de Mensagens e Relatórios para preservar acesso, registrando valores anteriores e migrados. | Reversível condicionalmente: restaura cada chave somente se ela ainda coincidir com o valor migrado; alterações posteriores são preservadas. O backup é removido na reversão. |
+| 0011_preserve_settings_access | Consolida Configurações com os níveis efetivos de configurações, usuários e cadastros, guardando os valores anteriores e migrados. | Reversível condicionalmente: restaura settings somente se ainda coincidir com o valor migrado; preserva alterações posteriores e remove o backup na reversão. |
+| 0012_membership_permission_role | Acrescenta ao vínculo local uma referência opcional ao tipo de permissão, com SET_NULL na exclusão do tipo. | Reversão estrutural possível; remove a coluna e perde as associações de tipo armazenadas. |
+
+Validação: Vitest completo, 650 testes aprovados; TypeScript, ESLint e build passaram em Node 24. O build mantém o aviso de chunk acima de 500 kB. Os testes direcionados de usuários, tipos e sessão do backend informaram 14 aprovados, com avisos de diretório staticfiles ausente. O frontend do staging isolado 8100 foi reconstruído apontando para a API descartável existente; /, /configuracoes, /relatorios, /mensagens, /grupos e /health/ responderam HTTP 200. Essas respostas não comprovam os fluxos autenticados. Não houve alteração de backend, migração de banco ou push nesta revisão.
