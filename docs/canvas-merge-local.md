@@ -34,3 +34,19 @@ Build frontend em Node 24 concluído; suíte com dois workers e timeout de 30 s:
 `makemigrations autoagenda --check --dry-run` não detectou mudanças. A checagem geral, com `REPORT_REMOVAL_ENABLED` desligado, propõe remover campos condicionais de `operations`; a mesma diferença foi reproduzida na imagem original da release (`local-changes/baseline-migrations.log`). Não foi gerada migração a partir disso.
 
 Commit de implementação: `02ed5350c1d8b1da030f627c87e54e0f801aaa76`. O SHA do commit atual pode ser consultado por `git rev-parse HEAD`; o valor registrado no final deste arquivo fica fora do commit de documentação, pois um commit não pode conter seu próprio SHA.
+
+SHA final: `c6d6d45e7a043695e70c518a9604a89a643dedac`
+
+FIM-TAREFA-37M (concluída) c6d6d45e7a043695e70c518a9604a89a643dedac
+
+## Revisão 37n
+
+O código original restringe o Autoagendamento à unidade cujo slug é `sansaude`. Na AME o menu permanece oculto; a rota direta agora informa a restrição da unidade. No staging foi criada uma Sansaúde fictícia, com configuração fictícia desativada e sem credenciais ou reservas reais. O usuário de teste `qa_autoagenda` tem apenas a permissão de edição do módulo nessa unidade. Administrador e usuário autorizado abrem o console, a configuração e os indicadores; a API aplica a permissão de leitura ou edição do módulo também à configuração e ao acompanhamento, e a troca de credencial continua exigindo a senha do usuário. Sem permissão, as APIs negam acesso. A lateral de um usuário com apenas essa permissão mostra o item na Sansaúde. Testes adicionais cobrem os níveis e o isolamento por unidade.
+
+A marca na lateral escura usa a cor de texto do tema. A reprodução no navegador confirmou o menu, console, configuração e indicadores para ambos os perfis, o menu exclusivo do usuário de teste e a ausência do menu e mensagem da rota na AME. O build de produção com o Login personalizado e a suíte frontend passaram (670 testes). Nenhuma migração foi adicionada.
+
+O estágio antigo usava um worker e DEBUG ligado; foi reconstruído com três workers, DEBUG desligado, assets minificados, banco descartável e envios simulados. Em medições locais antes da reconstrução, `GET /health/` levou 4 ms no staging e 8 ms na produção; após, 31 ms e 7 ms sob carga. Os assets principais levaram 18 ms no staging e 10 ms na produção (635 kB e 616 kB); não foi identificada regressão do código nessas leituras. Após a reconstrução, login no staging levou 1,2–1,5 s, consulta do Canvas 0,16 s e criação de usuário fictício 1,42 s. São amostras pontuais, não uma prova da causa das lentidões relatadas no navegador; o servidor tinha várias suítes simultâneas e carga elevada. A produção foi consultada apenas por GET, sem acesso ao banco real.
+
+Logs das suítes: `/tmp/orbita-37n-frontend.log` e `/tmp/orbita-37n-backend.log`. O staging 8115 usa `admin` e a mesma senha exclusiva de staging da tarefa anterior; a unidade e os usuários de teste são fictícios.
+
+A suíte backend completa em PostgreSQL isolado terminou com **1.297 testes aprovados e 5 ignorados**. O commit anterior a esta atualização de documentação é `9cd45dd`; o SHA final da entrega é obtido com `git rev-parse HEAD`.
