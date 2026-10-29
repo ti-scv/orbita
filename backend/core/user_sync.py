@@ -80,5 +80,5 @@ def sync_users(connection, actor=None):
     except (RemoteUnavailable, ValidationError) as exc:
         code = exc.code if isinstance(exc, RemoteUnavailable) else "invalid_connection"
         Audit.objects.create(unit=connection.local_unit, actor=actor, action="user_sync.failed",
-                             object_id=str(connection.pk), details={"code": code})
+                             object_id=str(connection.pk), details={"code": code, "unit": connection.remote_unit.get("name") or connection.name})
         return {"ok": False, "error": "Não foi possível sincronizar usuários. Tente novamente.", "code": code}

@@ -251,7 +251,7 @@ class UserViewSet(viewsets.GenericViewSet):
             if item.state != SyncedUserIdentity.State.CONFLICT or item.removed_at_origin:
                 raise ValidationError("O conflito não está disponível para decisão.")
             if decision == "pending":
-                Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_deferred", object_id=str(item.pk), details={"login": item.login, "unit": item.connection.remote_unit.get("name") or item.connection.name})
+                Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_deferred", object_id=str(item.pk), details={"login": item.login, "unit": item.connection.remote_unit.get("name") or item.connection.name, "decision": "pending"})
                 return Response({"id": item.pk, "state": item.state})
             if get_user_model().objects.filter(username=login).exists():
                 raise ValidationError("Login indisponível.")
@@ -277,10 +277,11 @@ class UserViewSet(viewsets.GenericViewSet):
                 raise ValidationError("Informe senha, acesso ativo e ao menos uma unidade.")
             self._releasing_synced = item.user_id
             result = self.configure_user(request, str(item.user_id))
+            access_audit = Audit.objects.filter(unit=anchor, actor=request.user, action="user.access_configured", object_id=str(item.user_id)).order_by("-pk").first()
             item.state = SyncedUserIdentity.State.RELEASED
             item.save(update_fields=["state"])
             Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.released",
-                                 object_id=str(item.pk), details={"user_id": item.user_id, "login": item.user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name})
+                                 object_id=str(item.pk), details={"user_id": item.user_id, "login": item.user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name, "access": (access_audit.details or {}).get("access", []) if access_audit else []})
             return result
 
     @extend_schema(request=UserInput, responses=UserOutput)
