@@ -326,6 +326,7 @@ export function AppointmentDetail({
   ...props
 }: Common & {
   id: string;
+  groupId?: string;
   username: string;
   operate: boolean;
   onBack: () => void;
@@ -347,6 +348,7 @@ export function AppointmentDetail({
 function CaseDetail({
   item,
   unit,
+  groupId,
   operate,
   revision,
   act,
@@ -355,6 +357,7 @@ function CaseDetail({
   onBack,
 }: Common & {
   item: CareCase;
+  groupId?: string;
   username: string;
   operate: boolean;
   onBack: () => void;
@@ -408,9 +411,9 @@ function CaseDetail({
         }),
       ),
       request<typeof comms>(query(`cases/${item.id}/communications`, { unit })),
-      request<Paginated<Row>>(query("movements", { unit, case: item.id })),
+      request<Paginated<Row>>(query("movements", { unit, case: item.id, group: groupId || "" })),
       request<Paginated<(typeof contacts)[number]>>(
-        query("contacts", { unit, event: String(item.event.id) }),
+        query("contacts", { unit, event: String(item.event.id), group: groupId || "" }),
       ),
     ])
       .then(([current, history, communications, moves, numbers]) => {
@@ -427,7 +430,7 @@ function CaseDetail({
     return () => {
       active = false;
     };
-  }, [item.id, item.event.id, unit, revision, timelinePage, onError]);
+  }, [item.id, item.event.id, unit, groupId, revision, timelinePage, onError]);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {

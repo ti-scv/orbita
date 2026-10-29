@@ -432,7 +432,7 @@ export default function OperationalAppointments({
       setError("");
       try {
         const result = await request(
-          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}`,
+          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}${groupId && /^(contacts|movements)(\/|$)/.test(path) ? `&group=${encodeURIComponent(groupId)}` : ""}`,
           "POST",
           data,
         );
@@ -445,7 +445,7 @@ export default function OperationalAppointments({
         setBusy(false);
       }
     },
-    [unit],
+    [unit, groupId],
   );
   function filter(key: keyof typeof filters, value: string) {
     setFilters((v) => ({ ...v, [key]: value, ...(key === "kind" ? {response: "", outcome: ""} : {}) }));
@@ -577,6 +577,7 @@ export default function OperationalAppointments({
         <AppointmentDetail
           key={`${unit}:${selected}`}
           id={selected}
+          groupId={groupId}
           unit={unit}
           username={username}
           operate={role === "admin" || role === "operator"}
