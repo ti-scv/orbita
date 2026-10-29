@@ -53,3 +53,5 @@ it("remove opções repetidas por valor e prefere a unidade permitida", async()=
  const source={id:"s",type:"report" as const,report_id:1};
  expect(previewParameters(source,schema,{},"scv",new Date(),true).values.unidade).toBe("scv");
 });
+
+it("permite buscar relatórios por nome mesmo com poucas opções",()=>{Element.prototype.scrollIntoView=vi.fn(); mount(); fireEvent.click(screen.getByRole("combobox")); fireEvent.change(screen.getByRole("combobox",{name:/Buscar em/}),{target:{value:"Mesmo nome"}}); expect(screen.getByRole("option",{name:/Mesmo nome/})).toBeTruthy(); expect(screen.queryByRole("option",{name:/Outro/})).toBeNull();});

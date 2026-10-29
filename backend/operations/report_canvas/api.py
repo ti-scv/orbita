@@ -157,6 +157,12 @@ def response(report):
         if child.pk in existing:continue
         pending=catalog_contract(child)
         if pending:sources.append(pending)
+    # Drafts can be composed, but runtime validation still enforces availability.
+    existing = {item["id"] for item in sources}
+    for child in ReportDefinition.objects.filter(unit=report.unit, catalog_kind="report", **active_conditions()).exclude(pk=report.pk):
+        if child.pk not in existing:
+            sources.append({"id": child.pk, "name": child.name, "code": child.code,
+                            "available": False, "unavailable_reason": "Fonte ainda não homologada para execução."})
     establishments = {child.pk: source_establishment(child) for child in ReportDefinition.objects.filter(pk__in=[item["id"] for item in sources]).select_related("unit")}
     for item in sources:
         item["establishment"] = establishments[item["id"]]

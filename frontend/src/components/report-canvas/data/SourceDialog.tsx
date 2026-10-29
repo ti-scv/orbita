@@ -559,7 +559,7 @@ export default function SourceDialog({
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
                 <small>Unidade selecionada: {unit.toUpperCase()}. Estabelecimento do relatório: {ownerEstablishment || "não identificado"}.</small>
-                <Select className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
+                <Select searchable className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
                   const chosen = availableSources.find(item => item.id === Number(e.target.value));
                   onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
                     label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
