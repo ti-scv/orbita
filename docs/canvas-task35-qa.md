@@ -46,3 +46,5 @@ A API `/api/v1/permission-roles/` lista modelos da unidade e permite criar ou ed
 | Usuários | Tipos de acesso | `GET/POST/PATCH /api/v1/permission-roles/` | `test_permission_roles_admin_and_scope` |
 
 A migração `core.0009_permission_roles` cria apenas a tabela de modelos e sua reversão a remove; não modifica vínculos existentes. Ela não substitui a migração pendente dos níveis antigos para os quatro tipos. Os endpoints antigos ainda não foram todos consolidados e não há certificação de que o novo tipo Mensagens controle todos os recursos compartilhados. Não executar migrações no banco real.
+
+Verificação da continuação: em PostgreSQL descartável, a suíte completa terminou com 1029 testes aprovados e as 5 falhas conhecidas de `test_report_removal.py` (resposta 503 pela flag de remoção). O teste adicional de reversão de `0009`, acrescentado depois do início dessa execução, passou na execução específica de `test_task35a2_roles.py` (3 testes). `test_task35a_whatsapp_permissions.py` passou com 10 testes. Foram usadas chaves fictícias e nenhum banco real.
