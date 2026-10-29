@@ -3036,3 +3036,6 @@
 }
 
 .modal.inline-dialog .access-grant > label.op-field + label.op-field { margin-top: 20px; }
+
+.directory-sync:not(:empty) { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+.directory-sync p { margin: 0; }

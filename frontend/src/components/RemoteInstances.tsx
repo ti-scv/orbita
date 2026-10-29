@@ -1,3 +1,4 @@
+import { syncCounts } from "./syncCounts";
 import Select from "./Select";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
@@ -156,7 +157,7 @@ export default function RemoteInstances({
     setNotice("");
     try {
       const result = await request<{ok?: boolean; new?: number; updated?: number; removed?: number; conflicts?: number}>(query(path, { unit }), "POST", body);
-      if (path.endsWith("/sync-users")) setNotice(`Sincronização concluída: ${result.new} novos, ${result.updated} atualizados, ${result.removed} removidos, ${result.conflicts} conflitos.`);
+      if (path.endsWith("/sync-users")) setNotice(`Sincronização concluída: ${syncCounts(result)}.`);
       await load();
       await onChanged();
     } catch (e) {

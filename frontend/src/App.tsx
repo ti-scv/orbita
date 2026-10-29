@@ -1,3 +1,4 @@
+import { AuditTimeline } from "./components/AuditTimeline";
 import { Activity, Lightbulb } from "./components/icons";
 import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
@@ -1427,22 +1428,7 @@ function Workspace({
                       </Panel>
 
                       <Panel title="Registro de auditoria">
-                        <div className="audit-timeline">
-                          {data.audit.results.slice(0, 10).map((item) => (
-                            <div key={item.id} className="audit-timeline-item">
-                              <span className="audit-dot" />
-                              <div className="audit-timeline-content">
-                                <strong>{item.action}</strong>
-                                <small>
-                                  {item.actor_name} · {dateTime(item.created_at)}
-                                </small>
-                              </div>
-                            </div>
-                          ))}
-                          {!data.audit.results.length && (
-                            <Empty text="Nenhuma atividade registrada." />
-                          )}
-                        </div>
+                        <AuditTimeline items={data.audit.results} dateTime={dateTime} />
                       </Panel>
                     </div>
                   )}

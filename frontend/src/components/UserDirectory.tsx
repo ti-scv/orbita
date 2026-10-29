@@ -1,3 +1,4 @@
+import { syncCounts } from "./syncCounts";
 import { Cloud } from "lucide-react";
 import { AlertTriangle } from "./icons";
 import Select from "./Select";
@@ -97,13 +98,13 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   }
   async function syncUsers(option: Option) {
     setBusy(true); setError(""); setNotice("");
-    try { const result = await request<{new: number; updated: number; removed: number; conflicts: number}>(query(`remote-instances/${option.slug.slice(7)}/sync-users`, {unit}), "POST", {}); setSyncNotice(`${option.name}: ${result.new} novos, ${result.updated} atualizados, ${result.removed} removidos, ${result.conflicts} conflitos.`); setRevision(v => v + 1); }
+    try { const result = await request<{new: number; updated: number; removed: number; conflicts: number}>(query(`remote-instances/${option.slug.slice(7)}/sync-users`, {unit}), "POST", {}); setSyncNotice(`${option.name}: ${syncCounts(result)}.`); setRevision(v => v + 1); }
     catch (e) {setError((e as Error).message);} finally {setBusy(false);}
   }
   return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
-    {editable && options.units.filter(o => o.remote && o.enabled && o.local_unit === unit).map(o => <button key={o.slug} className="button" disabled={busy} onClick={() => void syncUsers(o)}>Sincronizar usuários · {o.name}</button>)}
-    {syncNotice && <p role="status">{syncNotice}</p>}
+    <div className="directory-sync">{editable && options.units.filter(o => o.remote && o.enabled && o.local_unit === unit).map(o => <button key={o.slug} className="button" disabled={busy} onClick={() => void syncUsers(o)}>Sincronizar usuários · {o.name}</button>)}
+    {syncNotice && <p role="status">{syncNotice}</p>}</div>
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     {notice && <div role="alert" className="directory-remote-warning"><AlertTriangle size={20} /><span>Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</span></div>}
     <label className="op-field">Situação<Select value={stateFilter} onChange={e => setStateFilter(e.target.value)}><option value="">Todas</option><option>Pendente de liberação</option><option>Conflito de login</option><option>Removido na origem</option><option>Liberado</option><option>Ativo</option><option>Desativado</option></Select></label>
@@ -122,7 +123,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
           {editable && row?.editable && (!item || item.state === "released" && !item.removed_at_origin) && <UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>}
         </td></tr>;
       })}
-    </tbody></table></div>{loading ? <p role="status">Carregando usuários…</p> : !error && !rows.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
+    </tbody></table></div>{!loading && !error && !rows.length && !synced.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
   </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit} onChanged={() => setRevision(v => v + 1)}/>}</>;
 }
 
