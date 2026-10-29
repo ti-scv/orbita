@@ -12,6 +12,7 @@ import { PermissionGroups } from "./PermissionGroups";
 
 type Grant = { unit: string; role: string; permissions: SectionPermissions; permission_role?: {id: number; name: string} | null; permission_role_outdated?: boolean; roleAction?: number | null; customized?: boolean };
 type UserRow = { id: number; username: string; full_name: string; active: boolean; version: number; grants: Grant[]; editable: boolean; global_editable: boolean };
+type Synced = { id: number; user_id: number | null; login: string; name: string; unit: string; state: string; removed_at_origin: boolean };
 type Option = { slug: string; name: string; remote: boolean; instance_name?: string; local_unit?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
 const profiles: Record<string, string> = { admin: "Administrativo", operator: "Operador", viewer: "Consulta" };
@@ -44,6 +45,7 @@ export function applyTypeToGrants(grants: Grant[], option: Option, units: Option
 }
 
 export default function UserDirectory({unit, editable = true, onChanged}: {unit: string; editable?: boolean; onChanged?: () => Promise<void>}) {
+  const [synced, setSynced] = useState<Synced[]>([]);
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -71,34 +73,49 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
         const data = await request<Paginated<UserRow>>(query("users", {unit, search, page:String(page)}));
         found.push(...data.results); next = data.next;
       }
-      if(active) {setOptions(opts);setRows(found);}
+      const identities = editable && !unit.startsWith("remote:") ? await request<Synced[]>(query("users/synced", {unit})).catch(() => []) : [];
+      if(active) {setOptions(opts);setRows(found);setSynced(identities);}
     }
     load().catch(e=>active&&setError(e.message)).finally(()=>{if(active) setLoading(false);});
     return ()=>{active=false;};
-  }, [unit, revision, search]);
-  async function save(row:UserRow|undefined, body:unknown) {
+  }, [unit, revision, search, editable]);
+  async function save(row:UserRow|undefined, body:unknown, identity?: Synced) {
     setBusy(true);setError("");
     try {
-      const result = await request<{limitations?: {unit: string; sections: string[]}[]}>(query(row ? `users/${row.id}/configure` : "users",{unit}),"POST",body);
+      const result = await request<{limitations?: {unit: string; sections: string[]}[]}>(query(identity ? `users/${identity.id}/release-synced` : row ? `users/${row.id}/configure` : "users",{unit}),"POST",body);
       setNotice((result.limitations || []).map(item => `${item.unit}: ${item.sections.join(", ")}`).join("; "));
       setRevision(v=>v+1); await onChanged?.();
     } catch(e) {setError((e as Error).message);throw e;} finally {setBusy(false);}
+  }
+  async function resolve(identity: Synced, username: string) {
+    setBusy(true); setError("");
+    try { await request(query(`users/${identity.id}/resolve-sync-conflict`, {unit}), "POST", {username}); setRevision(v => v + 1); }
+    catch (e) { setError((e as Error).message); throw e; }
+    finally { setBusy(false); }
   }
   return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     {notice && <div role="alert" className="directory-remote-warning"><AlertTriangle size={20} /><span>Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</span></div>}
+    {editable && synced.filter(item => item.state !== "released" || item.removed_at_origin).map(item => {
+      const row = rows.find(user => user.id === item.user_id);
+      return <div key={item.id} className="directory-detail">
+        {item.name || item.login} · {item.unit} · {item.removed_at_origin ? "Removido na origem" : item.state === "conflict" ? "Conflito de login" : "Pendente de liberação"}
+        {!item.removed_at_origin && item.state === "pending" && row && <UserForm row={row} identity={item} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save} />}
+        {!item.removed_at_origin && item.state === "conflict" && <FormAction title="Resolver conflito de login" label="Resolver conflito" busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void resolve(item, String(form.get("username") || "")).catch(() => {}); }}><label className="op-field">Novo login<input name="username" minLength={3} maxLength={150} required /></label><button className="button primary" disabled={busy}>Criar conta separada</button></form></FormAction>}
+      </div>;
+    })}
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
+      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable&&!synced.some(item => item.user_id === row.id && (item.state !== "released" || item.removed_at_origin))?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
     </tbody></table></div>{loading ? <p role="status">Carregando usuários…</p> : !error && !rows.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
   </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit} onChanged={() => setRevision(v => v + 1)}/>}</>;
 }
 
-function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserRow;options:Options;roles:Record<string, PermissionRole[]>;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
+function UserForm({row, identity, options, roles, busy, error, revision, save}:{row?:UserRow;identity?:Synced;options:Options;roles:Record<string, PermissionRole[]>;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown,identity?:Synced)=>Promise<void>}) {
   const [username,setUsername]=useState(row?.username||""),[name,setName]=useState(row?.full_name||""),[password,setPassword]=useState("");
   const normalize = (items: Grant[]) => items.map(g => ({...g, permissions: {...g.permissions}}));
   const limited = (row?.grants || []).filter(g => { const option = options.units.find(o => o.slug === g.unit); return option?.remote && JSON.stringify(limitRemoteGrant(g, option)) !== JSON.stringify(g); });
-  const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(() => normalize(row?.grants||[]));
+  const [active,setActive]=useState(identity ? true : row?.active??true),[grants,setGrants]=useState<Grant[]>(() => normalize(row?.grants||[]));
   const global = !row || row.global_editable;
   const none=()=>Object.fromEntries(Object.keys(options.sections).map(k=>[k,"none"])) as SectionPermissions;
   function update(slug:string, change:Partial<Grant>) {setGrants(v=>v.map(g=>g.unit===slug?{...g,...change}:g));}
@@ -110,11 +127,11 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
     if(role!=="admin")permissions.users="none";
     update(slug,{role,permissions, ...(grant.permission_role ? {permission_role: null, roleAction: null, customized: true, permission_role_outdated: false} : {})});
   }
-  return <FormAction title={row?"Editar usuário":"Novo usuário"} label={row?"Editar":"Novo usuário"} busy={busy} error={error} version={revision} onClose={()=>{setUsername(row?.username||""); setName(row?.full_name||""); setPassword(""); setActive(row?.active??true); setGrants(normalize(row?.grants||[]));}}>
-    <form className="op-form" onSubmit={e=>{e.preventDefault();void save(row,{version:row?.version||0,username,full_name:name,active,grants:grants.filter(g=>options.units.some(o=>o.slug===g.unit&&o.editable)).map(({customized: _customized, roleAction, permission_role: _role, permission_role_outdated: _outdated, ...g})=>({...g, ...(roleAction !== undefined ? {permission_role: roleAction} : {})})),...(password?{password}:{})}).then(()=>setPassword("")).catch(()=>{});}}>
+  return <FormAction title={identity?"Liberar usuário":row?"Editar usuário":"Novo usuário"} label={identity?"Liberar":row?"Editar":"Novo usuário"} busy={busy} error={error} version={revision} onClose={()=>{setUsername(row?.username||""); setName(row?.full_name||""); setPassword(""); setActive(row?.active??true); setGrants(normalize(row?.grants||[]));}}>
+    <form className="op-form" onSubmit={e=>{e.preventDefault();void save(row,{version:row?.version||0,username,full_name:name,active,grants:grants.filter(g=>options.units.some(o=>o.slug===g.unit&&o.editable)).map(({customized: _customized, roleAction, permission_role: _role, permission_role_outdated: _outdated, ...g})=>({...g, ...(roleAction !== undefined ? {permission_role: roleAction} : {})})),...(password?{password}:{})}, identity).then(()=>setPassword("")).catch(()=>{});}}>
       <div className="op-two"><label className="op-field">Login<input required minLength={3} maxLength={150} disabled={!!row} autoComplete="off" value={username} onChange={e=>setUsername(e.target.value)}/></label>
         <label className="op-field">Nome<input maxLength={150} disabled={!global} value={name} onChange={e=>setName(e.target.value)}/></label>
-        <label className="op-field">{row?"Nova senha (opcional)":"Senha inicial"}<input type="password" required={!row} minLength={12} maxLength={200} disabled={!global} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
+        <label className="op-field">{row&&!identity?"Nova senha (opcional)":"Senha inicial"}<input type="password" required={!row || !!identity} minLength={12} maxLength={200} disabled={!global} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
       </div>
       <label className="checkbox-label"><input type="checkbox" disabled={!global} checked={active} onChange={e=>setActive(e.target.checked)}/>Usuário ativo</label>
       <h3>Unidades e abas</h3>
