@@ -136,6 +136,7 @@ def session(request):
             "units": list(UnitSerializer(units, many=True).data) + remotes,
             "roles": roles,
             "permissions": permissions,
+            "permission_types": {slug: {key: policy[key] for key in ("messages", "settings", "reports", "reportWhatsApp")} for slug, policy in permissions.items()},
             "mode": settings.SEND_MODE,
         }
     )

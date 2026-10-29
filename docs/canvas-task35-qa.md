@@ -26,7 +26,7 @@ Ainda faltam implementação, migração reversível, testes positivos e negativ
 
 ## Implementação parcial: WhatsApp dos relatórios
 
-A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, seu padrão é `none`. O superusuário possui edição. Em vínculos locais, remotos e limites das conexões existentes, a migração `core.0008_report_whatsapp_permission` grava o nível efetivo anterior de `reports` apenas para o perfil administrador; nos demais perfis grava `none`. Valores explícitos já presentes são preservados. A interseção federada continua exigida. O estado precisa de `read`; conectar e desconectar precisam de `write`. A ação de configuração continua exigindo também perfil administrador. A sessão já publica as permissões efetivas por unidade.
+A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, seu padrão é `none`. O superusuário possui edição. Em vínculos locais, remotos e limites das conexões existentes, a migração `core.0008_report_whatsapp_permission` grava o nível efetivo anterior de `reports` apenas para o perfil administrador; nos demais perfis grava `none`. Valores explícitos já presentes são preservados. A interseção federada continua exigida. O estado precisa de `read`; conectar e desconectar precisam de `write`. A configuração também exige edição em `reportWhatsApp`, sem exigência adicional de perfil. A sessão já publica as permissões efetivas por unidade.
 
 | Permissão | Aba | Endpoint | Teste |
 | --- | --- | --- | --- |
@@ -60,3 +60,109 @@ Verificação em 29/10/2026: build de produção com Node 24 passou; Vitest dos 
 Os arquivos solicitados `qa20-result.md` e `shots/qa20-*` não foram encontrados nos locais pesquisados no servidor. A revisão foi guiada pelos problemas descritos na tarefa e pela inspeção do staging; não foi possível conferir essas evidências específicas.
 
 Verificação adicional no banco descartável: o usuário `qa35cteste` foi criado com o tipo “QA Só Relatórios”; após salvar, a lista mostrou o tipo e a edição reabriu com o mesmo tipo e seus níveis. Evidência: `35c-salvo-reaberto.png`.
+## Continuação 35a3 (parcial)
+
+As rotas principais `indicators`, `messages`, `replies`, `appointment-groups` e `issues` exigem `messages`. `reports`, `report-access`, `report-schedules` e as ações Canvas do catálogo exigem `reports` na verificação comum; a consulta ao Canvas não exige mais perfil administrador. Os testes específicos são `test_task35a3_messages.py` e `test_task35a3_reports.py`. Persistem verificações adicionais de perfil e recursos compartilhados a revisar; esta etapa não certifica todos os endpoints.
+
+A migração `core.0010_preserve_task35_access` preserva os acessos associados às alterações acima em vínculos locais, vínculos remotos e limites das conexões. Em cada política, `messages` passa ao maior nível efetivo anterior entre `overview`, `messages`, `groups`, `issues` e `appointments`; `reports` passa ao maior nível anterior entre `reports` e `operationsAdmin`. A inclusão de `appointments` preserva o antigo acesso às pendências. A consolidação pode ampliar o acesso dentro de cada grupo; `reportWhatsApp` não é alterado. A reversão restaura cada chave somente se ainda tiver o valor gravado pela migração, preservando alterações posteriores. Em banco **descartável**, reverta com `python manage.py migrate core 0009_permission_roles`; reaplique com `python manage.py migrate core 0010_preserve_task35_access`. O teste de ida e volta é `test_task35a3_migration.py`. A migração não foi aplicada em produção.
+
+A sessão `GET /api/v1/auth/session/` acrescenta `permission_types`, sem remover `permissions`. O mapa é indexado pelo slug retornado em `units`, inclusive `remote:<id>`; seus valores resultam das restrições aplicadas ao vínculo e, para unidades remotas, da interseção federada:
+
+```json
+{"permission_types":{"ame":{"messages":"read","settings":"none","reports":"write","reportWhatsApp":"none"}}}
+```
+
+As quatro chaves são estáveis e seus níveis são `none`, `read` e `write`. `reportWhatsApp` é independente de `reports`. Uma unidade ausente não está disponível na sessão. A política exposta não elimina as restrições adicionais de perfil ainda existentes nas views, que continuam pendentes de revisão nesta tarefa; não usar este resultado como certificação de que todas as operações já estão disponíveis. Teste: `test_session_exposes_four_types_by_unit_and_superuser`.
+
+| Permissão | Aba | Endpoint principal | Teste |
+| --- | --- | --- | --- |
+| `messages` | Visão geral | `GET /api/v1/indicators/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Mensagens | `GET /api/v1/messages/`, `/api/v1/replies/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Grupos | `GET /api/v1/appointment-groups/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Pendências | `GET /api/v1/issues/` | `test_message_tabs_require_messages_permission` |
+| `reports` | Relatórios | `GET /api/v1/reports/`, `/api/v1/report-access/`, `/api/v1/report-schedules/` | `test_report_resources_require_reports_permission` |
+| `reports` | Canvas | `GET /api/v1/reports/{id}/canvas/` | `test_canvas_read_uses_reports_permission_for_operator` |
+| `reportWhatsApp` | WhatsApp dos relatórios | `GET/POST /api/v1/report-whatsapp/` | `test_whatsapp_status_is_independent_of_reports`, `test_whatsapp_connection_requires_write` |
+
+Esta tabela cobre apenas os casos exercitados; faltam testes de escrita e dos demais endpoints, inclusive Configurações e recursos compartilhados.
+
+## Continuação 35a4: Configurações (parcial)
+
+A verificação comum de `members`, `units`, `users` e `permission-roles` usa `settings`, assim como `rules`, `imports`, `audit`, `logs`, `control`, `meta-configuration`, `oracle-agendas`, `oracle-configuration`, `instance-keys` e `remote-instances`. A administração de usuários e tipos também usa `settings` no escopo interno. As exigências de perfil ainda existentes nas views e os recursos compartilhados continuam pendentes; esta etapa não certifica todas as operações.
+
+A migração `core.0011_preserve_settings_access` grava em `settings` o maior nível efetivo anterior entre `settings`, `users` e `operationsAdmin`, em vínculos locais, remotos e limites de conexão. Isso pode ampliar acesso dentro de Configurações para evitar redução. A reversão restaura o valor anterior apenas se ainda for igual ao migrado, preservando edições posteriores. Em banco descartável, reverta para `core 0010_preserve_task35_access` e reaplique `core 0011_preserve_settings_access`.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `settings` | Configurações | `GET /api/v1/{rules,imports,audit,logs,control,meta-configuration,oracle-agendas,oracle-configuration,instance-keys,remote-instances,members,units,users,permission-roles}/` | `test_settings_resources_require_settings` |
+| `settings` | Tipos de acesso | `POST /api/v1/permission-roles/` | `test_settings_write_requires_write`, `test_settings_controls_user_options_and_permission_role_write` |
+| `settings` | Usuários | `GET /api/v1/users/options/` | `test_settings_controls_user_options_and_permission_role_write` |
+
+A ida e volta da migração e a preservação de edição posterior são exercitadas por `test_settings_migration_preserves_and_reverses`.
+
+A continuação incluiu `settings` para `preparations`, `layouts`, `policies`, `sources`, `flow-rules` e `flow-runs`. As permissões legadas já aceitas continuam válidas para preservar outros fluxos; `templates` já aceitava `settings`. A migração 0011 já inclui o antigo `operationsAdmin` na consolidação.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `settings` | Configurações | `GET /api/v1/{preparations,layouts,policies,sources,flow-rules,flow-runs,templates}/` | `test_configuration_resources_allow_settings_without_legacy_permissions` |
+| `settings` | Configurações | `POST /api/v1/{preparations,layouts,policies,sources,flow-rules,templates}/` | `test_configuration_writes_require_settings_write` |
+
+### Recursos compartilhados: atendimento
+
+`cases`, `contacts` e `movements` atendem Pendências e também fluxos legados de Agendamentos ou Importa CROSS: aceitam `messages` ou as permissões anteriores. A leitura de `appointments` e `agenda-items` filtrada por grupo ou pendência atende Grupos/Pendências e aceita `messages`; a consulta geral continua vinculada a Agendamentos. Contatos continuam filtrados aos eventos de agendamento quando não há permissão de Agendamentos ou CROSS. A migração 0010 já consolidou os níveis antigos de grupos, pendências e agendamentos em `messages`. As restrições adicionais de perfil continuam pendentes de revisão.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `messages` | Grupos / Pendências | `GET /api/v1/{appointments,agenda-items}/` com filtro de grupo ou pendência | `test_shared_reads_allow_messages_permission` |
+| `messages` | Pendências | `GET /api/v1/{cases,contacts,movements}/` | `test_shared_reads_allow_messages_permission` |
+| `messages` | Pendências | `POST /api/v1/cases/{id}/act/`, `contacts/{id}/review/`, `movements/` | `test_shared_writes_require_messages_write` (validação ou objeto ausente após autorização) |
+
+### Relatórios: consultas adicionais
+
+A listagem de conexões, concessões, automações e coletas, o inventário e as opções de coleta não exigem mais perfil administrativo além da permissão `reports`. Destinatários, execuções e solicitações ainda podem ter filtros adicionais de escopo próprios; operações de edição e outras verificações de perfil permanecem pendentes.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reports` | Relatórios | `GET /api/v1/{report-connections,report-app-connections,report-recipients,report-grants,report-automations,report-executions,report-snapshots,report-snapshot-runs,report-requests}/` | `test_report_reads_use_reports_permission` |
+| `reports` | Relatórios | `GET /api/v1/reports/inventory/`, `report-snapshots/options/` | `test_report_reads_use_reports_permission` |
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` com ação `configure` | `test_whatsapp_configuration_uses_independent_write_permission` |
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` com ação `configure` | `test_whatsapp_configuration_uses_independent_write_permission` |
+
+### Estado e validação da retomada 35a4
+
+Resultado parcial: ainda há verificações de perfil nas views e serviços, inclusive criação/configuração de recursos, filtros de destinatários e relatórios, chaves e acesso federado. `role_permissions` ainda limita níveis por perfil e a aplicação de tipos a vínculos remotos continua indisponível. A tabela acima documenta apenas endpoints efetivamente testados; não certifica a cobertura integral dos recursos compartilhados nem das operações de escrita. É necessário concluir essas revisões e ampliar a tabela antes de declarar a tarefa concluída.
+
+Em PostgreSQL descartável, com arquivos de teste montados somente para leitura e chaves fictícias, a suíte completa teve **1163 aprovados e 5 falhas** em `test_report_removal.py`, todas respostas 503 da flag de remoção já conhecidas. Após essa execução, o teste de limite de delegação foi refinado e passou isoladamente. Não foram usados staging nem banco real.
+
+`makemigrations --check --dry-run` ainda propõe remover os campos `removed_at`, `removed_by` e `removed_was_enabled` de `ReportApplicationConnection`, `ReportConnection` e `ReportDefinition` em `operations`. Essa diferença já existia; não foi gerada nem aplicada migração para ela.
+
+## Continuação 35a5: tipo escolhido no vínculo
+
+`core.0012_membership_permission_role` adiciona ao vínculo local uma referência anulável ao tipo da mesma unidade, sem inferir tipos para vínculos antigos. A exclusão do tipo limpa a referência e preserva as permissões. Tipos não se aplicam a vínculos remotos; estes continuam individuais. A migração é aditiva e reversível: em banco **descartável**, reverta com `python manage.py migrate core 0011_preserve_settings_access` e reaplique com `python manage.py migrate core 0012_membership_permission_role`. A reversão perde as referências escolhidas, mas preserva os níveis e os tipos. Não executar no banco real.
+
+### Contrato para o frontend
+
+Cada item de `grants` na listagem `GET /api/v1/users/` e na resposta de criação/configuração contém, além de `unit`, `role` e `permissions`:
+
+```json
+{"unit":"ame","role":"viewer","permissions":{"messages":"read"},"permission_role":{"id":12,"name":"Atendimento"},"permission_role_outdated":false}
+```
+
+`permissions` no exemplo foi abreviado: a resposta contém todas as seções efetivas. `permission_role` é um objeto com `id` e nome atual, ou `null` para permissões individuais; `permission_role_outdated` é booleano e é `false` quando não há tipo. Ele indica diferença entre os níveis efetivos do vínculo e os níveis atuais do tipo, depois das restrições do perfil, incluindo as demais seções. Renomear um tipo atualiza o nome exibido; alterar seus níveis nunca modifica os acessos concedidos. Para vínculo remoto, inclusive acesso implícito, esses campos são sempre `null` e `false`.
+
+Nos pedidos `POST /api/v1/users/` e `POST /api/v1/users/{id}/configure/`, `permission_role` é um **inteiro**, não o objeto da resposta:
+
+- Enviar um ID válido da unidade local aplica os níveis atuais do tipo e substitui `permissions` enviado para esse acesso. Restrições de perfil e de delegação continuam válidas. Reenviar o ID reaplica o tipo, inclusive quando desatualizado.
+- Enviar `null` limpa a referência e usa as `permissions` enviadas; assim o frontend seleciona “Permissões individuais”.
+- Omitir o campo usa as `permissions` enviadas. Em um vínculo existente, preserva a referência somente se perfil e níveis efetivos permanecerem iguais aos já armazenados; alterações manuais tornam o vínculo individual (`null`). Para um vínculo novo, a omissão também resulta em individual. Para preservar um tipo desatualizado ao salvar outros dados, omita o campo e envie o perfil e os níveis recebidos, sem alterações.
+- Um ID de outra unidade ou um ID em vínculo remoto é rejeitado. O acesso aos endpoints continua sujeito às permissões de Configurações e às regras de escopo existentes.
+
+Edições por outros caminhos que alterem diretamente o JSON do vínculo sem limpar a referência aparecem como desatualizadas; a API de usuários limpa a referência quando recebe edição manual com o campo omitido. O frontend deve omitir o campo ou enviar `null` ao editar níveis individuais, pois um ID explícito sempre reaplica o tipo. A comparação não altera os níveis armazenados.
+
+Os testes `test_task35a5_roles.py` cobrem seleção, alteração posterior do tipo, preservação, personalização, limpeza, escopo, autorização, vínculo remoto e ida e volta da migração em banco de testes.

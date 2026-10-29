@@ -22,22 +22,22 @@ SECTIONS = {
 LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
-    "indicators": ["overview"],
+    "indicators": ["messages"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
     "agenda-items": ["appointments"],
-    "appointment-groups": ["groups"],
+    "appointment-groups": ["messages"],
     "messages": ["messages"],
     "replies": ["messages"],
-    "issues": ["issues", "appointments"],
-    "cases": ["appointments", "issues", "campaigns"],
-    "contacts": ["appointments", "issues", "campaigns"],
-    "movements": ["appointments", "issues"],
+    "issues": ["messages"],
+    "cases": ["messages", "appointments", "issues", "campaigns"],
+    "contacts": ["messages", "appointments", "issues", "campaigns"],
+    "movements": ["messages", "appointments", "issues"],
     "campaigns": ["campaigns"],
     "sheet-imports": ["campaigns"],
-    "reports": ["reports", "operationsAdmin"],
+    "reports": ["reports"],
     "report-requests": ["reports"],
-    "report-access": ["reports", "operationsAdmin"],
+    "report-access": ["reports"],
     "report-connections": ["reports"],
     "report-app-connections": ["reports"],
     "report-recipients": ["reports"],
@@ -47,13 +47,13 @@ RESOURCES = {
     "report-snapshots": ["reports"],
     "report-snapshot-runs": ["reports"],
     "report-whatsapp": ["reportWhatsApp"],
-    "report-schedules": ["reports", "operationsAdmin"],
-    "preparations": ["operationsAdmin"],
-    "layouts": ["operationsAdmin", "campaigns"],
-    "policies": ["operationsAdmin"],
-    "sources": ["operationsAdmin"],
-    "flow-rules": ["operationsAdmin"],
-    "flow-runs": ["operationsAdmin"],
+    "report-schedules": ["reports"],
+    "preparations": ["settings", "operationsAdmin"],
+    "layouts": ["settings", "operationsAdmin", "campaigns"],
+    "policies": ["settings", "operationsAdmin"],
+    "sources": ["settings", "operationsAdmin"],
+    "flow-rules": ["settings", "operationsAdmin"],
+    "flow-runs": ["settings", "operationsAdmin"],
     "rules": ["settings"],
     "templates": ["settings", "operationsAdmin", "campaigns"],
     "imports": ["settings"],
@@ -65,10 +65,10 @@ RESOURCES = {
     "oracle-configuration": ["settings"],
     "instance-keys": ["settings"],
     "remote-instances": ["settings"],
-    "members": ["users"],
-    "units": ["operationsAdmin", "users", "settings"],
-    "users": ["users"],
-    "permission-roles": ["users"],
+    "members": ["settings"],
+    "units": ["settings"],
+    "users": ["settings"],
+    "permission-roles": ["settings"],
     "tests": ["appointments", "overview"],
 }
 
@@ -164,17 +164,13 @@ def required_sections(resource, method, params):
     if method in {"GET", "HEAD", "OPTIONS"}:
         if root == "sheet-imports" and resource.rstrip("/") == "sheet-imports/schema":
             sections.append("operationsAdmin")
-        if root == "rules":
-            sections.append("operationsAdmin")
         if root in {"appointments", "agenda-items"}:
             if params.get("group"):
-                sections.append("groups")
+                sections.append("messages")
             if params.get("operational_pending") == "true":
-                sections.append("issues")
+                sections.append("messages")
         if root in {"cases", "contacts"}:
-            sections.append("groups")
-        if root == "members":
-            sections.append("operationsAdmin")
+            sections.append("messages")
     return sections
 
 

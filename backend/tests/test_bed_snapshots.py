@@ -178,6 +178,9 @@ def test_configuration_and_runs_api_enforce_unit_role_version_and_idempotency(be
     run=ReportSnapshotRun.objects.get()
     assert c.get(f"/api/v1/report-snapshot-runs/{run.pk}/records/?unit=other").status_code==404
     member=Membership.objects.get(unit=beds["unit"],user=beds["user"]);member.role="operator";member.save()
+    assert c.get("/api/v1/report-snapshots/?unit=ame").status_code==200
+    assert c.get("/api/v1/report-snapshot-runs/?unit=ame").status_code==200
+    member.permissions = {"reports": "none"}; member.save()
     assert c.get("/api/v1/report-snapshots/?unit=ame").status_code==403
     assert c.get("/api/v1/report-snapshot-runs/?unit=ame").status_code==403
 

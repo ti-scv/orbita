@@ -28,7 +28,7 @@ def scope_options(user):
     units = Unit.objects.all() if user.is_superuser else Unit.objects.filter(membership__user=user)
     options = []
     for unit in units.order_by("name"):
-        level = local_permissions(user, unit)["users"]
+        level = local_permissions(user, unit)["settings"]
         if level == "none":
             continue
         options.append(
@@ -61,11 +61,32 @@ def scope_options(user):
     return options
 
 
+def template_policy(role, template):
+    levels = template.permissions
+    overrides = {section: "none" for section in SECTIONS}
+    overrides.update({
+        "overview": levels["messages"], "messages": levels["messages"],
+        "groups": levels["messages"], "issues": levels["messages"],
+        "settings": levels["settings"], "reports": levels["reports"],
+        "reportWhatsApp": levels["reportWhatsApp"],
+    })
+    return role_permissions(role, overrides)
+
+
+def role_output(membership):
+    template = membership.permission_role
+    return {
+        "permission_role": {"id": template.pk, "name": template.name} if template else None,
+        "permission_role_outdated": bool(template and
+            role_permissions(membership.role, membership.permissions) != template_policy(membership.role, template)),
+    }
+
+
 def user_output(user, options, actor):
     available = {o["slug"]: o for o in options}
     grants = []
     outside = False
-    for membership in Membership.objects.filter(user=user).select_related("unit"):
+    for membership in Membership.objects.filter(user=user).select_related("unit", "permission_role"):
         slug = membership.unit.slug
         if slug not in available:
             outside = True
@@ -77,6 +98,7 @@ def user_output(user, options, actor):
                 "unit": slug,
                 "role": membership.role,
                 "permissions": role_permissions(membership.role, membership.permissions),
+                **role_output(membership),
             }
         )
     for membership in RemoteMembership.objects.filter(user=user).select_related("connection"):
@@ -91,6 +113,7 @@ def user_output(user, options, actor):
                 "unit": slug,
                 "role": membership.role,
                 "permissions": role_permissions(membership.role, membership.permissions),
+                "permission_role": None, "permission_role_outdated": False,
             }
         )
     profile = UserAccessProfile.objects.filter(user=user).first()
@@ -105,7 +128,8 @@ def user_output(user, options, actor):
                 )
                 role, policy = remote_access(user, connection)
                 if role:
-                    grants.append({"unit": option["slug"], "role": role, "permissions": policy})
+                    grants.append({"unit": option["slug"], "role": role, "permissions": policy,
+                                   "permission_role": None, "permission_role_outdated": False})
     editable = user.pk != actor.pk and not user.is_superuser and any(o["editable"] for o in options)
     return {
         "id": user.pk,
@@ -125,7 +149,7 @@ class GrantInput(serializers.Serializer):
     unit = serializers.CharField(max_length=100)
     role = serializers.ChoiceField(choices=Membership.Role.choices)
     permissions = serializers.JSONField(default=dict, validators=[validate_permissions])
-    permission_role = serializers.IntegerField(required=False, min_value=1, write_only=True)
+    permission_role = serializers.IntegerField(required=False, allow_null=True, min_value=1)
 
 
 class UserInput(serializers.Serializer):
@@ -137,13 +161,21 @@ class UserInput(serializers.Serializer):
     grants = GrantInput(many=True)
 
 
+class GrantOutput(serializers.Serializer):
+    unit = serializers.CharField()
+    role = serializers.CharField()
+    permissions = serializers.JSONField()
+    permission_role = serializers.JSONField(allow_null=True)
+    permission_role_outdated = serializers.BooleanField()
+
+
 class UserOutput(serializers.Serializer):
     id = serializers.IntegerField()
     username = serializers.CharField()
     full_name = serializers.CharField()
     active = serializers.BooleanField()
     version = serializers.IntegerField()
-    grants = GrantInput(many=True)
+    grants = GrantOutput(many=True)
     editable = serializers.BooleanField()
     global_editable = serializers.BooleanField()
     has_other_units = serializers.BooleanField()
@@ -215,7 +247,7 @@ class UserViewSet(viewsets.GenericViewSet):
             if grant["unit"] not in writable:
                 raise PermissionDenied("Você não pode conceder ou alterar acesso nesta unidade.")
             option = writable[grant["unit"]]
-            role_id = grant.pop("permission_role", None)
+            role_id = grant.get("permission_role")
             if role_id is not None:
                 if option["remote"]:
                     raise ValidationError("Tipos de acesso só podem ser aplicados à unidade local.")
@@ -310,10 +342,19 @@ class UserViewSet(viewsets.GenericViewSet):
                         defaults={"role": grant["role"], "permissions": grant["permissions"]},
                     )
                 else:
+                    existing = Membership.objects.filter(user=user, unit__slug=grant["unit"]).first()
+                    if "permission_role" in grant:
+                        selected_role_id = grant["permission_role"]
+                    elif (existing and existing.role == grant["role"] and
+                          role_permissions(existing.role, existing.permissions) == grant["permissions"]):
+                        selected_role_id = existing.permission_role_id
+                    else:
+                        selected_role_id = None
                     Membership.objects.update_or_create(
                         user=user,
                         unit=Unit.objects.get(slug=grant["unit"]),
-                        defaults={"role": grant["role"], "permissions": grant["permissions"]},
+                        defaults={"role": grant["role"], "permissions": grant["permissions"],
+                                  "permission_role_id": selected_role_id},
                     )
             profile = profile or UserAccessProfile(user=user, version=0, managing_unit=anchor)
             profile.version += 1

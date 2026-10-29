@@ -83,3 +83,24 @@ def test_migration_preserves_existing_access_and_later_edits():
         assert remote_member.permissions == {"reports": "write"}
     finally:
         MigrationExecutor(connection).migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("level,expected", [("none", 403), ("read", 403), ("write", 200)])
+def test_whatsapp_configuration_uses_independent_write_permission(level, expected):
+    from core.models import Audit
+    from operations.models import ReportWhatsAppConfiguration
+
+    unit = Unit.objects.create(slug="ame", name="AME")
+    user = get_user_model().objects.create_user("pessoa")
+    Membership.objects.create(user=user, unit=unit, role="operator", permissions={"reports": "none", "reportWhatsApp": level})
+    client = APIClient()
+    client.force_authenticate(user)
+    response = client.post("/api/v1/report-whatsapp/", {"action": "configure", "version": 1, "greeting": "Olá", "sends_enabled": False, "manual_enabled": False, "automatic_enabled": False}, format="json", HTTP_IDEMPOTENCY_KEY="configurar")
+    assert response.status_code == expected, response.data
+    if expected == 403:
+        assert "permissão" in str(response.data).lower()
+        assert not ReportWhatsAppConfiguration.objects.exists()
+    else:
+        assert ReportWhatsAppConfiguration.objects.get(unit=unit).greeting == "Olá"
+        assert Audit.objects.filter(unit=unit, action="report_whatsapp_configure").exists()
