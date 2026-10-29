@@ -54,3 +54,11 @@ Verificação da continuação: em PostgreSQL descartável, a suíte completa te
 As rotas principais `indicators`, `messages`, `replies`, `appointment-groups` e `issues` exigem `messages`. `reports`, `report-access`, `report-schedules` e as ações Canvas do catálogo exigem `reports` na verificação comum; a consulta ao Canvas não exige mais perfil administrador. Os testes específicos são `test_task35a3_messages.py` e `test_task35a3_reports.py`. Persistem verificações adicionais de perfil e recursos compartilhados a revisar; esta etapa não certifica todos os endpoints.
 
 A migração `core.0010_preserve_task35_access` preserva os acessos associados às alterações acima em vínculos locais, vínculos remotos e limites das conexões. Em cada política, `messages` passa ao maior nível efetivo anterior entre `overview`, `messages`, `groups`, `issues` e `appointments`; `reports` passa ao maior nível anterior entre `reports` e `operationsAdmin`. A inclusão de `appointments` preserva o antigo acesso às pendências. A consolidação pode ampliar o acesso dentro de cada grupo; `reportWhatsApp` não é alterado. A reversão restaura cada chave somente se ainda tiver o valor gravado pela migração, preservando alterações posteriores. Em banco **descartável**, reverta com `python manage.py migrate core 0009_permission_roles`; reaplique com `python manage.py migrate core 0010_preserve_task35_access`. O teste de ida e volta é `test_task35a3_migration.py`. A migração não foi aplicada em produção.
+
+A sessão `GET /api/v1/auth/session/` acrescenta `permission_types`, sem remover `permissions`. O mapa é indexado pelo slug retornado em `units`, inclusive `remote:<id>`; seus valores resultam das restrições aplicadas ao vínculo e, para unidades remotas, da interseção federada:
+
+```json
+{"permission_types":{"ame":{"messages":"read","settings":"none","reports":"write","reportWhatsApp":"none"}}}
+```
+
+As quatro chaves são estáveis e seus níveis são `none`, `read` e `write`. `reportWhatsApp` é independente de `reports`. Uma unidade ausente não está disponível na sessão. A política exposta não elimina as restrições adicionais de perfil ainda existentes nas views, que continuam pendentes de revisão nesta tarefa; não usar este resultado como certificação de que todas as operações já estão disponíveis. Teste: `test_session_exposes_four_types_by_unit_and_superuser`.
