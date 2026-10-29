@@ -20,6 +20,7 @@ type LogEntry = {
   error_code: string;
   count: number;
   completed_at: string | null;
+  detail?: string;
 };
 const categories: Record<string, string> = {
   imports: "Consultas às fontes",
@@ -239,6 +240,7 @@ export default function ExecutionLogs({ unit }: { unit: string }) {
               Registro: selected.id,
               Data: dateTime(selected.occurred_at),
               Execução: selected.title,
+              Detalhes: selected.detail || "—",
               Situação: statuses[selected.status] || selected.status,
               Responsável: selected.actor,
               Referência: selected.reference || "—",

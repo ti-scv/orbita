@@ -48,6 +48,7 @@ class LogSerializer(serializers.Serializer):
     error_code = serializers.CharField()
     count = serializers.IntegerField()
     completed_at = serializers.DateTimeField(allow_null=True)
+    detail = serializers.CharField(allow_blank=True, required=False)
 
 
 class LogViewSet(viewsets.GenericViewSet):
@@ -257,6 +258,24 @@ class LogViewSet(viewsets.GenericViewSet):
             "recipient",
             "provider_id",
         ]
-        return self.get_paginated_response(
-            self.get_serializer([dict(zip(keys, row)) for row in page], many=True).data
-        )
+        entries = [dict(zip(keys, row)) for row in page]
+        audits = {str(a.pk): a for a in Audit.objects.filter(unit=unit, pk__in=[e["id"] for e in entries if e["category"] == "audit"])}
+        titles = {"user_sync.completed": "Sincronização de usuários concluída", "user_sync.failed": "Falha na sincronização de usuários", "user_sync.released": "Usuário sincronizado liberado", "user_sync.conflict_resolved": "Conflito de login resolvido", "user_sync.conflict_deferred": "Conflito de login mantido pendente", "user.access_configured": "Acesso de usuário configurado"}
+        for entry in entries:
+            entry["detail"] = ""
+            audit = audits.get(entry["id"]) if entry["category"] == "audit" else None
+            if not audit or audit.action not in titles:
+                continue
+            entry["title"] = titles[audit.action]
+            d = audit.details or {}
+            parts = []
+            if d.get("login"): parts.append("Usuário: " + str(d["login"]))
+            if d.get("new_login"): parts.append("Novo login: " + str(d["new_login"]))
+            if d.get("unit"): parts.append("Unidade de origem: " + str(d["unit"]))
+            if audit.action == "user_sync.completed":
+                parts.append(", ".join(f"{d.get(k, 0)} {label}" for k, label in (("new", "novos"), ("updated", "atualizados"), ("removed", "removidos"), ("conflicts", "conflitos"))))
+            roles = {"admin": "Administrativo", "operator": "Operador", "viewer": "Consulta"}
+            for access in d.get("access", []):
+                parts.append(f'{access.get("unit", "")}: {roles.get(access.get("role"), access.get("role", ""))} · {access.get("type", "")}')
+            entry["detail"] = "; ".join(parts)
+        return self.get_paginated_response(self.get_serializer(entries, many=True).data)

@@ -280,7 +280,7 @@ class UserViewSet(viewsets.GenericViewSet):
             item.state = SyncedUserIdentity.State.RELEASED
             item.save(update_fields=["state"])
             Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.released",
-                                 object_id=str(item.pk), details={"user_id": item.user_id})
+                                 object_id=str(item.pk), details={"user_id": item.user_id, "login": item.user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name})
             return result
 
     @extend_schema(request=UserInput, responses=UserOutput)
@@ -445,6 +445,8 @@ class UserViewSet(viewsets.GenericViewSet):
                 object_id=str(user.pk),
                 details={
                     "version": profile.version,
+                    "login": user.username,
+                    "access": [{"unit": writable[g["unit"]]["name"], "role": g["role"], "type": (PermissionRole.objects.filter(pk=g.get("permission_role")).values_list("name", flat=True).first() if g.get("permission_role") else "Permissões individuais")} for g in grants],
                     "units": [g["unit"] for g in grants],
                     "active": user.is_active,
                 },
