@@ -40,7 +40,7 @@ export function createDuotoneIcon(
       {
         className: "orbita-icon-fill",
         fill: color,
-        fillOpacity: 0.20,
+        fillOpacity: displayName === "Activity" ? 0.28 : 0.20,
         stroke: "none",
         "aria-hidden": "true",
       },

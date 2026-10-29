@@ -1393,7 +1393,7 @@ nav button b + i {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   padding: 3px 0 23px;
   margin-top: 3px;
 }

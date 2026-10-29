@@ -1,3 +1,4 @@
+import { Activity } from "./components/icons";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -26,7 +27,6 @@ import Login from "./components/Login";
 import type { Modal } from "./types";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity,
   ArrowRight,
   Bell,
   CalendarDays,

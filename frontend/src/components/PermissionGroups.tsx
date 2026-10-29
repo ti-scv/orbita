@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Activity, MessageCircle, Settings2, WhatsApp } from "lucide-react";
+import { Activity, MessageCircle, Settings2, WhatsApp } from "./icons";
 const groups = [
   {name: "Mensagens", icon: MessageCircle, keys: ["overview", "messages", "groups", "issues"]},
   {name: "Configurações", icon: Settings2, keys: ["settings", "operationsAdmin", "users"]},
