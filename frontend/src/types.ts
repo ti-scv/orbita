@@ -1,4 +1,5 @@
 export type PageName =
+  | "checkin"
   | "autoagenda"
   | "groups"
   | "care"

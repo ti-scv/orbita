@@ -1,4 +1,12 @@
 const guides = {
+  checkin: {
+    title: "Check-in", path: "/check-in",
+    sections: [
+      ["Consulta", "Filtre pela data do atendimento, origem, resposta e comparecimento. Detalhes mostram os dois estados, o ciclo e os horários. Comparecimento conhecido prevalece na etiqueta."],
+      ["Alterações", "Quem tem permissão de escrita pode registrar alterações com motivo. Um conflito exige atualizar os dados antes de tentar novamente. Solicitação de cancelamento avisa a equipe e não altera a agenda."],
+      ["Configuração", "A configuração permite ativar o check-in e cada origem, definir antecedência, dias, horários, fuso e feriados. O envio usa o WhatsApp Meta. A apuração Oracle exige validação prévia. As opções começam desligadas."],
+    ],
+  },
   autoagenda: {
     title: "Autoagendamento Sansaúde", path: "/autoagendamento",
     sections: [
