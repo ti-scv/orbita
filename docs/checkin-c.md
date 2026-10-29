@@ -69,3 +69,9 @@ Verificação específica: 20 testes passaram em contêiner sem rede, SQLite tem
 A correlação também envia para revisão respostas fora de ordem ou associadas a contato alterado. Repetição dos testes específicos após essa verificação: 21 passaram.
 
 Os 21 testes específicos também passaram em PostgreSQL isolado. As consultas que bloqueiam um ciclo restringem `FOR UPDATE` à própria tabela para permitir suas relações opcionais em PostgreSQL.
+
+### Comparação final de regressão 38-C-4
+
+No mesmo ambiente isolado com PostgreSQL 17, transporte simulado e suítes completas serializadas por `flock /tmp/orbita-suite.lock`, a base `cd495d5` teve 1.300 testes aprovados, 5 ignorados e as duas falhas conhecidas `test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates`. A versão `115c3bd` teve 1.321 aprovados, 5 ignorados e as mesmas duas falhas. No frontend, base e versão final tiveram 76 arquivos e 671 testes aprovados cada, com no máximo dois workers. Logs em `/tmp/checkin38c4.mBghpP/base-pg.log`, `resume-pg.log`, `resume-base-front.log` e `resume-verified-front-retry.log`.
+
+Os cinco itens desta continuação foram implementados nos commits registrados acima, com expedição exclusivamente simulada. O interruptor continua desligado por padrão e a ativação real depende dos pontos de integração e do template Meta aprovados descritos nesta documentação.
