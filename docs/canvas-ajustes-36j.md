@@ -1,0 +1,7 @@
+# Ajustes da release 36j
+
+Base: `ab337e7`, branch `feature/canvas-release-merge`. A marca no login escuro usa a mesma máscara clara da barra lateral. Os filtros de data das telas solicitadas reutilizam `PtBrDateInput`; o placeholder do autoagendamento tem contraste no tema escuro. Catálogo e prazos exibem estados vazios, as contagens usam a mesma tipografia do título e a auditoria é recarregada ao abrir o modal. A importação já recarrega a lista após a operação.
+
+Validação: frontend em Node 24, 77 arquivos e 673 testes aprovados; build aprovado. Backend em PostgreSQL isolado e envio simulado: 1.299 aprovados e 5 ignorados. Os resultados coincidem com a base documentada em `canvas-merge-36.md`. Logs: `/tmp/orbita-36j-frontend-final.log`, `/tmp/orbita-36j-build24.log` e `/tmp/orbita-36j-backend.log`. Uma tentativa inicial no Node do host falhou por incompatibilidade de dependências e outra foi interrompida após tempos excedidos sob carga; a execução final usou um worker e timeout de 60 segundos. Chromium verificou a marca escura e a requisição da auditoria ao abrir o modal (`/tmp/orbita-36j-browser.log`).
+
+Staging: painéis de 8110 e 8111 atualizados para `orbita-36j-panel`; painéis anteriores preservados parados com sufixo `-36j-backup`. O painel de 8115 recebeu o mesmo build. As três portas responderam HTTP 200 e serviram o mesmo HTML; APIs e bancos fictícios existentes foram preservados. Não houve migrações nem alteração do compose.
