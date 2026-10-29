@@ -187,9 +187,14 @@ export default function ChartPreview({
 
   // Reserve room for every category label; the block can scroll when needed.
   const labelWidth = Math.max(50, ...chartData.map((row) => String(row.__x).length * 6 + 12));
-  const chartW = Math.max(180, Math.floor(block.width - 24), block.type === "pie" ? 0 : labelWidth * chartData.length + 100);
+  const chartW = Math.max(180, Math.floor(block.width - 24), block.type === "pie" ? 0 : labelWidth * chartData.length + 150);
   const chartH = Math.max(150, Math.floor(block.height - (block.title ? 44 : 20)));
-  const legendItems = block.type === "pie" ? chartData.map((row) => String(row.__x)) : yCols.length > 1 ? yCols : [];
+  const legendItems = block.type === "pie"
+    ? chartData.filter((row) => typeof row[yCols[0]] === "number" && Number(row[yCols[0]]) >= 0).map((row) => String(row.__x))
+    : yCols.length > 1 ? yCols : [];
+  const axisWidth = Math.max(80, ...chartData.flatMap((row) =>
+    yCols.map((column) => typeof row[column] === "number" ? Number(row[column]).toLocaleString("pt-BR").length * 7 + 12 : 0),
+  ));
   const palette = resolveSeriesPalette(opt.color, opt.series_colors, block.type);
 
   const precision =
@@ -243,7 +248,7 @@ export default function ChartPreview({
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={80}
+              width={axisWidth}
               tickFormatter={(v: any) =>
                 typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
               }
@@ -286,7 +291,7 @@ export default function ChartPreview({
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={80}
+              width={axisWidth}
               tickFormatter={(v: any) =>
                 typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
               }

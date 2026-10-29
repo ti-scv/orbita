@@ -180,7 +180,7 @@ class PDFExporter:
                 data=dict(b)
                 data["type"]="table"
                 data["title"]=""
-                data["columns"]=["Categoria", *[str(v) for v in b["columns"][1:]]]
+                data["columns"]=["Categoria", *[f"S{i}: {v}" for i,v in enumerate(b["columns"][1:],1)]]
                 data["rows"]=[[f"{i+1}: {row[0]}", *row[1:]] for i,row in enumerate(b["rows"])]
                 data["options"]={"font_size": 10}
                 charts[b["id"]]=table_parts(data,b["width"]*.75,b["height"]*.75)
