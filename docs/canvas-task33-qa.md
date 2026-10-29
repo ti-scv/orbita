@@ -3,7 +3,7 @@
 | Item | Teste | Print |
 | --- | --- | --- |
 | 1 | `ReportWorkspace.task33.test.tsx`: ausência na lista, ação na edição e bloqueio com flag desligada; `ReportRemoval.test.tsx`: confirmação, vínculos e remoção. | Pendente |
-| 2 | Busca por nome na unidade do Canvas, inclusão, ordenação, remoção e preservação de campos de composições salvas: testes de frontend e backend e navegador no staging isolado. Pendente: seleção e resolução de relatórios de outras unidades. | `canvas-task33-evidencias/33e-{light,dark}-{100,150}.png` |
+| 2 | Busca por nome na unidade do Canvas, inclusão, ordenação, remoção e preservação de campos de composições salvas: testes de frontend e backend e navegador no staging isolado. A continuação 33i cobre seleção e resolução de relatórios de outras unidades autorizadas. | `canvas-task33-evidencias/33e-{light,dark}-{100,150}.png` |
 | 3 | Remoção individual e do bloco, confirmação, persistência após recarregar, restauração, permissão e conflito de versão: testes de frontend e backend e navegador no staging isolado. A configuração de execução e o SQL são preservados. | `canvas-task33-evidencias/33d-{light,dark}-{100,150}.png` |
 | 4 | Parcial: `orientation.test.tsx`, navegador (troca e gravação nos dois sentidos) e `test_page_orientation_persists_and_controls_pdf` (dimensões e texto no PDF); falta garantir ausência de corte em blocos com conteúdo denso após reduzir suas dimensões. | `canvas-task33-evidencias/`: claro e escuro, 100% e 150%. |
 | 5 | `settingsDirectory.test.ts` e `ReportWorkspace.task33.test.tsx`: entrada de configuração e ausência da aba. Falta validar atalho antigo no navegador e permissões. | Pendente |
@@ -51,3 +51,13 @@ Os commits 5afc7e5 e 59cdb19 preservam texto longo e linhas longas de tabelas no
 O frontend passou em `scripts/canvas-check.sh` nesta retomada: 641 testes em 71 arquivos, ESLint de hooks, TypeScript e build; houve aviso de tamanho de chunks. O frontend isolado de 8095 foi reconstruído, e a API isolada foi atualizada e reiniciada com o PDF deste checkout; a imagem `orbita-api-fila:task33g` também foi reconstruída. O frontend respondeu HTTP 200. A atualização da API no container em execução foi feita por cópia do arquivo, portanto ao recriar o container é necessário usar a imagem reconstruída.
 
 Ainda falta validar no navegador, em ambas as direções, editor, visualização e PDF/impressão com dados densos, e capturar novas evidências em 100% e 150% nos temas claro e escuro. Os prints já existentes são de verificações anteriores e não demonstram esse cenário. Os gráficos ainda podem cortar rótulos ou legendas, e a correção não garante ausência de cortes para todos os tamanhos e conteúdos; especialmente tabelas com larguras de coluna muito desiguais e títulos longos precisam de validação. Por isso o item 4 permanece parcial.
+
+## Continuação 33i — busca entre unidades
+
+A composição pode pesquisar relatórios de unidades acessíveis, agrupados por unidade, com nome, código e ID. Referências novas a outra unidade usam o ID; referências anteriores continuam resolvidas por código na unidade original. O catálogo e a gravação verificam o acesso, e a execução volta a verificar o acesso do solicitante, inclusive após revogação. Componentes de outra unidade sem acesso são ocultados na resposta; ao salvar é necessário removê-los ou recuperar o acesso. Chaves de instância permanecem limitadas à sua unidade.
+
+A execução de uma composição com fonte externa exige um solicitante com acesso à unidade e ao relatório externo; execuções sem solicitante não podem usar essa fonte. A auditoria de parâmetros informa que o componente externo não foi auditado, sem expor seus dados.
+
+Validação em PostgreSQL descartável: 53 testes de catálogo passaram; na rodada ampliada passaram 77 testes e um teste de Indicadores Médicos falhou porque os arquivos de fixture não foram montados. Após montar files como /report_files somente para leitura, os sete testes de Indicadores Médicos passaram. No frontend, scripts/canvas-check.sh com ReportWorkspace.task33.test.tsx passou (quatro testes, hooks, TypeScript e build). Não foi executada a suíte completa.
+
+No staging isolado 8101, com API e banco próprios descartáveis, o navegador mostrou resultados de duas unidades com o mesmo nome e código e verificou inclusão, gravação e reabertura. Capturas: canvas-task33-evidencias/33i-{light,dark}-{100,150}.png. Script: scripts/canvas-task33i-qa.cjs.
