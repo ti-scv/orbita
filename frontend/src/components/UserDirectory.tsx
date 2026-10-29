@@ -20,7 +20,9 @@ export function limitRemoteGrant(grant: Grant, option: Option): Grant {
   const rank: Record<string, number> = {viewer: 0, operator: 1, admin: 2};
   const role = rank[grant.role] > rank[option.max_role] ? option.max_role : grant.role;
   const permissions = Object.fromEntries(Object.entries(grant.permissions).map(([key, value]) => {
-    const max = option.permissions[key] || "none";
+    const connectionMax = option.permissions[key] || "none";
+    const roleMax = key === "costs" && role !== "admin" || key === "users" && role !== "admin" ? "none" : role === "viewer" || role !== "admin" && ["settings", "operationsAdmin", "users"].includes(key) ? "read" : "write";
+    const max = levels[connectionMax] < levels[roleMax] ? connectionMax : roleMax;
     return [key, levels[value] > levels[max] ? max : value];
   })) as SectionPermissions;
   return {...grant, role, permissions};
@@ -122,7 +124,7 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
         const remoteChanges = requestedGrant && grant && option.remote ? Object.keys(requestedGrant.permissions).filter(k => requestedGrant.permissions[k] !== grant.permissions[k]).map(k => `${options.sections[k] || k}: ${requestedGrant.permissions[k]} → ${grant.permissions[k]}`) : [];
         const selectedRole = grant?.permission_role && (roles[option.slug] || []).find(r => r.id === grant.permission_role?.id);
         return <fieldset key={option.slug} className="access-grant" disabled={!option.editable}>
-          <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none(),customized:true}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
+          <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:option.remote && option.local_unit ? (() => { const local = v.find(g => g.unit === option.local_unit); const selected = (roles[option.local_unit] || []).find(r => r.id === local?.permission_role?.id); return selected ? templatePermissions(selected, options.sections) : none(); })() : none(),customized:true}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
           {grant&&<><label className="op-field">Perfil<Select value={grant.role} onChange={e=>setRole(option.slug,e.target.value)}>{Object.entries(profiles).filter(([key])=>option.max_role==="admin"||key!=="admin"&&(option.max_role!=="viewer"||key==="viewer")).map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
             {!option.remote && <label className="op-field">Tipo de usuário<Select value={selectedRole?.id || ""} onChange={e=>{const selected=(roles[option.slug] || []).find(r=>r.id===Number(e.target.value)); if (selected && row?.grants.some(g=>g.unit===option.slug) && !window.confirm("Aplicar este tipo substituirá as permissões individuais nesta unidade e nos acessos remotos vinculados. Continuar?")) { e.currentTarget.value = String(selectedRole?.id || ""); return; } if (selected) { setGrants(current=>applyTypeToGrants(current, option, options.units, selected, options.sections)); } else update(option.slug, {permission_role:null, roleAction:null, permission_role_outdated:false, customized:true});}}><option value="">Permissões individuais</option>{(roles[option.slug] || []).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
             {remoteChanges.length > 0 && <p role="status">Limites em {option.name}: {remoteChanges.join(", ")}.</p>}
