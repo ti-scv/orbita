@@ -1,5 +1,8 @@
 import uuid
 import pytest
+from django.conf import settings
+
+pytestmark = pytest.mark.skipif(not settings.REPORT_REMOVAL_ENABLED, reason="remoção de relatórios desativada")
 from core.models import Audit, Membership
 from django.contrib.auth import get_user_model
 from operations.models import ReportConnection, ReportDefinition

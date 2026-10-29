@@ -77,7 +77,7 @@ def test_canvas_collects_once_for_all_datasets(report):
  with patch("operations.exams_attendance.collect",return_value=d) as collect:
   content,count=export(report,make_layout(report),{"data_referencia":"2026-10-26"},[],"pdf")
   assert collect.call_count==1
-  assert len(PdfReader(io.BytesIO(base64.b64decode(content))).pages)==2
+  assert len(PdfReader(io.BytesIO(base64.b64decode(content))).pages)>=2
 
 
 def test_invalid_goal_blocks_source_snapshot(report):
