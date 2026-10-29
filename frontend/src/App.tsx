@@ -585,9 +585,9 @@ function Workspace({
             <div>
               <strong>{session.username}</strong>
               <small>
-                {role === "admin"
-                  ? "Administrador"
-                  : role === "operator"
+                {actualRole === "admin"
+                  ? "Administrativo"
+                  : actualRole === "operator"
                     ? "Operador"
                     : "Consulta"}
               </small>

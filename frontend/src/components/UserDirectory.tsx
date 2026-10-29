@@ -87,6 +87,7 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
   function update(slug:string, change:Partial<Grant>) {setGrants(v=>v.map(g=>g.unit===slug?{...g,...change}:g));}
   function setRole(slug:string, role:string) {
     const grant=grants.find(g=>g.unit===slug)!;
+    if (grant.permission_role && role !== grant.role && !window.confirm("Alterar o perfil desvinculará o tipo e manterá permissões individuais. Continuar?")) return;
     const permissions={...grant.permissions};
     for (const key of Object.keys(permissions)) if (permissions[key]==="write" && (role==="viewer" || (role!=="admin"&&["settings","operationsAdmin","users"].includes(key)))) permissions[key]="read";
     if(role!=="admin")permissions.users="none";
