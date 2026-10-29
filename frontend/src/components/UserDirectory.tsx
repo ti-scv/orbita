@@ -100,8 +100,8 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
             {!selectedRole && <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
                const label = ({settings:"Configurações · Integrações e envios",operationsAdmin:"Configurações · Cadastros",users:"Configurações · Usuários"} as Record<string,string>)[key] || originalLabel;
               const max=option.permissions[key]||"none";
-              return <tr key={key}><td>{label}</td><td><Select aria-label={`${option.name} — ${label}`} value={grant.permissions[key]||"none"} onChange={e=>update(option.slug,{permissions:{...grant.permissions,[key]:e.target.value as "none"|"read"|"write"}})}>
-                <option value="none">Oculto</option>{max!=="none"&&<option value="read">Somente leitura</option>}{max==="write"&&grant.role!=="viewer"&&(grant.role==="admin"||!["settings","operationsAdmin","users"].includes(key))&&<option value="write">Ver e editar</option>}
+              return <tr key={key}><td>{label}{key === "reportWhatsApp" && <small className="directory-detail">Somente leitura: ver o estado. Ver e editar: ver, conectar e desconectar.</small>}</td><td><Select aria-label={`${option.name} — ${label}`} value={grant.permissions[key]||"none"} onChange={e=>update(option.slug,{permissions:{...grant.permissions,[key]:e.target.value as "none"|"read"|"write"}})}>
+                <option value="none">Sem acesso</option>{max!=="none"&&<option value="read">Somente leitura</option>}{max==="write"&&grant.role!=="viewer"&&(grant.role==="admin"||!["settings","operationsAdmin","users"].includes(key))&&<option value="write">Ver e editar</option>}
               </Select></td></tr>;
             })}</tbody></table></div>}</>}
         </fieldset>;
