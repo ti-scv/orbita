@@ -264,7 +264,7 @@ class UserViewSet(viewsets.GenericViewSet):
             from core.federation_auth import RANK
 
             if RANK[grant["role"]] > RANK[option["max_role"]]:
-                raise ValidationError("O perfil excede a permissão da conexão remota.")
+                raise ValidationError(f"O perfil excede a permissão disponível na unidade {option['name']}.")
             policy = role_permissions(
                 grant["role"], {**{section: "none" for section in SECTIONS}, **grant["permissions"]}
             )
@@ -276,7 +276,7 @@ class UserViewSet(viewsets.GenericViewSet):
                         "Edição administrativa exige perfil Administrativo; Consulta não permite edição."
                     )
                 if LEVELS[level] > LEVELS[option["permissions"].get(section, "none")]:
-                    raise ValidationError("A seção excede as permissões disponíveis na unidade remota.")
+                    raise ValidationError(f"A seção {SECTIONS[section]} excede as permissões disponíveis na unidade {option['name']}.")
             grant["permissions"] = policy
         if data.get("password"):
             try:

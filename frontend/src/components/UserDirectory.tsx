@@ -13,6 +13,17 @@ type UserRow = { id: number; username: string; full_name: string; active: boolea
 type Option = { slug: string; name: string; remote: boolean; instance_name?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
 const profiles: Record<string, string> = { admin: "Administrativo", operator: "Operador", viewer: "Consulta" };
+const levels = {none: 0, read: 1, write: 2} as const;
+export function limitRemoteGrant(grant: Grant, option: Option): Grant {
+  if (!option.remote) return grant;
+  const rank: Record<string, number> = {viewer: 0, operator: 1, admin: 2};
+  const role = rank[grant.role] > rank[option.max_role] ? option.max_role : grant.role;
+  const permissions = Object.fromEntries(Object.entries(grant.permissions).map(([key, value]) => {
+    const max = option.permissions[key] || "none";
+    return [key, levels[value] > levels[max] ? max : value];
+  })) as SectionPermissions;
+  return {...grant, role, permissions};
+}
 export const templatePermissions = (role: PermissionRole, sections: Record<string, string>): SectionPermissions => {
   const mapping: Record<string, string> = {overview: "messages", messages: "messages", groups: "messages", issues: "messages", settings: "settings", reports: "reports", reportWhatsApp: "reportWhatsApp"};
   return Object.fromEntries(Object.keys(sections).map(key => [key, role.permissions[mapping[key]] || "none"])) as SectionPermissions;
@@ -64,7 +75,9 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
 
 function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserRow;options:Options;roles:Record<string, PermissionRole[]>;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
   const [username,setUsername]=useState(row?.username||""),[name,setName]=useState(row?.full_name||""),[password,setPassword]=useState("");
-  const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(row?.grants||[]);
+  const normalize = (items: Grant[]) => items.map(g => { const option = options.units.find(o => o.slug === g.unit); return option ? limitRemoteGrant(g, option) : g; });
+  const limited = (row?.grants || []).filter(g => { const option = options.units.find(o => o.slug === g.unit); return option?.remote && JSON.stringify(limitRemoteGrant(g, option)) !== JSON.stringify(g); });
+  const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(() => normalize(row?.grants||[]));
   const global = !row || row.global_editable;
   const none=()=>Object.fromEntries(Object.keys(options.sections).map(k=>[k,"none"])) as SectionPermissions;
   function update(slug:string, change:Partial<Grant>) {setGrants(v=>v.map(g=>g.unit===slug?{...g,...change}:g));}
@@ -75,7 +88,7 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
     if(role!=="admin")permissions.users="none";
     update(slug,{role,permissions, ...(grant.permission_role ? {permission_role: null, roleAction: null, customized: true, permission_role_outdated: false} : {})});
   }
-  return <FormAction title={row?"Editar usuário":"Novo usuário"} label={row?"Editar":"Novo usuário"} busy={busy} error={error} version={revision} onClose={()=>{setUsername(row?.username||""); setName(row?.full_name||""); setPassword(""); setActive(row?.active??true); setGrants(row?.grants||[]);}}>
+  return <FormAction title={row?"Editar usuário":"Novo usuário"} label={row?"Editar":"Novo usuário"} busy={busy} error={error} version={revision} onClose={()=>{setUsername(row?.username||""); setName(row?.full_name||""); setPassword(""); setActive(row?.active??true); setGrants(normalize(row?.grants||[]));}}>
     <form className="op-form" onSubmit={e=>{e.preventDefault();void save(row,{version:row?.version||0,username,full_name:name,active,grants:grants.filter(g=>options.units.some(o=>o.slug===g.unit&&o.editable)).map(({customized: _customized, roleAction, permission_role: _role, permission_role_outdated: _outdated, ...g})=>({...g, ...(roleAction !== undefined ? {permission_role: roleAction} : {})})),...(password?{password}:{})}).then(()=>setPassword("")).catch(()=>{});}}>
       <div className="op-two"><label className="op-field">Login<input required minLength={3} maxLength={150} disabled={!!row} autoComplete="off" value={username} onChange={e=>setUsername(e.target.value)}/></label>
         <label className="op-field">Nome<input maxLength={150} disabled={!global} value={name} onChange={e=>setName(e.target.value)}/></label>
@@ -83,6 +96,7 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
       </div>
       <label className="checkbox-label"><input type="checkbox" disabled={!global} checked={active} onChange={e=>setActive(e.target.checked)}/>Usuário ativo</label>
       <h3>Unidades e abas</h3>
+      {limited.map(g => <p role="status" key={g.unit}>As permissões de {options.units.find(o=>o.slug===g.unit)?.name} foram limitadas ao disponível na conexão remota e serão salvas com esses níveis.</p>)}
       {options.units.map(option=>{
         const grant=grants.find(g=>g.unit===option.slug);
         const selectedRole = grant?.permission_role && (roles[option.slug] || []).find(r => r.id === grant.permission_role?.id);
