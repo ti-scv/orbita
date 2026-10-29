@@ -25,8 +25,8 @@ from .flow import Flow, TEXTS, OPTIONS
 from .oracle import Oracle, SourceError, error_code
 
 
-def unit_for(request, admin=False):
-    unit=get_unit(request,['admin'] if admin else None)
+def unit_for(request):
+    unit=get_unit(request)
     if unit.slug!='sansaude':raise PermissionDenied('Autoagendamento disponível somente para Sansaúde.')
     return unit
 
@@ -62,9 +62,9 @@ class ConfigurationView(APIView):
         c=Configuration.objects.filter(unit=unit_for(request)).first()
         return Response(configuration_data(c) if c else {'configured':False})
     def put(self,request):
-        unit=unit_for(request,True);serializer=ConfigInput(data=request.data);serializer.is_valid(raise_exception=True);data=serializer.validated_data
+        unit=unit_for(request);serializer=ConfigInput(data=request.data);serializer.is_valid(raise_exception=True);data=serializer.validated_data
         password=data.pop('oracle_password','');admin_password=data.pop('admin_password','')
-        if password and not request.user.check_password(admin_password):raise ValidationError('Senha do administrador inválida.')
+        if password and not request.user.check_password(admin_password):raise ValidationError('Sua senha está incorreta.')
         if set(data.get('options',{}))-set(OPTIONS) or set(data.get('texts',{}))-set(TEXTS):raise ValidationError('Opções ou mensagens desconhecidas.')
         if data.get('public_base_url'):
             from urllib.parse import urlparse
@@ -89,7 +89,7 @@ class ConfigurationView(APIView):
 @extend_schema_view(post=extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT, tags=['Autoagendamento']))
 class ConnectionCheck(APIView):
     def post(self,request):
-        unit=unit_for(request,True);c=Configuration.objects.get(unit=unit);version=c.version
+        unit=unit_for(request);c=Configuration.objects.get(unit=unit);version=c.version
         try:identity=Oracle(c).check()
         except SourceError as exc:return Response({'ok':False,'code':exc.code},status=400)
         if c.environment=='homologation' and identity.get('DB_NAME','').lower()!='tstvotu':raise ValidationError('A identidade do banco não corresponde à homologação.')
@@ -141,9 +141,6 @@ class ConversationView(APIView):
         return Response({**conversation_data(c),'view':c.view,'booking':Booking.objects.filter(conversation=c).values('state','slot_id','specialty','professional','scheduled_for','error_code').first(),'events':list(c.events.order_by('id').values('id','actor','text','step','created_at')[:500])})
     def post(self,request,pk):
         unit=unit_for(request)
-        if not request.user.is_superuser:
-            from core.models import Membership
-            if not Membership.objects.filter(unit=unit,user=request.user,role__in=['admin','operator']).exists():raise PermissionDenied()
         if request.data.get('action')=='reconcile':
             c=Conversation.objects.select_related('configuration').filter(unit=unit,pk=pk).first()
             if not c:raise NotFound()

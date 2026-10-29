@@ -189,3 +189,21 @@ def test_two_patients_cannot_reserve_same_slot(env):
         second=action(b,token_b,data_b,'opcao','0')
         assert first.data['state']=='scheduled' and second.data['step']=='slot_conflict'
         assert book.call_count==1 and Booking.objects.count()==1
+
+
+def test_explicit_autoagenda_grant_covers_configuration_console_and_followup(env):
+    unit,cfg,admin=env
+    user=get_user_model().objects.create_user(username="auto-editor", password="fictional")
+    member=Membership.objects.create(unit=unit,user=user,role="operator",permissions={"autoagenda":"write"})
+    client=APIClient(HTTP_HOST="localhost"); client.force_authenticate(user)
+    for endpoint in ("config", "console"):
+        assert client.get(f"/api/v1/autoagenda/{endpoint}/?unit=sansaude").status_code == 200
+    assert client.put("/api/v1/autoagenda/config/?unit=sansaude", {"version":cfg.version,"session_minutes":35}, format="json").status_code == 200
+    row=Conversation.objects.create(unit=unit,configuration=cfg,token_hash="fictional",expires_at=timezone.now()+timedelta(hours=1),state="human")
+    path=f"/api/v1/autoagenda/conversations/{row.pk}/?unit=sansaude"
+    assert client.get(path).status_code == 200
+    assert client.post(path,{"version":row.version,"note":"Atendimento fictício"},format="json").status_code == 200
+    member.permissions={"autoagenda":"none"}; member.save()
+    for endpoint in ("config", "console", f"conversations/{row.pk}"):
+        assert client.get(f"/api/v1/autoagenda/{endpoint}/?unit=sansaude").status_code == 403
+    assert client.put("/api/v1/autoagenda/config/?unit=sansaude",{"version":2},format="json").status_code == 403
