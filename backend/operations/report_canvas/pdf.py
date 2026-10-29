@@ -171,7 +171,20 @@ class PDFExporter:
         for page in document["pages"]:
             tables={b["id"]:table_parts(b,b["width"]*.75,b["height"]*.75) for b in page["blocks"] if b["type"]=="table"}
             texts={b["id"]:text_parts(b,b["width"]*.75,b["height"]*.75) for b in page["blocks"] if b["type"]=="text"}
-            continuation=max([1,*[len(parts) for parts in tables.values()],*[len(parts) for parts in texts.values()]])
+            # Charts use numbered categories and series in the drawing, followed by
+            # their complete labels and values in a paginated table.
+            charts={}
+            for b in page["blocks"]:
+                if b["type"] not in {"bar","line","pie"} or not b["rows"]:
+                    continue
+                data=dict(b)
+                data["type"]="table"
+                data["title"]=""
+                data["columns"]=["Categoria", *[str(v) for v in b["columns"][1:]]]
+                data["rows"]=[[f"{i+1}: {row[0]}", *row[1:]] for i,row in enumerate(b["rows"])]
+                data["options"]={"font_size": 10}
+                charts[b["id"]]=table_parts(data,b["width"]*.75,b["height"]*.75)
+            continuation=max([1,*[len(parts) for parts in tables.values()],*[len(parts) for parts in texts.values()],*[1+len(parts) for parts in charts.values()]])
             for index in range(continuation):
                 total_pages+=1
                 if total_pages>200:fail("Relatório excede 200 páginas.")
@@ -189,6 +202,14 @@ class PDFExporter:
                         parts=texts[b["id"]]
                         if index<len(parts):
                             p=parts[index];_,height=p.wrap(bw,bh);p.drawOn(c,0,bh-height)
+                    elif b["id"] in charts:
+                        if index == 0:
+                            numbered=dict(b)
+                            numbered["columns"]=[b["columns"][0], *[f"S{i}" for i in range(1,len(b["columns"]))]]
+                            numbered["rows"]=[[str(i+1), *row[1:]] for i,row in enumerate(b["rows"])]
+                            RENDERERS[b["type"]](c,numbered,bw,bh)
+                        elif index-1<len(charts[b["id"]]):
+                            t=charts[b["id"]][index-1];_,height=t.wrap(bw,bh);t.drawOn(c,0,bh-height)
                     else:RENDERERS[b["type"]](c,b,bw,bh)
                     c.restoreState()
                 c.showPage()
