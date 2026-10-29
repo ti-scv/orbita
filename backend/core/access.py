@@ -7,6 +7,7 @@ from core.models import Membership, RemoteMembership, UserAccessProfile
 
 SECTIONS = {
     "autoagenda": "Autoagendamento",
+    "checkin": "Check-in",
     "overview": "Visão geral",
     "costs": "Custos Meta",
     "appointments": "Agendamentos",
@@ -24,6 +25,8 @@ LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
     "autoagenda": ["autoagenda"],
+    "checkins": ["checkin"],
+    "checkin-configuration": ["checkin"],
     "indicators": ["overview"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
@@ -98,6 +101,8 @@ def role_permissions(role, overrides=None):
         value["costs"] = "none"
     if role != "admin" or (overrides and "autoagenda" not in overrides):
         value["autoagenda"] = "none"
+    if role != "admin":
+        value["checkin"] = "none"
     value.update(
         {k: v for k, v in (overrides or {}).items() if k in SECTIONS and v in LEVELS}
     )
@@ -152,7 +157,7 @@ def remote_access(user, connection):
     role = limited_role(role, connection.remote_role)
     policy = intersect_permissions(
         policy,
-        role_permissions(role, {"reportWhatsApp": "write"}),
+        role_permissions(role, {"reportWhatsApp": "write", "checkin": "write"}),
         role_permissions(connection.remote_role, connection.remote_permissions),
     )
     policy["users"] = (
@@ -167,7 +172,7 @@ def effective_permissions(request, unit):
     auth = request.auth
     if getattr(auth, "effective_role", None):
         policy = intersect_permissions(
-            policy, role_permissions(auth.effective_role, {"reportWhatsApp": "write"})
+            policy, role_permissions(auth.effective_role, {"reportWhatsApp": "write", "checkin": "write"})
         )
         if getattr(auth, "section_limit", None) is not None:
             policy = intersect_permissions(policy, auth.section_limit)
@@ -237,6 +242,8 @@ class SectionPermission(IsAuthenticated):
         from core.permissions import get_unit
 
         unit = get_unit(request)
+        if root in {"checkins", "checkin-configuration"} and unit.slug != "sansaude":
+            raise PermissionDenied("Check-in disponível apenas para Sansaúde.")
         policy = effective_permissions(request, unit)
         check_resource(policy, path, request.method, request.query_params)
         return True
