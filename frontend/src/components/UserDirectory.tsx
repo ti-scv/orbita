@@ -12,7 +12,7 @@ import { PermissionGroups } from "./PermissionGroups";
 
 type Grant = { unit: string; role: string; permissions: SectionPermissions; permission_role?: {id: number; name: string} | null; permission_role_outdated?: boolean; roleAction?: number | null; customized?: boolean };
 type UserRow = { id: number; username: string; full_name: string; active: boolean; version: number; grants: Grant[]; editable: boolean; global_editable: boolean };
-type Synced = { id: number; user_id: number | null; login: string; name: string; unit: string; state: string; removed_at_origin: boolean };
+type Synced = { id: number; user_id: number | null; login: string; name: string; unit: string; state: string; removed_at_origin: boolean; existing_user?: {username: string; first_name: string} | null };
 type Option = { slug: string; name: string; remote: boolean; enabled?: boolean; instance_name?: string; local_unit?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
 const profiles: Record<string, string> = { admin: "Administrativo", operator: "Operador", viewer: "Consulta" };
@@ -89,9 +89,9 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
       setRevision(v=>v+1); await onChanged?.();
     } catch(e) {setError((e as Error).message);throw e;} finally {setBusy(false);}
   }
-  async function resolve(identity: Synced, username: string) {
+  async function resolve(identity: Synced, username: string, decision = "separate") {
     setBusy(true); setError("");
-    try { await request(query(`users/${identity.id}/resolve-sync-conflict`, {unit}), "POST", {username}); setRevision(v => v + 1); }
+    try { await request(query(`users/${identity.id}/resolve-sync-conflict`, {unit}), "POST", {username, decision}); setRevision(v => v + 1); }
     catch (e) { setError((e as Error).message); throw e; }
     finally { setBusy(false); }
   }
@@ -118,7 +118,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
         const state = item ? item.removed_at_origin ? "Removido na origem" : item.state === "conflict" ? "Conflito de login" : item.state === "pending" ? "Pendente de liberação" : "Liberado" : row?.active ? "Ativo" : "Desativado";
         return <tr key={item ? `sync:${item.id}` : `user:${row!.id}`}><td><strong>{item?.name || row?.full_name || item?.login || row?.username}</strong><small className="directory-detail">{item?.login || row?.username}</small></td><td>{Array.from(new Set(row?.grants.map(g => `${options.units.find(u=>u.slug===g.unit)?.name||g.unit} · ${g.permission_role?.name || profiles[g.role]}`) || [])).map(label=><small className="directory-detail" key={label}>{label}</small>)}{!row?.grants.length && "Sem acesso"}</td><td>{item?.unit || "Local"}</td><td><span className="status-badge">{state}</span></td><td>
           {editable && item && !item.removed_at_origin && item.state === "pending" && row && <UserForm row={row} identity={item} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save} />}
-          {editable && item && !item.removed_at_origin && item.state === "conflict" && <FormAction title="Resolver conflito de login" label="Resolver conflito" busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void resolve(item, String(form.get("username") || "")).catch(() => {}); }}><label className="op-field">Novo login<input name="username" minLength={3} maxLength={150} required /></label><button className="button primary" disabled={busy}>Criar conta separada</button></form></FormAction>}
+          {editable && item && !item.removed_at_origin && item.state === "conflict" && <FormAction title="Resolver conflito de login" label="Resolver conflito" busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void resolve(item, String(form.get("username") || "")).catch(() => {}); }}><p>O login {item.login} da unidade {item.unit} já pertence ao usuário local {item.existing_user?.first_name || item.existing_user?.username || item.login} ({item.existing_user?.username || item.login}). As contas não serão unidas.</p><label className="op-field">Novo login para a conta separada<input name="username" minLength={3} maxLength={150} required /></label><button type="button" className="button" disabled={busy} onClick={() => void resolve(item, "", "pending").catch(() => {})}>Manter pendente</button><button className="button primary" disabled={busy}>Criar conta separada</button></form></FormAction>}
           {editable && row?.editable && (!item || item.state === "released" && !item.removed_at_origin) && <UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>}
         </td></tr>;
       })}

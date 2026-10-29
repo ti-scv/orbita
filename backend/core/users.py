@@ -233,20 +233,26 @@ class UserViewSet(viewsets.GenericViewSet):
                           "unit": item.connection.remote_unit.get("name") or item.connection.name, "remote_user_id": item.remote_user_id,
                           "login": item.login, "name": item.name, "email": item.email,
                           "state": item.state, "removed_at_origin": item.removed_at_origin,
-                          "user_id": item.user_id, "last_synced_at": item.last_synced_at}
+                          "user_id": item.user_id, "existing_user": (get_user_model().objects.filter(username=item.login).values("username", "first_name").first() if item.state == SyncedUserIdentity.State.CONFLICT else None), "last_synced_at": item.last_synced_at}
                          for item in identities])
 
     @action(detail=True, methods=["post"], url_path="resolve-sync-conflict")
     def resolve_sync_conflict(self, request, pk=None):
         anchor = get_unit(request, ["admin"])
+        decision = request.data.get("decision", "separate")
+        if decision not in ("separate", "pending"):
+            raise ValidationError("Decisão inválida.")
         login = request.data.get("username", "")
-        field = serializers.RegexField(r"^[\w.@+-]{3,150}$")
-        login = field.run_validation(login)
+        if decision == "separate":
+            login = serializers.RegexField(r"^[\w.@+-]{3,150}$").run_validation(login)
         with transaction.atomic():
             item = get_object_or_404(SyncedUserIdentity.objects.select_for_update(),
                                      pk=pk, connection__local_unit=anchor)
             if item.state != SyncedUserIdentity.State.CONFLICT or item.removed_at_origin:
                 raise ValidationError("O conflito não está disponível para decisão.")
+            if decision == "pending":
+                Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_deferred", object_id=str(item.pk), details={"login": item.login, "unit": item.connection.remote_unit.get("name") or item.connection.name})
+                return Response({"id": item.pk, "state": item.state})
             if get_user_model().objects.filter(username=login).exists():
                 raise ValidationError("Login indisponível.")
             user = get_user_model()(username=login, first_name=item.name, email=item.email, is_active=False)
@@ -256,7 +262,7 @@ class UserViewSet(viewsets.GenericViewSet):
             item.user, item.state = user, SyncedUserIdentity.State.PENDING
             item.save(update_fields=["user", "state"])
             Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_resolved",
-                                 object_id=str(item.pk), details={"user_id": user.pk})
+                                 object_id=str(item.pk), details={"user_id": user.pk, "login": item.login, "new_login": user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name, "decision": "separate"})
         return Response({"id": item.pk, "user_id": user.pk, "state": item.state})
 
     @action(detail=True, methods=["post"], url_path="release-synced")
