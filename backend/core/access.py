@@ -22,14 +22,14 @@ SECTIONS = {
 LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
-    "indicators": ["messages"],
+    "indicators": ["overview"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
     "agenda-items": ["appointments"],
-    "appointment-groups": ["messages"],
+    "appointment-groups": ["groups"],
     "messages": ["messages"],
     "replies": ["messages"],
-    "issues": ["messages"],
+    "issues": ["issues"],
     "cases": ["messages", "appointments", "issues", "campaigns"],
     "contacts": ["messages", "appointments", "issues", "campaigns"],
     "movements": ["messages", "appointments", "issues"],
@@ -166,9 +166,9 @@ def required_sections(resource, method, params):
             sections.append("operationsAdmin")
         if root in {"appointments", "agenda-items"}:
             if params.get("group"):
-                sections.append("messages")
+                sections.append("groups")
             if params.get("operational_pending") == "true":
-                sections.append("messages")
+                sections.append("issues")
         if root in {"cases", "contacts"}:
             sections.append("messages")
     return sections
