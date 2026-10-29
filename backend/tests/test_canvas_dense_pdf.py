@@ -33,3 +33,19 @@ def test_wide_table_continues_by_column_in_both_orientations():
         assert len(pdf.pages) > 1
         for value in columns + row:
             assert value in content
+
+
+def test_chart_labels_and_values_continue_in_both_orientations():
+    for width, height in ((794, 1123), (1123, 794)):
+        for kind in ("bar", "line", "pie"):
+            chart = {"id": "chart", "type": kind, "x": 0, "y": 0, "width": 300, "height": 180,
+                     "title": "Chart", "columns": ["Category", "LongSeriesNameMarker"],
+                     "rows": [[f"LongCategoryMarker{i:02d}", i + 1] for i in range(15)], "options": {}}
+            doc = {"name": "chart", "page": {"width": width, "height": height, "background": "#ffffff"},
+                   "pages": [{"blocks": [chart]}]}
+            pdf = PdfReader(io.BytesIO(PDFExporter().render(doc)))
+            content = " ".join(page.extract_text() for page in pdf.pages)
+            assert len(pdf.pages) > 1
+            assert "LongSeriesNameMarker" in content
+            for i in range(15):
+                assert f"LongCategoryMarker{i:02d}" in content
