@@ -17,6 +17,7 @@ def tick():
         return
     now = timezone.now()
     create_cycles(now)
+    queue_cycles(now)
     ids = list(CheckIn.objects.filter(
         unit__slug="sansaude", unit__checkin_configuration__enabled=True,
         response="sent", response_deadline__lte=now,
@@ -75,3 +76,18 @@ def create_cycles(now):
         except ValidationError:
             # Configuration or eligibility may have changed since discovery.
             continue
+
+
+def queue_cycles(now):
+    from .deliveries import create_message
+    from messaging.models import Message
+
+    records = CheckIn.objects.filter(unit__slug="sansaude", unit__checkin_configuration__enabled=True,
+        response="pending", planned_send_at__isnull=False, response_deadline__gt=now).order_by("planned_send_at", "pk")
+    queued = 0
+    for record in records.iterator():
+        if queued >= 100:
+            break
+        message = create_message(record.pk)
+        if message and message.state == Message.State.PREVIEW:
+            queued += Message.objects.filter(pk=message.pk, state=Message.State.PREVIEW).update(state=Message.State.QUEUED)

@@ -47,3 +47,7 @@ Verificação específica, em contêiner sem rede, SQLite temporário e transpor
 ### Mensagem por ciclo
 
 `checkin.deliveries.create_message` cria uma prévia idempotente para um único contato: o primeiro `phone_numbers` do Appointment (com fallback para `phone`), como nos lembretes, ou o telefone da conversa do Booking. Normaliza o telefone e registra pendência se inválido. Exige template local `checkin_agendamento`, `pt_BR`, finalidade `checkin`, habilitado para teste, com campos `date` e `time` e texto exatamente correspondente ao conteúdo curto de check-in; a ausência gera pendência. Isso não comprova aprovação no catálogo Meta: aprovação, opções, mapeamento e validação do catálogo precisam ser integrados antes de qualquer envio. A função ainda não é chamada pelo tick nem coloca mensagens na fila. Nenhum envio foi realizado. A proposta de múltiplos destinatários permanece acima, sem alteração do contrato.
+
+### Fila
+
+O tick prepara e enfileira prévias de ciclos pendentes na fila `messaging` existente, sem adicionar transporte. O `send_guard` bloqueia deliberadamente todos os check-ins enquanto a revalidação de expedição não estiver implementada; portanto esta etapa isolada não envia. O interruptor do tick permanece desligado por padrão.

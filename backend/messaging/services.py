@@ -56,6 +56,9 @@ def issue_once(message, code, description):
 
 
 def send_guard(message):
+    # Check-in dispatch remains blocked until its source revalidation is integrated.
+    if message.purpose == "checkin":
+        return "checkin_validation_pending"
     if message.snapshot.get("oracle_agenda"):
         return "oracle_agenda_preview_only"
 
