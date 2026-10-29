@@ -22,14 +22,14 @@ SECTIONS = {
 LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
-    "indicators": ["overview"],
+    "indicators": ["messages"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
     "agenda-items": ["appointments"],
-    "appointment-groups": ["groups"],
+    "appointment-groups": ["messages"],
     "messages": ["messages"],
     "replies": ["messages"],
-    "issues": ["issues", "appointments"],
+    "issues": ["messages"],
     "cases": ["appointments", "issues", "campaigns"],
     "contacts": ["appointments", "issues", "campaigns"],
     "movements": ["appointments", "issues"],
