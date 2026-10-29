@@ -5,7 +5,7 @@ import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
 import FormAction from "./components/FormAction";
 import { Badge, Empty, Panel, SearchField } from "./components/ui";
-import OperationalAppointments from "./components/OperationalAppointments";
+
 import AppointmentGroups from "./components/AppointmentGroups";
 import ExecutionLogs from "./components/ExecutionLogs";
 import MetaConfiguration from "./components/MetaConfiguration";
@@ -20,7 +20,7 @@ import ReportAppConnections from "./components/ReportAppConnections";
 import UnitSelector from "./components/UnitSelector";
 import { readRoute, routePath } from "./routes";
 import ModalContent from "./components/ModalContent";
-import OperationsWorkspace from "./components/OperationsWorkspace";
+
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import Login from "./components/Login";
@@ -74,6 +74,8 @@ import type {
   Template,
 } from "./types";
 
+const OperationalAppointments = lazy(() => import("./components/OperationalAppointments"));
+const OperationsWorkspace = lazy(() => import("./components/OperationsWorkspace"));
 const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
 const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
@@ -114,8 +116,8 @@ function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
     [checking, setChecking] = useState(true);
   useEffect(() => {
-    initCsrf()
-      .then(() => request<Session>("/api/v1/auth/session/"))
+    Promise.all([initCsrf(), request<Session>("/api/v1/auth/session/")])
+      .then(([, currentSession]) => currentSession)
       .then(setSession)
       .catch(() => {})
       .finally(() => setChecking(false));
@@ -682,8 +684,8 @@ function Workspace({
             </div>
           )}
           {["care", "campaigns", "reports"].includes(page) && (
-            <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} />
+            <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
+              username={session.username} userAccess={false} /></Suspense>
           )}
           {page === "messages" && (
             <div className="filters">
@@ -739,7 +741,7 @@ function Workspace({
                 </Suspense>
               )}
               {page === "appointments" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={unit}
                   unit={unit}
                   periodFilter={periodFilter}
@@ -749,7 +751,7 @@ function Workspace({
                   refreshKey={loadSequence.current}
                   start={start}
                   end={end}
-                />
+                /></Suspense>
               )}
               {page === "messages" && (
                 <Panel
@@ -903,7 +905,7 @@ function Workspace({
                 />
               )}
               {page === "issues" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={`${unit}-issues`}
                   unit={unit}
                   role={role}
@@ -913,7 +915,7 @@ function Workspace({
                   start={start}
                   end={end}
                   issuesOnly
-                />
+                /></Suspense>
               )}
               {page === "settings" && (
                 <div className="settings-workspace">
@@ -931,9 +933,9 @@ function Workspace({
                   </div>
                   {activeConfiguration && <InlineDialog title={activeConfiguration.label} legacy={activeConfiguration.legacy} subtitle="" className="configuration-dialog"
                     onClose={() => setSettingsTab(null)} footer={<button className="button" onClick={() => setSettingsTab(null)}>Fechar</button>}>
-                    {activeConfiguration.section === "operationsAdmin" && <OperationsWorkspace
+                    {activeConfiguration.section === "operationsAdmin" && <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace
                       key={`${unit}:${settingsTab}`} page="operationsAdmin" unit={unit} role={role}
-                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} />}
+                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} /></Suspense>}
                     {settingsTab === "users" && <UserDirectory unit={unit} editable={policy.users === "write" && actualRole === "admin"} onChanged={onSessionRefresh} />}
                   {settingsTab === "logs" && <ExecutionLogs key={unit} unit={unit} />}
                   {settingsTab === "units" && actualRole === "admin" && !isRemote && (
