@@ -1,4 +1,5 @@
 from autoagenda import api as autoagenda
+from checkin.api import CheckInViewSet, ConfigurationView as CheckInConfigurationView
 from operations.report_app_api import AppConnectionViewSet
 from django.contrib import admin
 from django.urls import include, path
@@ -33,6 +34,7 @@ from scheduling.agenda_api import OracleAgendaViewSet
 
 router = DefaultRouter()
 for prefix, view in [
+    ("checkins", CheckInViewSet),
     ("oracle-agendas", OracleAgendaViewSet),
     ("oracle-configuration", OracleConfigurationViewSet),
     ("users", UserViewSet),
@@ -80,6 +82,7 @@ for prefix, view in [
     router.register(prefix, view, basename=prefix)
 
 urlpatterns = [
+    path("api/v1/checkin-configuration/", CheckInConfigurationView.as_view()),
     path("api/v1/autoagenda/config/", autoagenda.ConfigurationView.as_view()),
     path("api/v1/autoagenda/check/", autoagenda.ConnectionCheck.as_view()),
     path("api/v1/autoagenda/console/", autoagenda.ConsoleView.as_view()),

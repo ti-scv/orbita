@@ -51,6 +51,14 @@ class UnitSerializer(serializers.ModelSerializer):
 
 class AppointmentSerializer(serializers.ModelSerializer):
     tracking = serializers.SerializerMethodField()
+    checkin = serializers.SerializerMethodField()
+
+    def get_checkin(self, obj):
+        request = self.context.get("request")
+        if not request or getattr(self.context.get("view"), "action", None) != "retrieve":
+            return None
+        from checkin.api import source_label
+        return source_label(obj, request)
 
     def get_tracking(self, obj) -> dict:
         event = getattr(obj, "sourceevent", None)
@@ -136,6 +144,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "professional",
             "city",
             "tracking",
+            "checkin",
             "procedure",
             "procedure_code",
             "appointment_type",
