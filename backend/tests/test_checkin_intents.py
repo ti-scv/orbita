@@ -66,3 +66,20 @@ def test_booking_missing_time_creates_review(data):
     record = create_intent(source=booking, unit=unit, now=datetime(2026, 11, 1, tzinfo=timezone.utc))
     assert record.scheduled_at is None and record.planned_send_at is None
     assert Issue.objects.filter(category="checkin_schedule_review").exists()
+
+
+def test_message_uses_one_primary_recipient_and_is_idempotent(data):
+    from checkin.deliveries import create_message
+    from messaging.models import Template
+
+    unit, _, appointment = data
+    appointment.phone_numbers = ["11999990000", "11999990001"]
+    appointment.save()
+    record = create_intent(source=appointment, unit=unit, now=datetime(2026, 11, 1, tzinfo=timezone.utc))
+    Template.objects.create(unit=unit, name="checkin_agendamento", language="pt_BR", purpose="checkin", body="Seu agendamento é em {{1}} às {{2}}. Responda: Confirmar ou Solicitar cancelamento.", fields=["date", "time"], approved_for_test=True)
+    message = create_message(record.pk)
+    assert message.recipient == "5511999990000"
+    assert message.state == "preview"
+    assert message.parameters == ["10/11/2026", "12:00"]
+    assert create_message(record.pk).pk == message.pk
+    assert "Teste" not in message.body
