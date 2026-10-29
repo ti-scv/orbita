@@ -21,3 +21,9 @@ it("aplica o tipo às unidades remotas associadas para que o servidor informe os
   expect(limitRemoteGrant(result[1], remote).permissions).toEqual({reports:"read", reportWhatsApp:"none"});
   expect(result[2]).toEqual(grants[2]);
 });
+
+it("exibe o teto do perfil remoto além do teto da conexão", () => {
+  const option = {slug:"remote:1", name:"Remota", remote:true, editable:true, max_role:"viewer", permissions:{reports:"write", settings:"write", users:"write", costs:"write", reportWhatsApp:"write"} as const};
+  const grant = {unit:"remote:1", role:"admin", permissions:{reports:"write", settings:"write", users:"write", costs:"write", reportWhatsApp:"write"} as const};
+  expect(limitRemoteGrant(grant, option)).toMatchObject({role:"viewer", permissions:{reports:"read", settings:"read", users:"none", costs:"none", reportWhatsApp:"read"}});
+});
