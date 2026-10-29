@@ -164,7 +164,11 @@ def required_sections(resource, method, params):
     if method in {"GET", "HEAD", "OPTIONS"}:
         if root == "sheet-imports" and resource.rstrip("/") == "sheet-imports/schema":
             sections.append("operationsAdmin")
-        if root in {"appointments", "agenda-items"}:
+        # filter_options queries the whole unit, not the filtered queryset.
+        if (
+            root in {"appointments", "agenda-items"}
+            and resource.strip("/") != "agenda-items/filter_options"
+        ):
             if params.get("group"):
                 sections.append("groups")
             if params.get("operational_pending") == "true":

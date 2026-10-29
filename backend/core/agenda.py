@@ -361,14 +361,19 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], pagination_class=None)
     def types(self, request):
         unit = get_unit(request)
+        scoped = bool(request.query_params.get("group")) or (
+            request.query_params.get("operational_pending") == "true"
+        )
+        cases = (
+            self.get_queryset()
+            if scoped
+            else Case.objects.filter(unit=unit, event__unit=unit)
+        )
         registered = set(
-            Campaign.objects.filter(unit=unit).values_list("purpose", flat=True)
+            cases.filter(event__appointment__isnull=True).values_list("purpose", flat=True)
         )
-        registered.update(
-            Case.objects.filter(
-                unit=unit, event__unit=unit, event__appointment__isnull=True
-            ).values_list("purpose", flat=True)
-        )
+        if not scoped:
+            registered.update(Campaign.objects.filter(unit=unit).values_list("purpose", flat=True))
         result = [
             {"value": value, "label": label, "group": "Agendamentos"}
             for value, label in Appointment.Kind.choices
@@ -379,9 +384,7 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             if purpose in registered and purpose in PATIENT_PURPOSES
         )
         oracle_types = set(
-            Case.objects.filter(
-                unit=unit,
-                event__unit=unit,
+            cases.filter(
                 purpose="absence",
                 event__data__source_origin="oracle_absences",
             ).values_list("event__data__tp_item", flat=True)

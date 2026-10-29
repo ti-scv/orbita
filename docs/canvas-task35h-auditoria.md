@@ -7,7 +7,7 @@ Base auditada: f89c7c9. As seções são alternativas (OU); GET/HEAD/OPTIONS exi
 | cases: lista, detalhe, operators, metrics, export, health, timeline, communications; act | messages, appointments, issues ou campaigns / mesmos | Atendimento em Pendências e Agendamentos, seleção de casos em CROSS; revisar acesso genérico por messages e finalidade dos dados. Export e health expõem dados agregados adicionais. |
 | contacts: lista, detalhe; review | messages, appointments, issues ou campaigns / mesmos | Atendimento em Pendências/Agendamentos; revisão altera também PatientPhone e mensagens. Filtro de eventos adicional usa permissions locais. |
 | movements: lista, detalhe; criar, confirm | messages, appointments ou issues / mesmos | Atendimento em Pendências/Agendamentos; confirmar altera agendamento. Revisar acesso genérico por messages. |
-| agenda-items: lista, detalhe, types, export, communications | appointments; com group também groups; com operational_pending=true também issues / appointments | Grupos/Pendências precisam de consultas filtradas; types e detalhe chamados sem filtro na tela de Pendências. Verificar se filtros são aplicados por cada ação antes de autorizar. |
+| agenda-items: lista, detalhe, types, filter_options, export, communications | appointments; com group também groups; com operational_pending=true também issues / appointments | Grupos/Pendências precisam de consultas filtradas; types e detalhe chamados sem filtro na tela de Pendências. Verificar se filtros são aplicados por cada ação antes de autorizar. |
 | appointments: lista, detalhe, export, communications | appointments; com group também groups; com operational_pending=true também issues / appointments | Compartilhado entre Agendamentos, Grupos e Pendências; conferir filtros em cada ação. |
 | indicators | overview / overview | Visão geral. |
 | messages: lista, detalhe; retry, simulate | messages / messages | Mensagens; conferir ações compartilhadas com outras telas. |
@@ -25,3 +25,9 @@ Base auditada: f89c7c9. As seções são alternativas (OU); GET/HEAD/OPTIONS exi
 | tests | appointments ou overview / mesmos | Testes operacionais; conferir operação e escopo. |
 
 Este inventário é inicial: não certifica que todas as ações, suas consultas internas e os caminhos federados estejam corretos. `SectionPermission` aplica a tabela localmente; `RemoteProxyView` a aplica antes de encaminhar; a autenticação por chave limita o papel na origem. A lista de recursos federáveis é separada em `core/federation_auth.py` e não inclui todos os recursos locais.
+
+## Correção parcial de agenda
+
+A autorização de `filter_options` agora exige Agendamentos, pois essa ação consulta a unidade inteira sem aplicar os filtros de grupo ou pendência. Em `types`, quando esses filtros autorizam a consulta, as finalidades CROSS e os tipos Oracle vêm dos casos filtrados; os tipos fixos de agendamento continuam disponíveis. A tela envia o filtro na consulta de tipos e no detalhe inicial. O teste local cobre leitura permitida e negada e isolamento das finalidades; o teste do proxy verifica que pedidos negados não são encaminhados.
+
+A auditoria continua incompleta: Grupos usa o detalhe de atendimento, mas `cases`, `contacts` e `movements` ainda não limitam objetos ao grupo, e as demais ações e seus efeitos precisam de cobertura local e federada. Não há certificação da separação de permissões.

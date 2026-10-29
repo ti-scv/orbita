@@ -306,11 +306,11 @@ export default function OperationalAppointments({
   const [typeOptions, setTypeOptions] = useState<{value: string; label: string; group: string}[]>([]);
   useEffect(() => {
     let active = true;
-    request<{value: string; label: string; group: string}[]>(query("agenda-items/types", {unit}))
+    request<{value: string; label: string; group: string}[]>(query("agenda-items/types", {unit, operational_pending: issuesOnly ? "true" : "", group: groupId || ""}))
       .then(options => {if (active) setTypeOptions(options);})
       .catch(error => {if (active) setError(error.message);});
     return () => {active = false;};
-  }, [unit, refreshKey]);
+  }, [unit, refreshKey, issuesOnly, groupId]);
   const [issueFilter, setIssueFilter] = useState("all");
   const handleIssueFilterChange = (value: string) => {
     setIssueFilter(value);
@@ -417,7 +417,7 @@ export default function OperationalAppointments({
   useEffect(() => {
     if (!initialId) return;
     let active = true;
-    request<Appointment>(query(`agenda-items/${initialId}`, { unit }))
+    request<Appointment>(query(`agenda-items/${initialId}`, { unit, operational_pending: issuesOnly ? "true" : "", group: groupId || "" }))
       .then((item) => {
         if (active) select(item.tracking?.id || null);
       })
@@ -425,7 +425,7 @@ export default function OperationalAppointments({
     return () => {
       active = false;
     };
-  }, [initialId, unit]);
+  }, [initialId, unit, issuesOnly, groupId]);
   const act = useCallback(
     async (path: string, data: unknown) => {
       setBusy(true);
