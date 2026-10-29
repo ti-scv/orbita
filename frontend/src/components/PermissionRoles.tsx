@@ -4,6 +4,7 @@ import type { Paginated, SectionPermissions } from "../types";
 import FormAction from "./FormAction";
 import Select from "./Select";
 import { Panel } from "./ui";
+import { PermissionGroups } from "./PermissionGroups";
 
 export type PermissionRole = { id: number; name: string; permissions: SectionPermissions };
 export const roleLabels: Record<string, string> = {overview: "Visão geral", messages: "Mensagens", groups: "Grupos", issues: "Pendências", settings: "Configurações", reports: "Relatórios", reportWhatsApp: "WhatsApp dos relatórios"};
@@ -33,7 +34,7 @@ function RoleForm({row, revision, busy, error, save}: {row?: PermissionRole; rev
   const [name, setName] = useState(row?.name || ""), [permissions, setPermissions] = useState<SectionPermissions>(row ? {...row.permissions, overview: row.permissions.overview || row.permissions.messages, groups: row.permissions.groups || row.permissions.messages, issues: row.permissions.issues || row.permissions.messages} : {overview:"none", messages:"none", groups:"none", issues:"none", settings:"none", reports:"none", reportWhatsApp:"none"});
   return <FormAction title={row ? "Editar tipo de usuário" : "Novo tipo de usuário"} label={row ? "Editar" : "Adicionar"} busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => {e.preventDefault(); void save(row, name, permissions).catch(() => {});}}>
     <label className="op-field">Nome<input required maxLength={100} value={name} onChange={e => setName(e.target.value)}/></label>
-    {Object.entries(roleLabels).map(([key,label]) => <label className="op-field" key={key}>{label}{key === "reportWhatsApp" && <small>Somente leitura: ver o estado. Ver e editar: ver, conectar e desconectar.</small>}<Select value={permissions[key] || "none"} onChange={e => setPermissions({...permissions, [key]: e.target.value as "none" | "read" | "write"})}><option value="none">Sem acesso</option><option value="read">Somente leitura</option><option value="write">Ver e editar</option></Select></label>)}
+    <PermissionGroups sections={roleLabels} render={(key,label) => <label className="op-field" key={key}>{label}{key === "reportWhatsApp" && <small>Somente leitura: ver o estado. Ver e editar: ver, conectar e desconectar.</small>}<Select value={permissions[key] || "none"} onChange={e => setPermissions({...permissions, [key]: e.target.value as "none" | "read" | "write"})}><option value="none">Sem acesso</option><option value="read">Somente leitura</option><option value="write">Ver e editar</option></Select></label>}/>
     <button type="submit" className="button primary">Salvar</button>
   </form></FormAction>;
 }

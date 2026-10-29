@@ -5914,3 +5914,7 @@ body:has([role="dialog"][aria-modal="true"]) {
 .route-message { max-width: 38rem; padding: 24px; }
 .route-message h1 { margin: 0 0 12px; }
 .route-message p { margin: 0 0 20px; }
+
+.permission-group { border: 1px solid var(--border-default); border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.permission-group h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.permission-group p { margin: 6px 0; }
