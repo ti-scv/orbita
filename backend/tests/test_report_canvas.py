@@ -46,7 +46,7 @@ def test_pdf_xlsx_native_charts_and_untrusted_cells(env):
     r.canvas_layout["sources"][0]["rows"][0][0]="=HYPERLINK(\"bad\")"
     content,count=export(r,r.canvas_layout,{},r.monthly_goals,"pdf")
     pdf=PdfReader(io.BytesIO(base64.b64decode(content)))
-    assert count==2 and len(pdf.pages)==1
+    assert count==2 and len(pdf.pages)==2
     assert "30" in pdf.pages[0].extract_text() and "Canvas Teste" in pdf.pages[0].extract_text()
     content,count=export(r,r.canvas_layout,{},r.monthly_goals,"xlsx")
     book=load_workbook(io.BytesIO(base64.b64decode(content)))
