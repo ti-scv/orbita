@@ -1,10 +1,4 @@
-"""Conservative reconciliation boundary; no Oracle query or connector is installed.
-
-A future homologated source must implement lookup(records) and return a mapping
-from local check-in id to a list of booleans indicating CD_ATENDIMENTO presence.
-The source is responsible for a validated, source-specific unique join and for
-bounded read-only access. Until then this boundary is exercised with mocks only.
-"""
+"""Conservative, read-only reconciliation of check-in attendance."""
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
@@ -77,3 +71,40 @@ def reconcile_batch(*, unit, source, cursor=0, limit=MAX_BATCH):
         except (Conflict, ValidationError, CheckIn.DoesNotExist):
             reviews.append((record.pk, "conflict"))
     return BatchResult("ok", next_cursor=records[-1].pk, reviewed=tuple(reviews), changed=changed)
+
+
+class OracleAttendanceSource:
+    """Read a validated view keyed by Appointment.external_id.
+
+    Bookings have no homologated external key and never produce a match.
+    """
+    def __init__(self, unit):
+        import re
+        from django.conf import settings
+        from scheduling.connectors import OracleSource
+
+        identifier = r"[A-Za-z][A-Za-z0-9_$#]*"
+        view = settings.CHECKIN_ORACLE_VIEW
+        key = settings.CHECKIN_ORACLE_KEY_COLUMN
+        if unit.slug != "sansaude" or not re.fullmatch(identifier + r"(?:\." + identifier + r")?", view) or not re.fullmatch(identifier, key):
+            raise ValueError("oracle_view_not_configured")
+        self.source = OracleSource(unit)
+        self.view, self.key = view, key
+
+    def lookup(self, records):
+        result = {}
+        with self.source.connect() as connection:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SET TRANSACTION READ ONLY")
+                    for record in records:
+                        if not record.appointment_id or not record.appointment.external_id:
+                            continue
+                        cursor.execute(
+                            f"SELECT CD_ATENDIMENTO FROM {self.view} WHERE {self.key} = :source_id FETCH FIRST 2 ROWS ONLY",
+                            {"source_id": record.appointment.external_id},
+                        )
+                        result[record.pk] = [row[0] is not None for row in cursor.fetchmany(2)]
+            finally:
+                connection.rollback()
+        return result

@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -83,3 +83,58 @@ def test_missing_and_stale_revision_are_reviewed(setup):
     assert (records[1].pk, "no_match") in result.reviewed
     records[0].refresh_from_db()
     assert records[0].attendance == "unknown"
+
+
+def test_scheduled_oracle_read_only_and_late_arrival(setup, settings, monkeypatch):
+    from checkin.tasks import reconcile_oracle
+    from scheduling.connectors import OracleSource
+
+    unit, _, config, records = setup
+    config.enabled = config.oracle_enabled = config.appointment_enabled = True
+    config.save()
+    settings.CHECKIN_ORACLE_VIEW = "TEST_OWNER.TEST_VIEW"
+    settings.CHECKIN_ORACLE_KEY_COLUMN = "AGENDA_ID"
+    settings.CHECKIN_ORACLE_SCHEDULER_ENABLED = False
+    connection = MagicMock()
+    cursor = connection.cursor.return_value.__enter__.return_value
+    cursor.fetchmany.side_effect = [[(123,)], [(None,)], [(1,), (2,)]]
+    connection.__enter__ = Mock(return_value=connection)
+    connection.__exit__ = Mock(return_value=False)
+    connect = Mock(return_value=connection)
+    monkeypatch.setattr(OracleSource, "connect", connect)
+
+    reconcile_oracle()
+    connect.assert_not_called()
+    settings.CHECKIN_ORACLE_SCHEDULER_ENABLED = True
+    reconcile_oracle()
+    for record in records:
+        record.refresh_from_db()
+    assert [r.attendance for r in records] == ["attended", "unknown", "unknown"]
+    assert records[0].events.get().evidence == {"cd_atendimento_present": True}
+    calls = cursor.execute.call_args_list
+    assert calls[0].args == ("SET TRANSACTION READ ONLY",)
+    assert all(call.args[0].startswith("SELECT CD_ATENDIMENTO FROM TEST_OWNER.TEST_VIEW") for call in calls[1:])
+    assert [call.args[1]["source_id"] for call in calls[1:]] == ["0", "1", "2"]
+    connection.rollback.assert_called_once()
+    cursor.fetchmany.side_effect = [[(123,)], [(42,)], []]
+    reconcile_oracle()
+    records[1].refresh_from_db()
+    assert records[1].attendance == "attended"
+    assert records[0].events.count() == 1
+
+
+def test_scheduled_oracle_requires_configuration_and_safe_identifiers(setup, settings, monkeypatch):
+    from checkin.tasks import reconcile_oracle
+    from scheduling.connectors import OracleSource
+
+    unit, _, config, _ = setup
+    settings.CHECKIN_ORACLE_SCHEDULER_ENABLED = True
+    settings.CHECKIN_ORACLE_VIEW = "VIEW_NAME; DELETE FROM X"
+    settings.CHECKIN_ORACLE_KEY_COLUMN = "KEY"
+    connect = Mock()
+    monkeypatch.setattr(OracleSource, "connect", connect)
+    reconcile_oracle()
+    config.enabled = config.oracle_enabled = config.appointment_enabled = True
+    config.save()
+    reconcile_oracle()
+    connect.assert_not_called()

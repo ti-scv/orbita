@@ -1,6 +1,7 @@
 """Validate the Meta request body locally; no HTTP request leaves this test."""
 
 import pytest
+from cryptography.fernet import Fernet
 from django.utils import timezone
 from test_cross_controls import messages, sample
 
@@ -12,6 +13,7 @@ from operations.cross_controls import set_batch_enabled
 
 @pytest.mark.django_db
 def test_cross_body_parameters_are_in_meta_request(setup, settings, monkeypatch):
+    settings.META_CREDENTIALS_KEY = Fernet.generate_key().decode()
     batch = sample(setup, phones=False)
     set_batch_enabled(batch, True, batch.version, setup["user"])
     message = messages(batch).first()

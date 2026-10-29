@@ -91,3 +91,29 @@ def queue_cycles(now):
         message = create_message(record.pk)
         if message and message.state == Message.State.PREVIEW:
             queued += Message.objects.filter(pk=message.pk, state=Message.State.PREVIEW).update(state=Message.State.QUEUED)
+
+
+@shared_task(name="checkin.reconcile_oracle")
+def reconcile_oracle():
+    """Revisit pages each run so late Oracle arrivals are picked up."""
+    if not settings.CHECKIN_ORACLE_SCHEDULER_ENABLED:
+        return
+    from core.models import Unit
+    from .models import Configuration
+    from .oracle_reconciliation import OracleAttendanceSource, reconcile_batch
+
+    unit = Unit.objects.filter(slug="sansaude").first()
+    if not unit or not Configuration.objects.filter(unit=unit, enabled=True, oracle_enabled=True).exists():
+        return
+    try:
+        source = OracleAttendanceSource(unit)
+    except ValueError:
+        return
+    # Freeze the upper bound so new records cannot make this run unending.
+    last = CheckIn.objects.filter(unit=unit).order_by("-pk").values_list("pk", flat=True).first()
+    cursor = 0
+    while last and cursor < last:
+        result = reconcile_batch(unit=unit, source=source, cursor=cursor)
+        if result.status != "ok" or result.next_cursor is None or result.next_cursor <= cursor:
+            break
+        cursor = result.next_cursor
