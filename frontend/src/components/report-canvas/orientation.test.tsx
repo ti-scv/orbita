@@ -32,4 +32,12 @@ describe("orientação da página", () => {
     expect(portrait.pages[0].blocks[0].y).toBeCloseTo(800, 1);
     expect(portrait.pages[0].blocks[0].height).toBeCloseTo(200, 1);
   });
+  it("reserva margem inferior ao reduzir a altura da página", () => {
+    const original = createDefaultLayout();
+    original.pages[0].blocks = [{ id: "b", type: "text", x: 0, y: 900, width: 700, height: 223, text: "Conteúdo", options: {} }];
+    const landscape = applyPageConfigPatch(original, { width: 1123, height: 794 });
+    const block = landscape.pages[0].blocks[0];
+    expect(block.y + block.height).toBeLessThanOrEqual(770);
+  });
+
 });

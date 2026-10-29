@@ -72,7 +72,7 @@ export function applyPageConfigPatch(
         y: round2(b.y * scaleY),
         width: round2(b.width * scaleX),
         height: round2(b.height * scaleY),
-      }, nextWidth, nextHeight)),
+      }, nextWidth, nextHeight < prev.page.height ? Math.max(150, nextHeight - 24) : nextHeight)),
     })),
   };
 }
