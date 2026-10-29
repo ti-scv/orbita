@@ -339,15 +339,16 @@ function seed(tab: Tab, row?: Row): Row {
 export default function ReportWorkspace({
   unit,
   admin,
-  operate,
+  operate, reportAccess = true, whatsappRead = false, whatsappWrite = false, whatsappConfigure = false,
 }: {
   unit: string;
   admin: boolean;
   operate: boolean;
+  reportAccess?: boolean; whatsappRead?: boolean; whatsappWrite?: boolean; whatsappConfigure?: boolean;
 }) {
   const initialTab = new URLSearchParams(location.search).get("reportTab");
   const initial = (initialTab === "appSources" ? "reports" : initialTab === "review" ? "components" : initialTab === "grants" ? "recipients" : initialTab === "components" && new URLSearchParams(location.search).get("componentCategory") === "collection" ? "snapshots" : initialTab) as Tab;
-  const [tab, setTab] = useState<Tab>(initial in names ? initial : "reports"),
+  const [tab, setTab] = useState<Tab>(initial in names ? initial : reportAccess ? "reports" : "whatsapp"),
     [rows, setRows] = useState<Row[]>([]),
     [loadedScope, setLoadedScope] = useState(""),
     [count, setCount] = useState(0),
@@ -359,6 +360,7 @@ export default function ReportWorkspace({
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
   const loadedQuery = useRef("");
+  const allowedTab = tab === "whatsapp" ? whatsappRead : reportAccess;
   const isReports = tab === "reports" || tab === "components";
   const [sourceFilter, setSourceFilter] = useState("");
   const [appConnections,setAppConnections]=useState<Row[]>([]);
@@ -406,7 +408,7 @@ export default function ReportWorkspace({
   useEffect(() => {
     let alive = true;
     setError("");
-    if (tab === "whatsapp" || tab === "snapshots" || tab === "appSources") { setLoading(false); return () => {alive = false;}; }
+    if (!allowedTab || tab === "whatsapp" || tab === "snapshots" || tab === "appSources") { setLoading(false); return () => {alive = false;}; }
     const listUrl = query(tab === "grants" ? "report-recipients" : resources[tab], {
         unit,
         page: String(page),
@@ -436,9 +438,9 @@ export default function ReportWorkspace({
     return () => {
       alive = false;
     };
-  }, [unit, tab, page, revision, search, sourceFilter, statusFilter, connectionFilter, sqlFilter, grantReportFilter, grantRecipientFilter, permissionFilter, recipientKindFilter, scheduleFilters]);
+  }, [unit, tab, page, revision, search, sourceFilter, statusFilter, connectionFilter, sqlFilter, grantReportFilter, grantRecipientFilter, permissionFilter, recipientKindFilter, scheduleFilters, allowedTab]);
   useEffect(() => {
-    if (tab === "snapshots" || tab === "appSources") return;
+    if (!allowedTab || tab === "whatsapp" || tab === "snapshots" || tab === "appSources") return;
     let alive = true;
     const tasks = [
       modal || tab === "grants" || tab === "automations" ? all("reports", unit) : Promise.resolve([]),
@@ -781,7 +783,7 @@ export default function ReportWorkspace({
     <div className="report-workspace">
       <div className="report-tabs" role="tablist" aria-label="Relatórios" onKeyDown={navigateTabs}>
         {(Object.keys(names) as Tab[])
-          .filter((t) => t !== "grants" && t !== "snapshots" && t !== "appSources" && (admin || t === "reports" || t === "executions"))
+          .filter((t) => t !== "grants" && t !== "snapshots" && t !== "appSources" && (t === "whatsapp" ? whatsappRead : reportAccess && (admin || t === "reports" || t === "executions")))
           .map((t) => {
             const Icon=tabIcons[t];
             return <button
@@ -809,7 +811,7 @@ export default function ReportWorkspace({
           {error}
         </div>
       )}
-      {tab === "whatsapp" ? <ReportWhatsApp unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
+      {!allowedTab ? <p role="alert">Você não tem permissão para acessar esta área</p> : tab === "whatsapp" ? <ReportWhatsApp unit={unit} editable={whatsappWrite} configurable={whatsappWrite && whatsappConfigure} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
       {admin && inventory?.legacy_import?.issues?.length > 0 && (
         <details className="report-inventory">
           <summary>

@@ -515,7 +515,7 @@ class ExecutionSerializer(model_serializer(m.ReportExecution)):
 class Managed(ConfigViewSet):
     pagination_class = ReportPagination
     def get_queryset(self):
-        get_unit(self.request, ["admin"])
+        get_unit(self.request)
         qs = super().get_queryset()
         for field in ("report", "recipient"):
             if field in {
@@ -846,7 +846,7 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
 
     @action(detail=False, methods=["get"])
     def inventory(self, request):
-        unit = get_unit(request, ["admin"])
+        unit = get_unit(request)
         return Response(
             {
                 "reports": m.ReportDefinition.objects.filter(unit=unit, catalog_kind="report").count(),
@@ -937,7 +937,7 @@ class RecipientViewSet(RecipientManualReportsMixin, Managed):
 
     @action(detail=False, methods=["get"])
     def users(self, request):
-        unit = get_unit(request, ["admin"])
+        unit = get_unit(request)
         return Response(
             list(
                 get_user_model()

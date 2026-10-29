@@ -96,7 +96,7 @@ class CanvasAssetSchema(serializers.Serializer):
 
 
 def context_report(view, request):
-    unit = get_unit(request, ["admin"])
+    unit = get_unit(request)
     try:
         return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
     except Http404:

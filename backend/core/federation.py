@@ -367,6 +367,9 @@ class ManifestOutput(serializers.Serializer):
     role = serializers.CharField()
     sending_enabled = serializers.BooleanField()
     permissions = serializers.DictField(child=serializers.CharField())
+    group_object_scope = serializers.BooleanField()
+    cases_section_limit = serializers.BooleanField()
+    contacts_movements_section_limit = serializers.BooleanField()
 
 
 class ManifestView(APIView):
@@ -383,9 +386,12 @@ class ManifestView(APIView):
                 "unit": UnitSerializer(get_unit(request)).data,
                 "role": request.auth.effective_role,
                 "sending_enabled": False,
+                "group_object_scope": True,
+                "cases_section_limit": True,
+                "contacts_movements_section_limit": True,
                 "permissions": intersect_permissions(
                     local_permissions(request.user, get_unit(request)),
-                    role_permissions(request.auth.effective_role),
+                    role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"}),
                 ),
             },
             headers={"Cache-Control": "no-store"},
@@ -436,6 +442,23 @@ class RemoteProxyView(APIView):
             raise ValidationError("Conteúdo excede o limite da conexão remota.")
         params = {k: request.query_params.getlist(k) for k in request.query_params if k != "unit"}
         params["unit"] = connection.remote_unit_slug
+        root = resource.split("/")[0]
+        if root in {"cases", "contacts", "movements"} or (request.query_params.get("group") and root in {"appointments", "agenda-items"}):
+            # Older origins ignore the section ceiling; refuse them before reads or writes.
+            manifest_code, _, manifest_body = remote_http(
+                connection.base_url, decrypt_key(connection.key_ciphertext),
+                "federation/manifest/", role=role,
+            )
+            try:
+                feature = "cases_section_limit" if root == "cases" else "contacts_movements_section_limit"
+                features = json.loads(manifest_body)
+                supported = manifest_code == 200 and (root not in {"cases", "contacts", "movements"} or features.get(feature) is True)
+                if request.query_params.get("group"):
+                    supported = supported and features.get("group_object_scope") is True
+            except (ValueError, UnicodeError, AttributeError):
+                supported = False
+            if not supported:
+                raise PermissionDenied("A origem não suporta o limite de seções para este recurso.")
         code, headers, content = remote_http(
             connection.base_url,
             decrypt_key(connection.key_ciphertext),
@@ -446,6 +469,7 @@ class RemoteProxyView(APIView):
             role=role,
             idempotency=key,
             content_type=request.headers.get("Content-Type", "application/json"),
+            section_limit=policy if root in {"cases", "contacts", "movements"} else None,
         )
         content_type = next((v for k, v in headers.items() if k.lower() == "content-type"), "")
         if code in {401, 403}:

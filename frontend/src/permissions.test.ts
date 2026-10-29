@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canAccess, permissionsFor, reconcileSession } from "./permissions";
+import { canAccess, canUseReportWhatsApp, permissionsFor, reconcileSession } from "./permissions";
 import type { Session } from "./types";
 
 const session:Session={username:"operator",mode:"simulated",units:[{id:1,slug:"ame",name:"AME",paused:true,response_hours:24}],roles:{ame:"operator"},permissions:{ame:{appointments:"write",groups:"read",messages:"none"}}};
@@ -49,5 +49,29 @@ describe("Meta costs",()=>{
   });
   it("revoked units cannot read costs",()=>{
     expect(canAccess({...session,units:[],permissions:{ame:{costs:"read"}}},"ame","costs")).toBe(false);
+  });
+});
+
+describe("Permissões da tarefa 35", () => {
+  const base = {...session, permissions: {ame: {overview:"none" as const, messages:"none" as const, groups:"none" as const, issues:"none" as const, settings:"none" as const, users:"none" as const, operationsAdmin:"none" as const, reports:"none" as const, reportWhatsApp:"none" as const}}};
+  for (const page of ["overview", "messages", "groups", "issues", "settings", "reports"] as const) {
+    it(`exige acesso para ${page}`, () => {
+      expect(canAccess(base, "ame", page)).toBe(false);
+      const granted = {...base, permissions: {ame: {...base.permissions.ame, [page]: "read" as const}}};
+      expect(canAccess(granted, "ame", page)).toBe(true);
+      expect(canAccess(granted, "ame", page, true)).toBe(false);
+    });
+  }
+  it("mantém WhatsApp independente de relatórios e distingue leitura de edição", () => {
+    expect(canUseReportWhatsApp(base, "ame")).toBe(false);
+    const reports = {...base, permissions: {ame: {...base.permissions.ame, reports:"write" as const}}};
+    expect(canUseReportWhatsApp(reports, "ame")).toBe(false);
+    const read = {...base, permissions: {ame: {...base.permissions.ame, reportWhatsApp:"read" as const}}};
+    expect(canUseReportWhatsApp(read, "ame")).toBe(true);
+    expect(canUseReportWhatsApp(read, "ame", true)).toBe(false);
+    expect(canAccess(read, "ame", "reports")).toBe(true);
+    const write = {...base, permissions: {ame: {...base.permissions.ame, reportWhatsApp:"write" as const}}};
+    expect(canUseReportWhatsApp(write, "ame", true)).toBe(true);
+    expect(canUseReportWhatsApp({...write, units:[]}, "ame")).toBe(false);
   });
 });

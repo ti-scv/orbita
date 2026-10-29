@@ -55,7 +55,7 @@ class AppConnectionViewSet(ReversibleRemovalMixin, ConfigViewSet):
     serializer_class=AppConnectionSerializer
 
     def get_queryset(self):
-        return self.scope_removals(self.queryset.filter(unit=get_unit(self.request,["admin"])).order_by("name"))
+        return self.scope_removals(self.queryset.filter(unit=get_unit(self.request)).order_by("name"))
 
     @extend_schema(responses=AppConnectionOptionsSchema)
     @action(detail=False,methods=["get"])

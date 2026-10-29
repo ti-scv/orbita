@@ -1,3 +1,4 @@
+import { Activity, Lightbulb } from "./components/icons";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -13,7 +14,7 @@ import OracleConfiguration from "./components/OracleConfiguration";
 import OracleAgendaConfiguration from "./components/OracleAgendaConfiguration";
 import UnitDirectory from "./components/UnitDirectory";
 import UserDirectory from "./components/UserDirectory";
-import { canAccess, permissionsFor, reconcileSession } from "./permissions";
+import { canAccess, canUseReportWhatsApp, permissionsFor, reconcileSession } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
 import ReportAppConnections from "./components/ReportAppConnections";
@@ -27,7 +28,6 @@ import Login from "./components/Login";
 import type { Modal } from "./types";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity,
   ArrowRight,
   Bell,
   CalendarDays,
@@ -38,7 +38,6 @@ import {
   ClipboardList,
   Clock3,
   Cloud,
-  Wallet,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -50,7 +49,6 @@ import {
   Play,
   Plus,
   RefreshCw,
-  Send,
   Settings2,
   TriangleAlert,
   User,
@@ -81,14 +79,11 @@ const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
 
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
-  { id: "appointments", label: "Agendamentos", icon: CalendarDays },
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   { id: "issues", label: "Pendências", icon: ClipboardList },
-  { id: "campaigns", label: "Importa CROSS", icon: Send },
-  { id: "reports", label: "Relatórios", icon: Activity },
-  { id: "costs", label: "Custos Meta", icon: Wallet },
+  { id: "reports", label: "Relatórios", icon: Lightbulb },
   { id: "settings", label: "Configurações", icon: Settings2 },
 ];
 type Data = {
@@ -114,23 +109,49 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
+    [justLoggedIn, setJustLoggedIn] = useState(false),
     [checking, setChecking] = useState(true),
-    [bootError, setBootError] = useState(false),
+    [bootError, setBootError] = useState(""),
     [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
     let active = true;
-    setChecking(true); setBootError(false);
-    const timer = window.setTimeout(() => { if (active) { active = false; setChecking(false); setBootError(true); } }, 20000);
-    initCsrf()
-      .then(() => request<Session>("/api/v1/auth/session/"))
-      .then(value => { if (active) setSession(value); })
-      .catch(error => { if (active && error?.status !== 401 && error?.status !== 403) setBootError(true); })
-      .finally(() => { if (active) { window.clearTimeout(timer); setChecking(false); } });
-    return () => { active = false; window.clearTimeout(timer); };
+    let controller: AbortController | undefined;
+    setChecking(true);
+    setBootError("");
+    async function load() {
+      for (let attempt = 0; attempt < 2 && active; attempt++) {
+        controller = new AbortController();
+        const timer = window.setTimeout(() => controller?.abort(), 20000);
+        try {
+          const [, incoming] = await Promise.all([
+            initCsrf(controller.signal),
+            request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal),
+          ]);
+          if (active) setSession(incoming);
+          return;
+        } catch (error) {
+          if (!active) return;
+          if ((error as {status?: number}).status === 401) {
+            setSession(null);
+            return;
+          }
+          if (attempt === 1) {
+            setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente.");
+            return;
+          }
+        } finally {
+          window.clearTimeout(timer);
+          controller.abort();
+        }
+        await new Promise(resolve => window.setTimeout(resolve, 500));
+      }
+    }
+    void load().finally(() => { if (active) setChecking(false); });
+    return () => { active = false; controller?.abort(); };
   }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
-    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
+    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(error => { if (error.status === 401) setSession(null); }); };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
@@ -142,12 +163,13 @@ function AppRoot() {
         <span>Carregando painel…</span>
       </div>
     );
-  if (bootError) return <div className="boot"><BrandLogo /><p>Não foi possível carregar o painel. Confira a conexão e tente de novo.</p><button className="button" onClick={() => setBootAttempt(value => value + 1)}>Tentar de novo</button></div>;
-  if (!session) return <Login onLogin={setSession} />;
+  if (bootError) return <div className="boot"><p role="alert">{bootError}</p><button className="button" onClick={() => setBootAttempt(v => v + 1)}>Tentar novamente</button></div>;
+  if (!session) return <Login onLogin={incoming => { setJustLoggedIn(true); setSession(incoming); }} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (
     <Workspace
       session={session}
+      justLoggedIn={justLoggedIn}
       onLogout={() => setSession(null)}
       onSessionRefresh={async () =>
         setSession(await request<Session>("/api/v1/auth/session/"))
@@ -160,8 +182,10 @@ function Workspace({
   session,
   onLogout,
   onSessionRefresh,
+  justLoggedIn,
 }: {
   session: Session;
+  justLoggedIn: boolean;
   onLogout: () => void;
   onSessionRefresh: () => Promise<void>;
 }) {
@@ -174,6 +198,7 @@ function Workspace({
     [toast, setToast] = useState(""),
     [modal, setModal] = useState<Modal>(null),
     [mobile, setMobile] = useState(false);
+  const [notFound, setNotFound] = useState(() => readRoute().notFound);
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
   const [canvasId, setCanvasId] = useState<number | null>(() => readRoute().canvasId ?? null);
   const [groupId, setGroupId] = useState<string | null>(
@@ -183,6 +208,7 @@ function Workspace({
     const sync = () => {
       const next = readRoute();
       setPage(next.page);
+      setNotFound(next.notFound);
       setCanvasId(next.canvasId ?? null);
       setSettingsTab(null);
       setGroupId(next.groupId);
@@ -240,7 +266,7 @@ function Workspace({
   const canOperate = policy[page] === "write" && (actualRole === "admin" || actualRole === "operator");
   useEffect(() => {
     if (!session.units.some(u=>u.slug===unit)) { const next = session.units[0]?.slug; if(next) changeUnit(next); return; }
-    if (!visibleNavigation.some(item=>item.id===page) && visibleNavigation[0]) navigate(visibleNavigation[0].id);
+
   }, [session, unit, page]);
   const selectedUnit = session.units.find((item) => item.slug === unit);
   const isRemote = unit.startsWith("remote:");
@@ -275,7 +301,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (canvasId || page === "reports") {
+    if (!canAccess(session, unit, page) || canvasId || page === "reports") {
       setBusy(false);
       return;
     }
@@ -419,6 +445,7 @@ function Workspace({
   ) {
     selectAppointment(appointmentId);
     setPage(next);
+    setNotFound(false);
     setCanvasId(null);
     setGroupId(null);
     window.history.pushState(
@@ -436,7 +463,15 @@ function Workspace({
     navigate(next, response ? "" : filter);
     if (response) setResponseState(filter);
   }
-  const currentTitle = navigation.find((item) => item.id === page)?.label;
+  useEffect(() => {
+    if (justLoggedIn && !notFound && !canAccess(session, unit, page) && visibleNavigation.length) {
+      navigate(visibleNavigation[0].id);
+    }
+    // This redirect only applies to the route present immediately after login.
+  }, []);
+
+  const denied = !canAccess(session, unit, page) || !!(canvasId && (!policy.reports || policy.reports === "none"));
+  const currentTitle = notFound ? "Página não encontrada" : denied ? "Sem permissão" : navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
   const periodFilter = (
     <div className="date-range">
@@ -490,7 +525,7 @@ function Workspace({
         : page === "messages"
           ? data?.messages
           : null;
-  if (canvasId) return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
+  if (canvasId && policy.reports && policy.reports !== "none") return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
@@ -579,9 +614,9 @@ function Workspace({
             <div>
               <strong>{session.username}</strong>
               <small>
-                {role === "admin"
-                  ? "Administrador"
-                  : role === "operator"
+                {actualRole === "admin"
+                  ? "Administrativo"
+                  : actualRole === "operator"
                     ? "Operador"
                     : "Consulta"}
               </small>
@@ -615,7 +650,7 @@ function Workspace({
             </button>
             <span className="breadcrumb">
               <span className="breadcrumb-root">Workspace</span>
-              {page !== "overview" && page !== "appointments" && (
+              {(notFound || denied || (page !== "overview" && page !== "appointments")) && (
                 <>
                   <ChevronRight className="breadcrumb-root" size={14} />{" "}
                   <strong>{currentTitle}</strong>
@@ -675,6 +710,7 @@ function Workspace({
           className={`content ${page === "appointments" || page === "issues" ? "appointments-page" : ""}`}
         >
 
+          {notFound || denied ? <section className="route-message" role="alert"><h1>{notFound ? "Página não encontrada" : "Sem permissão"}</h1><p>{notFound ? "Esta página não existe ou mudou de endereço." : "Você não tem acesso a esta área. Se precisar, peça acesso ao administrador."}</p><button type="button" className="button primary" onClick={() => navigate(visibleNavigation[0]?.id || "overview")}>Voltar ao início</button></section> : <>
           {error && (
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />
@@ -692,7 +728,7 @@ function Workspace({
           )}
           {["care", "campaigns", "reports"].includes(page) && (
             <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} /></Suspense>
+              username={session.username} userAccess={false} reportAdmin={actualRole === "admin"} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} /></Suspense>
           )}
           {page === "messages" && (
             <div className="filters">
@@ -1437,6 +1473,7 @@ function Workspace({
               )}
             </>
           )}
+          </>}
           <footer className="page-footer">
             <span>
               <BrandLogo small />
