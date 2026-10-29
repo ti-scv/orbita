@@ -78,6 +78,7 @@ describe("Novo Estilo de Ícones Duotone (Traço Uniforme + Preenchimento Suave)
     expect(svg).toBeTruthy();
     const fillPath = svg?.querySelector(".orbita-icon-fill path");
     expect(fillPath).toBeTruthy();
+    expect(fillPath?.parentElement?.getAttribute("fill-opacity")).toBe("0.28");
     expect(fillPath?.getAttribute("d")).toContain("M15 14");
     expect(fillPath?.getAttribute("d")).toContain("Z");
 
