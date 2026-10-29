@@ -105,3 +105,12 @@ A continuação incluiu `settings` para `preparations`, `layouts`, `policies`, `
 | `messages` | Grupos / Pendências | `GET /api/v1/{appointments,agenda-items}/` com filtro de grupo ou pendência | `test_shared_reads_allow_messages_permission` |
 | `messages` | Pendências | `GET /api/v1/{cases,contacts,movements}/` | `test_shared_reads_allow_messages_permission` |
 | `messages` | Pendências | `POST /api/v1/cases/{id}/act/`, `contacts/{id}/review/`, `movements/` | `test_shared_writes_require_messages_write` (validação ou objeto ausente após autorização) |
+
+### Relatórios: consultas adicionais
+
+A listagem de conexões, concessões, automações e coletas, o inventário e as opções de coleta não exigem mais perfil administrativo além da permissão `reports`. Destinatários, execuções e solicitações ainda podem ter filtros adicionais de escopo próprios; operações de edição e outras verificações de perfil permanecem pendentes.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reports` | Relatórios | `GET /api/v1/{report-connections,report-app-connections,report-recipients,report-grants,report-automations,report-executions,report-snapshots,report-snapshot-runs,report-requests}/` | `test_report_reads_use_reports_permission` |
+| `reports` | Relatórios | `GET /api/v1/reports/inventory/`, `report-snapshots/options/` | `test_report_reads_use_reports_permission` |

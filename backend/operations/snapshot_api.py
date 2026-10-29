@@ -97,7 +97,7 @@ class SnapshotConfigurationViewSet(Managed):
     @action(detail=False, methods=["get"])
     def options(self, request):
         from rest_framework.response import Response
-        unit = get_unit(request, ["admin"])
+        unit = get_unit(request)
         sources = m.ReportDefinition.objects.filter(unit=unit, catalog_kind="component", source="sql", connection__engine="oracle").order_by("name")
         reports = m.ReportDefinition.objects.filter(unit=unit).filter(Q(handler=HANDLER) | Q(code__in=["legacy123-18","legacy123-19","legacy123-20","legacy123-24","legacy123-25","legacy123-55","legacy123-271","legacy123-310"])).order_by("name")
         return Response({"sources": [{"id": x.pk, "name": x.name, "connection_name": x.connection.name} for x in sources.select_related("connection")], "reports": list(reports.values("id", "name")), "dataset_kinds": [{"value": k, "label": v} for k, v in m.ReportSnapshotConfiguration._meta.get_field("dataset_kind").choices]})
@@ -134,7 +134,7 @@ class SnapshotRunViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SnapshotRunSerializer
 
     def get_queryset(self):
-        qs = self.queryset.filter(unit=get_unit(self.request, ["admin"]))
+        qs = self.queryset.filter(unit=get_unit(self.request))
         configuration = self.request.query_params.get("configuration", "")
         if configuration:
             if not configuration.isdigit(): raise ValidationError("Coleta inválida.")
