@@ -72,3 +72,11 @@ A execução de uma composição com fonte externa exige um solicitante com aces
 Validação em PostgreSQL descartável: 53 testes de catálogo passaram; na rodada ampliada passaram 77 testes e um teste de Indicadores Médicos falhou porque os arquivos de fixture não foram montados. Após montar files como /report_files somente para leitura, os sete testes de Indicadores Médicos passaram. No frontend, scripts/canvas-check.sh com ReportWorkspace.task33.test.tsx passou (quatro testes, hooks, TypeScript e build). Não foi executada a suíte completa.
 
 No staging isolado 8101, com API e banco próprios descartáveis, o navegador mostrou resultados de duas unidades com o mesmo nome e código e verificou inclusão, gravação e reabertura. Capturas: canvas-task33-evidencias/33i-{light,dark}-{100,150}.png. Script: scripts/canvas-task33i-qa.cjs.
+
+## Continuação 33j — integração
+
+Merge local da 33i na 33h: `e42dc0d1760122587bcee4df481ad625e180c0b7`. O conflito de documentação foi resolvido preservando os registros das duas continuações.
+
+Frontend completo: `bash scripts/canvas-check.sh` passou (ESLint de hooks, TypeScript, suíte Vitest e build); o build avisou sobre tamanho de chunks. Backend em PostgreSQL descartável: 104 testes passaram nos arquivos `test_canvas_dense_pdf.py`, `test_canvas_chart_grouping.py`, `test_report_canvas.py`, `test_report_catalog.py` e `test_report_removal.py`; as cinco falhas conhecidas de remoção retornaram 503 com a flag desligada. Não foi executada a suíte completa do backend.
+
+Staging isolado 8095 reconstruído, com API executando a imagem `orbita-api-fila:task33j` e proxy preservado. As rotas `/relatorios/57/canvas?unit=scv` e `/relatorios/1/canvas?unit=ame`, assim como `/health/`, responderam HTTP 200. Isso confirma a resposta HTTP, não uma validação funcional no navegador. Ao iniciar, o Django avisou que há alterações de modelos de `operations` não refletidas em migration; nenhuma migration pendente foi aplicada. As limitações de validação visual registradas na 33h permanecem.
