@@ -130,7 +130,7 @@ def readiness(report, seen=None, *, check_external_file=True, canvas_reports=Non
                 child = composition_child(report, entry)
                 if not child or not child.enabled or readiness(child, seen):
                     missing.append(
-                        "Componente pendente" if "report_id" in entry else "Componente pendente: " + str(entry.get("code", "?"))
+                        ("Componente pendente" if "report_id" in entry else "Componente pendente: " + str(entry.get("code", "?")))
                         if isinstance(entry, dict)
                         else "Componente inválido"
                     )
