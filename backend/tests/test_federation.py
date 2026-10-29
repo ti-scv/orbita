@@ -412,7 +412,7 @@ def test_real_http_handshake_and_relay_without_replication(federation):
         assert observed[1]["path"] == "/api/v1/federation/user-identities/"
         assert "unit=remote-clinic" in observed[2]["path"]
         assert all(item["authorization"] == "Bearer " + f["key"]["key"] for item in observed)
-        assert observed[1]["role"] == "operator"
+        assert observed[2]["role"] == "operator"
         assert counts == (Unit.objects.count(), Appointment.objects.count(), Message.objects.count())
     finally:
         server.shutdown()
