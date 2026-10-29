@@ -106,6 +106,7 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
+    [justLoggedIn, setJustLoggedIn] = useState(false),
     [checking, setChecking] = useState(true),
     [bootError, setBootError] = useState(""),
     [bootAttempt, setBootAttempt] = useState(0);
@@ -143,11 +144,12 @@ function AppRoot() {
       </div>
     );
   if (bootError) return <div className="boot"><p role="alert">{bootError}</p><button className="button" onClick={() => setBootAttempt(v => v + 1)}>Tentar novamente</button></div>;
-  if (!session) return <Login onLogin={setSession} />;
+  if (!session) return <Login onLogin={incoming => { setJustLoggedIn(true); setSession(incoming); }} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (
     <Workspace
       session={session}
+      justLoggedIn={justLoggedIn}
       onLogout={() => setSession(null)}
       onSessionRefresh={async () =>
         setSession(await request<Session>("/api/v1/auth/session/"))
@@ -160,8 +162,10 @@ function Workspace({
   session,
   onLogout,
   onSessionRefresh,
+  justLoggedIn,
 }: {
   session: Session;
+  justLoggedIn: boolean;
   onLogout: () => void;
   onSessionRefresh: () => Promise<void>;
 }) {
@@ -430,6 +434,13 @@ function Workspace({
     navigate(next, response ? "" : filter);
     if (response) setResponseState(filter);
   }
+  useEffect(() => {
+    if (justLoggedIn && !notFound && !canAccess(session, unit, page) && visibleNavigation.length) {
+      navigate(visibleNavigation[0].id);
+    }
+    // This redirect only applies to the route present immediately after login.
+  }, []);
+
   const denied = !canAccess(session, unit, page) || !!(canvasId && (!policy.reports || policy.reports === "none"));
   const currentTitle = notFound ? "Página não encontrada" : denied ? "Sem permissão" : navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
