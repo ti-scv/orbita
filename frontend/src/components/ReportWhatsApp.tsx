@@ -54,7 +54,7 @@ const events: Record<string, string> = {
   restore_failed: "Falha ao restaurar sessão",
   inbound_parse_error: "Mensagem não reconhecida",
 };
-export default function ReportWhatsApp({ unit }: { unit: string }) {
+export default function ReportWhatsApp({ unit, editable = false, configurable = false }: { unit: string; editable?: boolean; configurable?: boolean }) {
   const [data, setData] = useState<State | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -124,7 +124,7 @@ export default function ReportWhatsApp({ unit }: { unit: string }) {
             {states[data.status.state] || data.status.state}
           </span>
         </div>
-        <div className="report-actions">
+        {configurable && <div className="report-actions">
         <button className="button" onClick={() => {setForm({...data.configuration}); setFlow(true); setModal(true);}}>
           <ListTree size={15} /> Fluxo
         </button>
@@ -138,7 +138,7 @@ export default function ReportWhatsApp({ unit }: { unit: string }) {
         >
           <Settings2 size={15} /> Configurar
         </button>
-        </div>
+        </div>}
       </header>
       {error && (
         <div className="inline-error" role="alert">
@@ -227,7 +227,7 @@ export default function ReportWhatsApp({ unit }: { unit: string }) {
           )}
           {data.status.account && <strong>+{data.status.account}</strong>}
           <div className="report-actions">
-            {!connected && !pending ? (
+            {editable && (!connected && !pending ? (
               <button
                 className="button primary"
                 disabled={busy}
@@ -243,6 +243,7 @@ export default function ReportWhatsApp({ unit }: { unit: string }) {
               >
                 Desconectar
               </button>
+            )}
             )}
             {pending && (
               <span className="report-channel-wait">

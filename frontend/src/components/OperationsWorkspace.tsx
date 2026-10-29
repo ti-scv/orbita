@@ -205,6 +205,7 @@ export default function OperationsWorkspace({
   username,
   userAccess = false,
   administrationCategory,
+  reportAccess = true, whatsappRead = false, whatsappWrite = false,
 }: {
   page: PageName;
   unit: string;
@@ -212,6 +213,7 @@ export default function OperationsWorkspace({
   username: string;
   userAccess?: boolean;
   administrationCategory?: string;
+  reportAccess?: boolean; whatsappRead?: boolean; whatsappWrite?: boolean;
 }) {
   const [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
@@ -282,6 +284,7 @@ export default function OperationsWorkspace({
             unit={unit}
             admin={role === "admin" && operate}
             operate={operate}
+            reportAccess={reportAccess} whatsappRead={whatsappRead} whatsappWrite={whatsappWrite} whatsappConfigure={role === "admin"}
           />
         )}
         {page === "operationsAdmin" && (

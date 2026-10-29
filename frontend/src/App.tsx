@@ -13,7 +13,7 @@ import OracleConfiguration from "./components/OracleConfiguration";
 import OracleAgendaConfiguration from "./components/OracleAgendaConfiguration";
 import UnitDirectory from "./components/UnitDirectory";
 import UserDirectory from "./components/UserDirectory";
-import { canAccess, permissionsFor, reconcileSession } from "./permissions";
+import { canAccess, canUseReportWhatsApp, permissionsFor, reconcileSession } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
 import UnitSelector from "./components/UnitSelector";
@@ -230,7 +230,7 @@ function Workspace({
   const canOperate = policy[page] === "write" && (actualRole === "admin" || actualRole === "operator");
   useEffect(() => {
     if (!session.units.some(u=>u.slug===unit)) { const next = session.units[0]?.slug; if(next) changeUnit(next); return; }
-    if (!visibleNavigation.some(item=>item.id===page) && visibleNavigation[0]) navigate(visibleNavigation[0].id);
+
   }, [session, unit, page]);
   const selectedUnit = session.units.find((item) => item.slug === unit);
   const isRemote = unit.startsWith("remote:");
@@ -257,7 +257,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (canvasId || page === "reports") {
+    if (!canAccess(session, unit, page) || canvasId || page === "reports") {
       setBusy(false);
       return;
     }
@@ -471,7 +471,7 @@ function Workspace({
         : page === "messages"
           ? data?.messages
           : null;
-  if (canvasId) return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
+  if (canvasId && policy.reports && policy.reports !== "none") return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
@@ -656,6 +656,7 @@ function Workspace({
           className={`content ${page === "appointments" || page === "issues" ? "appointments-page" : ""}`}
         >
 
+          {!canAccess(session, unit, page) || (canvasId && (!policy.reports || policy.reports === "none")) ? <p role="alert">Você não tem permissão para acessar esta área</p> : <>
           {error && (
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />
@@ -673,7 +674,7 @@ function Workspace({
           )}
           {["care", "campaigns", "reports"].includes(page) && (
             <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} />
+              username={session.username} userAccess={false} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} />
           )}
           {page === "messages" && (
             <div className="filters">
@@ -1417,6 +1418,7 @@ function Workspace({
               )}
             </>
           )}
+          </>}
           <footer className="page-footer">
             <span>
               <BrandLogo small />
