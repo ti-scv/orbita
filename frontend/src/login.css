@@ -73,3 +73,10 @@
 .lg-go:disabled{opacity:.7;cursor:progress}
 
 @media(prefers-reduced-motion:reduce){.lg-comets,.lg-flare,.lg-light{display:none}}
+
+[data-theme="dark"] .lg .orbita-logo { position: relative; }
+[data-theme="dark"] .lg .orbita-logo:has(.brand-image-wordmark)::after {
+  content: ""; position: absolute; inset: 0; background: var(--text-primary);
+  mask: url("/brand-wordmark.webp") center / contain no-repeat;
+}
+[data-theme="dark"] .lg .orbita-logo .brand-image-wordmark { opacity: 0; }
