@@ -33,3 +33,11 @@ Item 2: no navegador, a composição foi salva e reaberta com ordem e parâmetro
 
 
 Reexecução com chave Oracle descartável: 59 testes aprovados em `test_operational_sql.py` e `test_report_catalog.py`, incluindo o novo teste de isolamento por unidade e persistência da composição.
+
+## Continuação 33f — parcial
+
+O teste de navegador `scripts/canvas-task33f-shortcut-qa.cjs`, usando sessão administrativa e dados descartáveis da unidade `qa33c` no staging isolado, confirmou que o endereço antigo `reportTab=appSources` abre a configuração geral de Instâncias dos apps e que o atalho não aparece no editor Canvas. As verificações anteriores de permissões em `settingsDirectory.test.ts` continuam aplicáveis; não houve nova validação de permissões no navegador.
+
+O staging `orbita-canvas-stage-fila` foi reconstruído na porta 8095 e retornou HTTP 200. Os testes `tests/test_report_canvas.py` e `tests/test_report_catalog.py` passaram (87 testes), em PostgreSQL descartável `orbita-task33f-db`. Uma tentativa anterior com credenciais incorretas do banco isolado teve 70 erros de conexão; a execução acima usou um banco dedicado. A execução inicial do frontend no Node 18 do host falhou por incompatibilidade com jsdom; a verificação suportada via `scripts/canvas-check.sh` foi executada separadamente.
+
+Continuam pendentes: correção e provas de ausência de cortes com conteúdo denso em ambas as orientações, editor, visualização e PDF/impressão; capturas correspondentes em ambos os temas e níveis de zoom; busca e resolução segura de componentes de outras unidades com teste de permissões. Nenhuma dessas funcionalidades foi implementada nesta continuação.
