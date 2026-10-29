@@ -431,9 +431,9 @@ export default function ReportWorkspace({
     return () => {
       alive = false;
     };
-  }, [unit, tab, page, revision, search, sourceFilter, statusFilter, connectionFilter, sqlFilter, grantReportFilter, grantRecipientFilter, permissionFilter, recipientKindFilter, scheduleFilters]);
+  }, [unit, tab, page, revision, search, sourceFilter, statusFilter, connectionFilter, sqlFilter, grantReportFilter, grantRecipientFilter, permissionFilter, recipientKindFilter, scheduleFilters, allowedTab]);
   useEffect(() => {
-    if (tab === "snapshots" || tab === "appSources") return;
+    if (!allowedTab || tab === "whatsapp" || tab === "snapshots" || tab === "appSources") return;
     let alive = true;
     const tasks = [
       modal || tab === "grants" || tab === "automations" ? all("reports", unit) : Promise.resolve([]),

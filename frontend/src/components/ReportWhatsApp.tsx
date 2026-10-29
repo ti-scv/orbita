@@ -243,8 +243,7 @@ export default function ReportWhatsApp({ unit, editable = false, configurable = 
               >
                 Desconectar
               </button>
-            )}
-            )}
+            ))}
             {pending && (
               <span className="report-channel-wait">
                 <RefreshCw size={13} /> Aguardando conexão
