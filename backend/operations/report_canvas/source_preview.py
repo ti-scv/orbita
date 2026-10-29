@@ -108,6 +108,7 @@ def source_preview(view, request):
     bounded_total = dataset.total
     total_rows = len(dataset.rows)
     has_more = total_rows > limit if postgres else total_rows > offset + limit
+    declared_types = dataset.types or []
     if not postgres:
         dataset = Dataset(dataset.columns, dataset.rows[offset:offset + limit])
     else:
@@ -130,6 +131,11 @@ def source_preview(view, request):
         infer_column_metadata(col_name, [r[col_idx] for r in dataset.rows])
         for col_idx, col_name in enumerate(dataset.columns)
     ]
+
+    for index, column in enumerate(columns):
+        if column["type"] == "unknown" and index < len(declared_types) and declared_types[index] != "unknown":
+            column["type"] = declared_types[index]
+            column["estimated"] = True
 
     # The local adapter declares these types even when the requested period has no values.
     from .native import LOCAL_COLUMN_TYPES

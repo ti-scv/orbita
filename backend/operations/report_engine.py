@@ -323,7 +323,7 @@ def connect(connection):
                 c.close()
 
 
-def run_query(report, values, *, session=None, typed=False, preview_limit=None, preview_offset=0, timings=None, preview_count=False):
+def run_query(report, values, *, session=None, typed=False, preview_limit=None, preview_offset=0, timings=None, preview_count=False, column_types=None):
     connection = report.connection
     if (
         not connection
@@ -369,6 +369,9 @@ def run_query(report, values, *, session=None, typed=False, preview_limit=None, 
             if not cursor.description:
                 raise ValidationError("A consulta não retornou colunas.")
             headers = [x[0] for x in cursor.description]
+            if column_types is not None:
+                from operations.report_canvas.sql_columns import description_types
+                column_types.extend(description_types(cursor.description, connection.engine))
             if len(headers) > 100:
                 raise ValidationError("Limite de 100 colunas excedido.")
             fetch_limit = (1 if preview_count else preview_limit) if preview_limit is not None and connection.engine == "postgres" else connection.max_rows + 1

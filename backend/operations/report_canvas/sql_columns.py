@@ -73,3 +73,15 @@ def _columns(sql, engine):
 
 def query_columns(sql, engine):
     return list(_columns(sql, engine))
+
+
+def description_types(description, engine):
+    """Use driver-provided result types; leave unrecognized types unknown."""
+    pg = {16: "boolean", 20: "number", 21: "number", 23: "number", 700: "number", 701: "number", 1700: "number", 25: "text", 1042: "text", 1043: "text", 1082: "date", 1114: "datetime", 1184: "datetime"}
+    names = {"STRING": "text", "VARCHAR": "text", "CHAR": "text", "TEXT": "text", "NUMBER": "number", "INTEGER": "number", "FLOAT": "number", "DECIMAL": "number", "DATE": "date", "DATETIME": "datetime", "TIMESTAMP": "datetime", "BOOLEAN": "boolean"}
+    result = []
+    for item in description:
+        code = item[1]
+        name = getattr(code, "name", getattr(code, "__name__", "")).upper().replace("DB_TYPE_", "")
+        result.append(pg.get(code, "unknown") if engine == "postgres" else names.get(name, "unknown"))
+    return result

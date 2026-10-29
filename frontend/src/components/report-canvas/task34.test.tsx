@@ -17,7 +17,7 @@ const catalog = [
  {id:59,name:"Outro",code:"confirmed",establishment:"AME Jales"},
 ];
 function mount(){const init=createSourceModalState([],catalog); if(!init.ok) throw Error(init.error); const initialState=init.state; function App(){const [state,setState]=useState(initialState); return <SourceDialog sourceModal={state} onChange={setState} availableSources={catalog} reportId={57} unit="scv" sourceEstablishment="AME Votuporanga" onClose={()=>{}} onSubmit={e=>e.preventDefault()}/>}; render(<App/>);}
-it("filtra estabelecimentos, identifica duplicados e revela outros sob demanda",()=>{Element.prototype.scrollIntoView=vi.fn(); mount(); fireEvent.click(screen.getByRole("combobox")); expect(screen.getByRole("option",{name:/Mesmo nome · AME Votuporanga · ID 58 · Pendente de aceite/})).toBeTruthy(); expect(screen.queryByRole("option",{name:/Outro/})).toBeNull(); fireEvent.keyDown(screen.getByRole("listbox"),{key:"Escape"}); fireEvent.click(screen.getByLabelText("Mostrar de outras unidades")); fireEvent.click(screen.getByRole("combobox")); expect(screen.getByRole("option",{name:/Outro · AME Jales · ID 59/})).toBeTruthy();});
+it("filtra estabelecimentos, identifica duplicados e revela outros sob demanda",()=>{Element.prototype.scrollIntoView=vi.fn(); mount(); fireEvent.click(screen.getByRole("combobox")); expect(screen.getByRole("option",{name:/Mesmo nome · AME Votuporanga · ID 58 · Em revisão/})).toBeTruthy(); expect(screen.queryByRole("option",{name:/Outro/})).toBeNull(); fireEvent.keyDown(screen.getByRole("listbox"),{key:"Escape"}); fireEvent.click(screen.getByLabelText("Mostrar outros estabelecimentos")); fireEvent.click(screen.getByRole("combobox")); expect(screen.getByRole("option",{name:/Outro · AME Jales · ID 59/})).toBeTruthy();});
 it("traduz nomes e erro",()=>{expect(friendlyParameterName("cd_paciente")).toBe("Código do paciente"); expect(canvasErrorMessage("Fonte indisponível nesta Unidade.")).toBe("Esta fonte não está disponível para esta unidade.");});
 it("fecha gaveta com Esc e respeita modal superior",()=>{const close=vi.fn(); render(<DataDrawer source={{id:"s",type:"inline",columns:["Responsável"],rows:[[""]]}} preview={{columns:[{name:"Responsável",type:"text",estimated:true}],rows:[[""]],total_rows:1,truncated:false}} onClose={close}/>); expect(screen.getByText("Sem valores neste período")).toBeTruthy(); expect(screen.getByLabelText(/estimado pelo esquema/)).toBeTruthy(); const modal=document.createElement("div"); modal.setAttribute("role","dialog"); modal.setAttribute("aria-modal","true"); document.body.appendChild(modal); fireEvent.keyDown(document,{key:"Escape"}); expect(close).not.toHaveBeenCalled(); modal.remove(); fireEvent.keyDown(document,{key:"Escape"}); expect(close).toHaveBeenCalledOnce();});
 it("não identifica rascunho idêntico como alteração",()=>{const layout=normalizeLayout({}); const current={layout,enabled:false,outputFormat:"pdf" as const}; expect(isDraftDifferent({...current,timestamp:Date.now()},current)).toBe(false); expect(isDraftDifferent({...current,enabled:true,timestamp:Date.now()},current)).toBe(true);});
@@ -44,4 +44,12 @@ it("ignora a ordem das propriedades de um rascunho",()=>{
 it("devolve o foco ao botão que abriu a gaveta",()=>{
  function App(){const [open,setOpen]=useState(false);return <><button onClick={()=>setOpen(true)}>Ver dados</button>{open && <DataDrawer source={{id:"s",type:"inline",columns:["Nome"],rows:[]}} preview={null} onClose={()=>setOpen(false)}/>}</>}
  render(<App/>); const trigger=screen.getByRole("button",{name:"Ver dados"});trigger.focus();fireEvent.click(trigger);fireEvent.keyDown(document,{key:"Escape"});expect(document.activeElement).toBe(trigger);
+});
+
+it("remove opções repetidas por valor e prefere a unidade permitida", async()=>{
+ const {testParameters} = await import("./parameters");
+ const schema={unidade:{type:"string",default:"ame",choices:[{value:"ame",label:"AME Votuporanga"},{value:"ame",label:"AME Votuporanga"},{value:"scv",label:"SCV"}]}};
+ expect(testParameters(schema)[0].options?.map(o=>o.value)).toEqual(["ame","scv"]);
+ const source={id:"s",type:"report" as const,report_id:1};
+ expect(previewParameters(source,schema,{},"scv",new Date(),true).values.unidade).toBe("scv");
 });

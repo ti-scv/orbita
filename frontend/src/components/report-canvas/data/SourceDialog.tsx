@@ -124,7 +124,7 @@ export default function SourceDialog({
   const fallbackUnit = ({"AME Votuporanga":"ame", "AME Jales":"ame-jales", "AME Santa Fé":"ame-santa-fe"} as Record<string,string>)[ownerEstablishment || ""] || "";
   const filteredCatalog = useMemo(() => availableSources
     .filter(s => showOtherUnits || !ownerEstablishment || !s.establishment || s.establishment === ownerEstablishment)
-    .sort((a, b) => (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
+    .sort((a, b) => Number(b.establishment === ownerEstablishment) - Number(a.establishment === ownerEstablishment) || (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
   useEffect(() => {
     if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
     try {
@@ -558,18 +558,19 @@ export default function SourceDialog({
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <Select className="cv-report-select" required value={sourceModal.reportId} onChange={e => {
+                <small>Unidade selecionada: {unit.toUpperCase()}. Estabelecimento do relatório: {ownerEstablishment || "não identificado"}.</small>
+                <Select className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
                   const chosen = availableSources.find(item => item.id === Number(e.target.value));
                   onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
                     label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
                     parametersJson: "{}", testPreview: null, testError: null});
                 }}>
                   <option value="">Escolha um relatório</option>
-                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment || "Unidade atual"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Pendente de aceite" : ""}</option>)}
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment === ownerEstablishment ? "Estabelecimento do relatório" : "Outros estabelecimentos"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Em revisão" : ""}</option>)}
                 </Select>
               </label>
 
-              <label className="op-field"><span><input type="checkbox" checked={showOtherUnits} onChange={e => setShowOtherUnits(e.target.checked)} /> Mostrar de outras unidades</span></label>
+              <label className="op-field"><span><input type="checkbox" checked={showOtherUnits} onChange={e => setShowOtherUnits(e.target.checked)} /> Mostrar outros estabelecimentos</span></label>
             {!!selectedCatalog?.datasets?.length && (
                 <label className="op-field">
                   <span>Conjunto de dados</span>
@@ -597,9 +598,9 @@ export default function SourceDialog({
                 {fields.map(field => <label className="op-field" key={field.name}>
                   <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
                   {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
-                  {/^(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && <small>A unidade deste relatório não está nas opções desta fonte; foi usada uma opção permitida. Confira a seleção.</small>}
+                  {/^(?:wpa_)?(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && values[field.name] && <small>Usada {unitOptionLabel(field.name, values[field.name], field.options.find(option => option.value === values[field.name])?.label || values[field.name])}: a unidade {unit.toUpperCase()} não está disponível nesta fonte.</small>}
                   {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
-                    <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
+                    {!field.options.some(option => option.value === "") && <option value="">Selecione</option>}{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
                   </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
                 </label>)}
               </div> : <p className="cv-hint">Este relatório não exige valores adicionais.</p>;
@@ -931,7 +932,7 @@ export default function SourceDialog({
                       <th key={idx}>
                         <div className="cv-table-th-content">
                           <ColumnBadge type={col.type} looksLike={col.looks_like} estimated={col.estimated} />
-                          <span>{friendlyColumnName(col.name)}</span>
+                          <span>{friendlyColumnName(col.name)}{col.estimated && <small> · tipo estimado</small>}</span>
                         </div>
                       </th>
                     ))}

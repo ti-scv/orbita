@@ -14,3 +14,22 @@ def test_establishment_uses_legacy_location_and_canvas_unit_fallback():
 def test_local_schema_describes_empty_responsavel_and_dates():
     assert LOCAL_COLUMN_TYPES["Responsável"] == "text"
     assert LOCAL_COLUMN_TYPES["Data"] == "date"
+
+
+def test_sql_description_estimates_only_known_types():
+    from operations.report_canvas.sql_columns import description_types
+    assert description_types([('a', 25), ('b', 23), ('c', 1082), ('d', 999999)], 'postgres') == ['text', 'number', 'date', 'unknown']
+
+
+import pytest
+
+@pytest.mark.django_db
+def test_postgres_empty_query_returns_type_metadata():
+    from django.db import connection
+    from operations.report_canvas.sql_columns import description_types
+    if connection.vendor != 'postgresql':
+        pytest.skip('Exige PostgreSQL')
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT NULL::text AS resposta, NULL::date AS data WHERE false')
+        assert cursor.fetchall() == []
+        assert description_types(cursor.description, 'postgres') == ['text', 'date']

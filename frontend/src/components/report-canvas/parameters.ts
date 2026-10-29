@@ -13,7 +13,7 @@ export function testParameters(schema: Record<string,unknown> = {}): TestParamet
     const numeric=spec.type === "integer" || spec.type === "number";
     const prompt=String(spec.prompt || "");
     const numericLabel=numeric && /\bano\b/i.test(prompt) ? "Ano" : numeric && /mês|mes/i.test(prompt) ? "Mês" : undefined;
-    return {...spec,name,type:spec.type || "string",label:spec.label || numericLabel || labels[key] || fallback.charAt(0).toUpperCase()+fallback.slice(1),options:Array.isArray(choices)?choices.map((v:any)=>typeof v === "object"?{value:String(v.value),label:String(v.label ?? v.value)}:{value:String(v),label:String(v)}):undefined};
+    return {...spec,name,type:spec.type || "string",label:spec.label || numericLabel || labels[key] || fallback.charAt(0).toUpperCase()+fallback.slice(1),options:Array.isArray(choices)?Array.from(new Map(choices.map((v:any)=>{ const option = typeof v === "object" ? {value:String(v.value),label:String(v.label ?? v.value)} : {value:String(v),label:String(v)}; return [option.value, option]; })).values()) as Array<{value:string;label:string}>:undefined};
   }).sort((a,b) => {
     const rank=(f:TestParameter)=>f.order ?? (/inicial|start/i.test(f.name)?1:/final|end/i.test(f.name)?2:100);
     return rank(a)-rank(b);

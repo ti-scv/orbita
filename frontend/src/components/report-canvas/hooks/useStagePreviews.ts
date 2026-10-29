@@ -37,6 +37,7 @@ export function previewParameters(source: CanvasSource, schema: Record<string, u
       value = field.options.some(option => option.value === String(field.default)) ? field.default : undefined;
       if (value == null) field.default = undefined;
     }
+    if (preferUnit && configured == null && /^(unit|unit_slug|unidade)$/.test(key) && field.options && (value == null || value === "")) value = field.options.find(option => option.value)?.value;
     if (value == null || value === "") {
       if (field.type === "date" || /^(start|end|start_date|end_date|data_inicial|data_final)$/.test(key)) {
         const date = new Date(now);
