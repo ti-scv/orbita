@@ -1388,13 +1388,13 @@ export default function ReportWorkspace({
                         {compositionLoading && <p role="status">Carregando relatórios…</p>}
                         {(() => {
                           const matches = compositionCatalog.filter(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.report_id ? c.report_id === r.id : (!r.unit_slug || r.unit_slug === unit) && c.code === r.code));
-                          const groups = Array.from(new Set(matches.map(r => r.unit_name || r.unit_slug || unit)));
+                          const groups = Array.from(new Set(matches.map(r => String(r.unit_id || r.unit_slug || unit))));
                           if (!componentSearch.trim()) return null;
                           if (!compositionLoading && !matches.length) return <p role="status">Nenhum relatório encontrado.</p>;
                           return groups.map(group => <div key={group}>
-                            <h4>{group}</h4>
-                            <ul className="report-composition-list" aria-label={`Resultados da busca · ${group}`}>
-                              {matches.filter(r => (r.unit_name || r.unit_slug || unit) === group).map(r => <li key={r.id}>
+                            <h4>{matches.find(r => String(r.unit_id || r.unit_slug || unit) === group)?.unit_name || group}</h4>
+                            <ul className="report-composition-list" aria-label={`Resultados da busca · ${matches.find(r => String(r.unit_id || r.unit_slug || unit) === group)?.unit_name || group}`}>
+                              {matches.filter(r => String(r.unit_id || r.unit_slug || unit) === group).map(r => <li key={r.id}>
                                 <span>{r.name} <small>· {r.unit_name || r.unit_slug || unit} · ID {r.id} · {r.code}</small></span>
                                 <button type="button" className="button" aria-label={`Adicionar ${r.name} ID ${r.id}`} onClick={() => setComponents(current => [...current, r.unit_slug && r.unit_slug !== unit ? {code: r.code, report_id: r.id} : {code: r.code}])}>Adicionar</button>
                               </li>)}
