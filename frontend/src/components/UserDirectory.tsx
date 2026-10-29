@@ -46,11 +46,15 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   useEffect(() => {
     let active = true;
     async function load() {
-      const opts = await request<Options>(query("users/options", {unit}));
-      const found: UserRow[] = [];
-      for (let page=1;;page++) {
+      const [opts, first] = await Promise.all([
+        request<Options>(query("users/options", {unit})),
+        request<Paginated<UserRow>>(query("users", {unit, search, page:"1"})),
+      ]);
+      const found: UserRow[] = [...first.results];
+      let next = first.next;
+      for (let page=2; next; page++) {
         const data = await request<Paginated<UserRow>>(query("users", {unit, search, page:String(page)}));
-        found.push(...data.results); if (!data.next) break;
+        found.push(...data.results); next = data.next;
       }
       if(active) {setOptions(opts);setRows(found);}
     }
