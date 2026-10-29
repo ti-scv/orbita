@@ -61,12 +61,13 @@ class CaseViewSet(ScopedRead):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        from core.access import local_permissions
+        from core.access import LEVELS, effective_permissions
 
-        policy = local_permissions(self.request.user, get_unit(self.request))
-        if policy["campaigns"] == "none":
+        policy = effective_permissions(self.request, get_unit(self.request))
+        level = 1 if self.request.method in {"GET", "HEAD", "OPTIONS"} else 2
+        if LEVELS[policy["campaigns"]] < level:
             allowed = ["appointment", "absence", "movement"]
-            if policy["appointments"] != "none":
+            if LEVELS[policy["appointments"]] >= level:
                 allowed += ["waitlist", "summons", "postoperative"]
             qs = qs.filter(purpose__in=allowed)
         for field in [

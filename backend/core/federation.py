@@ -367,6 +367,7 @@ class ManifestOutput(serializers.Serializer):
     role = serializers.CharField()
     sending_enabled = serializers.BooleanField()
     permissions = serializers.DictField(child=serializers.CharField())
+    cases_section_limit = serializers.BooleanField()
 
 
 class ManifestView(APIView):
@@ -383,6 +384,7 @@ class ManifestView(APIView):
                 "unit": UnitSerializer(get_unit(request)).data,
                 "role": request.auth.effective_role,
                 "sending_enabled": False,
+                "cases_section_limit": True,
                 "permissions": intersect_permissions(
                     local_permissions(request.user, get_unit(request)),
                     role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"}),
@@ -436,6 +438,18 @@ class RemoteProxyView(APIView):
             raise ValidationError("Conteúdo excede o limite da conexão remota.")
         params = {k: request.query_params.getlist(k) for k in request.query_params if k != "unit"}
         params["unit"] = connection.remote_unit_slug
+        if resource.split("/")[0] == "cases":
+            # Older origins ignore the section ceiling; refuse them before reads or writes.
+            manifest_code, _, manifest_body = remote_http(
+                connection.base_url, decrypt_key(connection.key_ciphertext),
+                "federation/manifest/", role=role,
+            )
+            try:
+                supported = manifest_code == 200 and json.loads(manifest_body).get("cases_section_limit") is True
+            except (ValueError, UnicodeError, AttributeError):
+                supported = False
+            if not supported:
+                raise PermissionDenied("A origem não suporta o limite de seções para casos.")
         code, headers, content = remote_http(
             connection.base_url,
             decrypt_key(connection.key_ciphertext),
@@ -446,6 +460,7 @@ class RemoteProxyView(APIView):
             role=role,
             idempotency=key,
             content_type=request.headers.get("Content-Type", "application/json"),
+            section_limit=policy if resource.split("/")[0] == "cases" else None,
         )
         content_type = next((v for k, v in headers.items() if k.lower() == "content-type"), "")
         if code in {401, 403}:

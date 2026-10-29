@@ -4,7 +4,8 @@ Base auditada: f89c7c9. As seções são alternativas (OU); GET/HEAD/OPTIONS exi
 
 | Recurso/ações | Hoje: leitura / escrita | Uso esperado e pontos a verificar |
 | --- | --- | --- |
-| cases: lista, detalhe, operators, metrics, export, health, timeline, communications; act | messages, appointments, issues ou campaigns / mesmos | Atendimento em Pendências e Agendamentos, seleção de casos em CROSS; revisar acesso genérico por messages e finalidade dos dados. Export e health expõem dados agregados adicionais. |
+| cases: lista, detalhe, operators, metrics, export, timeline, communications; act | messages, appointments, issues ou campaigns / mesmos, no nível do método | O filtro de finalidade agora usa o nível do método e o teto efetivo federado. Ainda falta definir e aplicar o contexto de Grupos e confirmar a matriz de finalidades e subáreas. |
+| cases/health | messages E issues E reports E (settings OU operationsAdmin) / não aplicável | Agregado da unidade inteira; cada área dos dados deve autorizar a leitura. |
 | contacts: lista, detalhe; review | messages, appointments, issues ou campaigns / mesmos | Atendimento em Pendências/Agendamentos; revisão altera também PatientPhone e mensagens. Filtro de eventos adicional usa permissions locais. |
 | movements: lista, detalhe; criar, confirm | messages, appointments ou issues / mesmos | Atendimento em Pendências/Agendamentos; confirmar altera agendamento. Revisar acesso genérico por messages. |
 | agenda-items: lista, detalhe, types, filter_options, export, communications | appointments; com group também groups; com operational_pending=true também issues / appointments | Grupos/Pendências precisam de consultas filtradas; types e detalhe chamados sem filtro na tela de Pendências. Verificar se filtros são aplicados por cada ação antes de autorizar. |
@@ -55,3 +56,24 @@ A auditoria continua incompleta: Grupos usa o detalhe de atendimento, mas `cases
   autorizar `groups` no recurso genérico permitiria acesso fora do grupo.
 
 Estes achados são diagnóstico, não certificação nem correção dos passos 1–4.
+
+
+## Continuação 35h3 — correção parcial de cases
+
+O filtro de finalidade de casos usa leitura ou escrita conforme o método, inclusive
+para detalhe, timeline, comunicações, métricas, exportação e ação. Assim, leitura
+de CROSS combinada com escrita de Mensagens não autoriza alterar um caso CROSS.
+A saúde operacional exige leitura de Mensagens, Pendências, Relatórios e
+Configurações ou Administração, pois agrega dados de todas essas áreas.
+
+O proxy envia a interseção de seções à origem; a autenticação por chave valida
+o teto e a origem o intersecta com o emissor e o papel da chave. Antes de
+encaminhar cases, o proxy exige suporte declarado no manifesto, bloqueando
+origens antigas que ignorariam o teto. O teste exercita a resposta da origem
+com o teto do proxy, além de autorizações e recusas locais e na borda.
+
+Ainda não há certificação de todas as subáreas: Grupos continua sem contexto
+de grupo em cases, e a matriz genérica de mensagens/agendamentos/pendências
+para finalidades básicas permanece a ser confirmada. A correção de Grupos
+exige limitar os objetos e acompanhar as chamadas de detalhe da interface.
+O problema análogo em contacts permanece fora deste escopo.
