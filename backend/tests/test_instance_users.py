@@ -139,6 +139,7 @@ def test_authorized_test_recipients_edit_and_empty_list_revokes(setup, settings)
 @pytest.mark.parametrize("role", ["operator", "admin"])
 def test_template_with_remote_ceiling_and_descriptive_error(setup, role):
     from core.models import PermissionRole, RemoteInstance
+    Membership.objects.filter(user=setup["user"], unit=setup["unit"]).update(permissions={"reportWhatsApp": "write"})
     remote = RemoteInstance.objects.create(
         local_unit=setup["unit"], name="Conexão QA", base_url="https://example.org",
         key_ciphertext="test", remote_instance_id=uuid4(), remote_unit_slug="remote",
