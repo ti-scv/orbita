@@ -326,3 +326,22 @@ def test_wrong_unit_returns_friendly_404(env):
         response = e["client"].get(f"/api/v1/reports/{report.pk}/{suffix}?unit=outra")
         assert response.status_code == 404
         assert str(response.data["detail"]) == "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista."
+
+@pytest.mark.parametrize("width,height", [(794, 1123), (1123, 794)])
+def test_page_orientation_persists_and_controls_pdf(env, width, height):
+    e, report, _ = env
+    report.enabled = False
+    report.save()
+    v = default_layout()
+    v["page"].update(width=width, height=height)
+    v["pages"][0]["blocks"] = [{"id": "title", "type": "text", "x": 20, "y": 20, "width": width - 40, "height": 60, "text": "Orientação preservada"}]
+    response = post(e, report, "canvas", {"version": report.version, "layout": v, "enabled": False, "output_format": "pdf"})
+    assert response.status_code == 200, response.data
+    report.refresh_from_db()
+    assert report.canvas_layout["page"]["width"] == width
+    assert report.canvas_layout["page"]["height"] == height
+    content, _ = export(report, report.canvas_layout, {}, [], "pdf")
+    page = PdfReader(io.BytesIO(base64.b64decode(content))).pages[0]
+    assert float(page.mediabox.width) == width * .75
+    assert float(page.mediabox.height) == height * .75
+    assert "Orientação preservada" in page.extract_text()

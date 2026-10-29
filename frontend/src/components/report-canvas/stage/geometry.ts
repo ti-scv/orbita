@@ -52,6 +52,10 @@ export function applyPageConfigPatch(
     return prev;
   }
 
+  // Preserve the relative arrangement when the page changes size.
+  const scaleX = nextWidth / prev.page.width;
+  const scaleY = nextHeight / prev.page.height;
+
   return {
     ...prev,
     page: {
@@ -62,7 +66,13 @@ export function applyPageConfigPatch(
     },
     pages: prev.pages.map((p) => ({
       ...p,
-      blocks: p.blocks.map((b) => clampBlockToPage(b, nextWidth, nextHeight)),
+      blocks: p.blocks.map((b) => clampBlockToPage({
+        ...b,
+        x: round2(b.x * scaleX),
+        y: round2(b.y * scaleY),
+        width: round2(b.width * scaleX),
+        height: round2(b.height * scaleY),
+      }, nextWidth, nextHeight)),
     })),
   };
 }
