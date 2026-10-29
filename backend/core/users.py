@@ -20,7 +20,7 @@ from core.access import (
     role_permissions,
     validate_permissions,
 )
-from core.models import Audit, Membership, RemoteInstance, RemoteMembership, Unit, UserAccessProfile
+from core.models import Audit, Membership, PermissionRole, RemoteInstance, RemoteMembership, Unit, UserAccessProfile
 from core.permissions import get_unit
 
 
@@ -125,6 +125,7 @@ class GrantInput(serializers.Serializer):
     unit = serializers.CharField(max_length=100)
     role = serializers.ChoiceField(choices=Membership.Role.choices)
     permissions = serializers.JSONField(default=dict, validators=[validate_permissions])
+    permission_role = serializers.IntegerField(required=False, min_value=1, write_only=True)
 
 
 class UserInput(serializers.Serializer):
@@ -214,6 +215,20 @@ class UserViewSet(viewsets.GenericViewSet):
             if grant["unit"] not in writable:
                 raise PermissionDenied("Você não pode conceder ou alterar acesso nesta unidade.")
             option = writable[grant["unit"]]
+            role_id = grant.pop("permission_role", None)
+            if role_id is not None:
+                if option["remote"]:
+                    raise ValidationError("Tipos de acesso só podem ser aplicados à unidade local.")
+                template = PermissionRole.objects.filter(pk=role_id, unit__slug=grant["unit"]).first()
+                if not template:
+                    raise ValidationError("Tipo de acesso não encontrado nesta unidade.")
+                levels = template.permissions
+                grant["permissions"] = {
+                    "overview": levels["messages"], "messages": levels["messages"],
+                    "groups": levels["messages"], "issues": levels["messages"],
+                    "settings": levels["settings"], "reports": levels["reports"],
+                    "reportWhatsApp": levels["reportWhatsApp"],
+                }
             from core.federation_auth import RANK
 
             if RANK[grant["role"]] > RANK[option["max_role"]]:

@@ -36,3 +36,13 @@ A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, s
 A migração guarda os valores inseridos em `PermissionMigration35Backup`. Ao reverter para `core 0007`, remove apenas valores ainda iguais aos gravados pela migração; valores editados depois são mantidos. Essa operação deve ser ensaiada exclusivamente em banco descartável; a versão anterior não aplica a nova seção, mesmo quando uma edição posterior fica preservada no JSON. `test_migration_preserves_existing_access_and_later_edits` exercita a ida e a volta. As demais partes da tarefa 35a continuam pendentes.
 
 Em um ambiente descartável com as variáveis de conexão apontando para esse banco, o comando de reversão é `python manage.py migrate core 0007_unit_logo`; para reaplicar, `python manage.py migrate core 0008_report_whatsapp_permission`. Não execute esses comandos no banco real ou de produção.
+
+## Continuação 35a2: cadastro de tipos (parcial)
+
+A API `/api/v1/permission-roles/` lista modelos da unidade e permite criar ou editar somente com perfil administrador e permissão de edição de usuários. Cada modelo tem exatamente `messages`, `settings`, `reports` e `reportWhatsApp`, com níveis `none`, `read` ou `write`. O WhatsApp é independente. A chave opcional `permission_role` em um acesso da API de usuários copia os níveis para o JSON do vínculo local: `messages` preenche `overview`, `messages`, `groups` e `issues`; os outros três preenchem as seções homônimas. As seções restantes recebem `none`. Aplicam-se as restrições de perfil existentes. Alterar um modelo não altera acessos já concedidos; é necessário reaplicá-lo. A aplicação em vínculos remotos ainda não está disponível.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| Usuários | Tipos de acesso | `GET/POST/PATCH /api/v1/permission-roles/` | `test_permission_roles_admin_and_scope` |
+
+A migração `core.0009_permission_roles` cria apenas a tabela de modelos e sua reversão a remove; não modifica vínculos existentes. Ela não substitui a migração pendente dos níveis antigos para os quatro tipos. Os endpoints antigos ainda não foram todos consolidados e não há certificação de que o novo tipo Mensagens controle todos os recursos compartilhados. Não executar migrações no banco real.

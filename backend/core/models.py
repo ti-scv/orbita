@@ -133,3 +133,13 @@ class PermissionMigration35Backup(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["model_name", "object_id"], name="permission35_backup_unique")]
+
+
+class PermissionRole(models.Model):
+    """Modelo reutilizável; os acessos efetivos continuam no vínculo."""
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=120)
+    permissions = models.JSONField(default=dict)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["unit", "name"], name="permission_role_unit_name")]

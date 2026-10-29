@@ -68,6 +68,7 @@ RESOURCES = {
     "members": ["users"],
     "units": ["operationsAdmin", "users", "settings"],
     "users": ["users"],
+    "permission-roles": ["users"],
     "tests": ["appointments", "overview"],
 }
 
