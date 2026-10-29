@@ -988,3 +988,14 @@
   padding: 10px 12px; border: 1px solid var(--cv-border, #aaa); border-radius: 8px;
   background: var(--cv-surface, #fff); color: var(--cv-text, #222); box-shadow: 0 4px 16px #0003;
 }
+
+/* Portability notices float above the workspace without changing its size. */
+.cv-root .cv-banner-floating {
+  position: absolute;
+  right: 16px;
+  bottom: 40px;
+  max-width: min(560px, calc(100% - 32px));
+  border: 1px solid var(--cv-warning-line);
+  border-radius: var(--cv-r-sm);
+  box-shadow: 0 4px 16px #0003;
+}

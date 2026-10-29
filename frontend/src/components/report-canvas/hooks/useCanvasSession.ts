@@ -107,7 +107,7 @@ export function useCanvasSession({
         const { data, normalizedLayout } = !isReload && initialCanvas
           ? { data: initialCanvas, normalizedLayout: normalizeLayout(initialCanvas.layout) }
           : await api.fetchCanvas();
-        if (data.port_notice) setBanner({ tone: "conflict", text: data.port_notice });
+        if (data.port_notice) setBanner({ tone: "conflict", text: data.port_notice, floating: true });
         setParameterDeclarations(data.parameter_editor || []);
         setParameterEdits([]);
         const nextEnabled = Boolean(data.enabled);
