@@ -13,7 +13,7 @@ import { PermissionGroups } from "./PermissionGroups";
 type Grant = { unit: string; role: string; permissions: SectionPermissions; permission_role?: {id: number; name: string} | null; permission_role_outdated?: boolean; roleAction?: number | null; customized?: boolean };
 type UserRow = { id: number; username: string; full_name: string; active: boolean; version: number; grants: Grant[]; editable: boolean; global_editable: boolean };
 type Synced = { id: number; user_id: number | null; login: string; name: string; unit: string; state: string; removed_at_origin: boolean };
-type Option = { slug: string; name: string; remote: boolean; instance_name?: string; local_unit?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
+type Option = { slug: string; name: string; remote: boolean; enabled?: boolean; instance_name?: string; local_unit?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
 const profiles: Record<string, string> = { admin: "Administrativo", operator: "Operador", viewer: "Consulta" };
 const levels = {none: 0, read: 1, write: 2} as const;
@@ -49,6 +49,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [syncNotice, setSyncNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
@@ -94,8 +95,15 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
     catch (e) { setError((e as Error).message); throw e; }
     finally { setBusy(false); }
   }
+  async function syncUsers(option: Option) {
+    setBusy(true); setError(""); setNotice("");
+    try { const result = await request<{new: number; updated: number; removed: number; conflicts: number}>(query(`remote-instances/${option.slug.slice(7)}/sync-users`, {unit}), "POST", {}); setSyncNotice(`${option.name}: ${result.new} novos, ${result.updated} atualizados, ${result.removed} removidos, ${result.conflicts} conflitos.`); setRevision(v => v + 1); }
+    catch (e) {setError((e as Error).message);} finally {setBusy(false);}
+  }
   return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
+    {editable && options.units.filter(o => o.remote && o.enabled && o.local_unit === unit).map(o => <button key={o.slug} className="button" disabled={busy} onClick={() => void syncUsers(o)}>Sincronizar usuários · {o.name}</button>)}
+    {syncNotice && <p role="status">{syncNotice}</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     {notice && <div role="alert" className="directory-remote-warning"><AlertTriangle size={20} /><span>Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</span></div>}
     <label className="op-field">Situação<Select value={stateFilter} onChange={e => setStateFilter(e.target.value)}><option value="">Todas</option><option>Pendente de liberação</option><option>Conflito de login</option><option>Removido na origem</option><option>Liberado</option><option>Ativo</option><option>Desativado</option></Select></label>

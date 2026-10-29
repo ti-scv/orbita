@@ -155,7 +155,8 @@ export default function RemoteInstances({
     setError("");
     setNotice("");
     try {
-      await request(query(path, { unit }), "POST", body);
+      const result = await request<{ok?: boolean; new?: number; updated?: number; removed?: number; conflicts?: number}>(query(path, { unit }), "POST", body);
+      if (path.endsWith("/sync-users")) setNotice(`Sincronização concluída: ${result.new} novos, ${result.updated} atualizados, ${result.removed} removidos, ${result.conflicts} conflitos.`);
       await load();
       await onChanged();
     } catch (e) {

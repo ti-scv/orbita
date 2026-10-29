@@ -42,9 +42,11 @@ def sync_users(connection, actor=None):
         with transaction.atomic():
             connection = RemoteInstance.objects.select_for_update().get(pk=connection.pk)
             now = timezone.now()
+            counts = {"new": 0, "updated": 0, "removed": 0, "conflicts": 0}
             for remote_id, login, name, email in parsed:
                 identity = SyncedUserIdentity.objects.filter(connection=connection, remote_user_id=remote_id).first()
                 if identity is None:
+                    counts["new"] += 1
                     identity = SyncedUserIdentity(connection=connection, remote_user_id=remote_id)
                     if get_user_model().objects.filter(username=login).exists():
                         identity.state = SyncedUserIdentity.State.CONFLICT
@@ -61,15 +63,20 @@ def sync_users(connection, actor=None):
                             identity.state = SyncedUserIdentity.State.CONFLICT
                         else:
                             identity.user = user
+                elif (identity.login, identity.name, identity.email, identity.removed_at_origin) != (login, name, email, False):
+                    counts["updated"] += 1
+                if identity.state == SyncedUserIdentity.State.CONFLICT:
+                    counts["conflicts"] += 1
                 identity.login, identity.name, identity.email = login, name, email
                 identity.last_synced_at, identity.removed_at_origin = now, False
                 identity.save()
             missing = SyncedUserIdentity.objects.filter(connection=connection).exclude(remote_user_id__in=seen)
+            counts["removed"] = missing.filter(removed_at_origin=False).count()
             get_user_model().objects.filter(pk__in=missing.values_list("user_id", flat=True)).update(is_active=False)
             missing.update(removed_at_origin=True)
             Audit.objects.create(unit=connection.local_unit, actor=actor, action="user_sync.completed",
-                                 object_id=str(connection.pk), details={"count": len(parsed)})
-        return {"ok": True, "count": len(parsed)}
+                                 object_id=str(connection.pk), details={"count": len(parsed), **counts, "unit": connection.remote_unit.get("name") or connection.name})
+        return {"ok": True, "count": len(parsed), **counts}
     except (RemoteUnavailable, ValidationError) as exc:
         code = exc.code if isinstance(exc, RemoteUnavailable) else "invalid_connection"
         Audit.objects.create(unit=connection.local_unit, actor=actor, action="user_sync.failed",
