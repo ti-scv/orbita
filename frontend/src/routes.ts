@@ -1,7 +1,7 @@
 import type { PageName } from "./types";
 
 const pages: Record<string, PageName> = {
-  "/": "appointments",
+  "/": "overview",
   "/visao-geral": "overview",
   "/custos-meta": "costs",
   "/agendamentos": "appointments",

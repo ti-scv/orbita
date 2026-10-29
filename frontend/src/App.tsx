@@ -78,14 +78,11 @@ const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
 
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
-  { id: "appointments", label: "Agendamentos", icon: CalendarDays },
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   { id: "issues", label: "Pendências", icon: ClipboardList },
-  { id: "campaigns", label: "Importa CROSS", icon: Send },
   { id: "reports", label: "Relatórios", icon: Activity },
-  { id: "costs", label: "Custos Meta", icon: Wallet },
   { id: "settings", label: "Configurações", icon: Settings2 },
 ];
 type Data = {
@@ -674,7 +671,7 @@ function Workspace({
           )}
           {["care", "campaigns", "reports"].includes(page) && (
             <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} />
+              username={session.username} userAccess={false} reportAdmin={actualRole === "admin"} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} />
           )}
           {page === "messages" && (
             <div className="filters">

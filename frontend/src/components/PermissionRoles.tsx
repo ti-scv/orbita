@@ -15,12 +15,12 @@ export async function loadPermissionRoles(unit: string): Promise<PermissionRole[
     if (!result.next) return roles;
   }
 }
-export default function PermissionRoles({unit}: {unit: string}) {
+export default function PermissionRoles({unit, onChanged}: {unit: string; onChanged?: () => void}) {
   const [roles, setRoles] = useState<PermissionRole[]>([]), [revision, setRevision] = useState(0), [busy, setBusy] = useState(false), [error, setError] = useState("");
   useEffect(() => { let active = true; setRoles([]); setError(""); loadPermissionRoles(unit).then(r => {if (active) setRoles(r);}).catch(e => {if (active) setError(e.message);}); return () => {active = false;}; }, [unit, revision]);
   async function save(row: PermissionRole | undefined, name: string, permissions: SectionPermissions) {
     setBusy(true); setError("");
-    try { await request(query(row ? `permission-roles/${row.id}` : "permission-roles", {unit}), row ? "PATCH" : "POST", {name, permissions}); setRevision(v => v + 1); }
+    try { await request(query(row ? `permission-roles/${row.id}` : "permission-roles", {unit}), row ? "PATCH" : "POST", {name, permissions}); setRevision(v => v + 1); onChanged?.(); }
     catch (e) {setError((e as Error).message); throw e;} finally {setBusy(false);}
   }
   return <Panel title="Tipos de usuário" action={<RoleForm key={`new:${revision}`} revision={revision} busy={busy} error={error} save={save}/> }>
