@@ -954,3 +954,5 @@
 .cv-root .cv-block-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .cv-root .cv-block-kpi .cv-block-inner { overflow: auto; pointer-events: auto; }
 .cv-root .cv-kpi-value { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+
+.cv-root :is(.cv-block-bar, .cv-block-line, .cv-block-pie) > .cv-block-inner { overflow: auto; pointer-events: auto; }
