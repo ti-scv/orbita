@@ -200,3 +200,30 @@ Medição headless autenticada, Chromium com cache desativado, desde a navegaç�
 Vitest: 648 aprovados. Testes backend direcionados após atualização de expectativas: 56 aprovados. A suíte ampla anterior à atualização dos testes terminou com 1.162 aprovados, 16 falhas e 7 erros: entre as falhas estavam expectativas antigas sobre permissão geral e rejeição de limites remotos, além de falhas de remoção de relatórios; os erros de SQL operacional ocorreram na preparação da fonte. A repetição isolada de remoção retornou HTTP 503. A suíte ampla não foi repetida após atualizar as expectativas e não pode ser considerada aprovada.
 
 Frontend do staging 8100 reconstruído e API descartável reiniciada; `/`, `/configuracoes`, `/relatorios`, `/mensagens` e `/grupos` responderam 200. Nenhuma migração ou push foi realizada.
+
+## Revisão 35g — resultado parcial
+
+A suíte completa do backend foi executada no container descartável com `REPORT_REMOVAL_ENABLED=1` e chaves Fernet fictícias para Meta e Oracle, somente no processo de teste; os arquivos de `files/reports/indicadores-medicos` foram copiados para `/report_files/reports` dentro do container descartável. Resultado: **1.205 aprovados e 1 pulado** em 203,55 s; o pulado é o teste que exige o modo de compatibilidade com remoção desabilitada, e passou na execução inicial com esse modo. A primeira execução sem essa configuração teve 1.171 aprovados, 7 falhas e 7 erros: chave Meta ausente, arquivo de layout ausente, cinco falhas de remoção desabilitada e sete erros por chave Oracle ausente. Não se identificaram falhas remanescentes nessa execução configurada. A suíte focada posterior passou com 58 testes e, após ampliar os casos federados, `test_federation.py` passou com 60 testes.
+
+Os testes federados cobrem permissão independente de Relatórios e WhatsApp para as rotas de relatórios disponíveis na federação, com níveis negado/leitura/escrita e ações de conectar e desconectar; o transporte remoto é simulado e não é chamado nas negativas. Ainda falta auditar e cobrir todos os usos dos recursos compartilhados de outras telas, particularmente `cases`, `contacts`, `movements` e suas ações, antes de considerar concluída a separação de permissões.
+
+Ao aplicar ou reaplicar um tipo de uma unidade local, o formulário avisa que ele também substitui permissões nos vínculos remotos associados. O servidor limita esses vínculos ao teto correspondente e retorna as seções limitadas, apresentadas após salvar. No Chromium autenticado no staging 8100, aplicou-se `qa23 B` a `qa23u` com Relatórios em escrita e WhatsApp em leitura: salvamento HTTP 200 e aviso `QA 35g simulada: Mensagens, Relatórios, WhatsApp dos relatórios`; o vínculo remoto persistiu essas três seções como `none`. Vitest final: **649 aprovados** com Node 24 e dois workers. O staging 8100 foi reconstruído; `/`, `/configuracoes`, `/relatorios`, `/mensagens` e `/grupos` responderam 200.
+
+### Dados fictícios do cenário remoto
+
+Somente no banco descartável `orbita-db-fila35b`, foi criada a conexão `QA 35g simulada`, id `475fa04c-8422-43fe-9d5c-eaa5cbafb26c`, identidade `35000000-0000-0000-0000-000000000035`, unidade `qa35g-falsa`, URL `http://127.0.0.1:1` e ciphertext propositalmente inválido `simulacao-sem-chave`. Nenhum servidor remoto foi acessado. A conexão tem teto `none` para Mensagens, Relatórios e WhatsApp e um vínculo para `qa23u`. Para o teste, em `teste35b` adicionou-se `reportWhatsApp: write`; em `qa23 B`, alteraram-se `reports` para `write` e `reportWhatsApp` para `read`. O salvamento alterou os vínculos de `qa23u`, inclusive aplicando o tipo local `qa23 B`.
+
+Para remover a simulação e restaurar as duas alterações de preparação, execute **somente no container descartável**, após conferir que esses dados de QA não foram alterados para outro propósito:
+
+```sh
+docker exec -i orbita-api-fila35b python manage.py shell <<PY
+from core.models import Membership, PermissionRole, RemoteInstance
+RemoteInstance.objects.filter(remote_instance_id="35000000-0000-0000-0000-000000000035", remote_unit_slug="qa35g-falsa").delete()
+m = Membership.objects.get(user__username="teste35b", unit__slug="ame")
+p = dict(m.permissions); p.pop("reportWhatsApp", None); m.permissions = p; m.save(update_fields=["permissions"])
+r = PermissionRole.objects.get(unit__slug="ame", name="qa23 B")
+p = dict(r.permissions); p.update(reports="read", reportWhatsApp="none"); r.permissions = p; r.save(update_fields=["permissions"])
+PY
+```
+
+A exclusão da conexão também remove o vínculo remoto por cascata; a restauração acima não desfaz o vínculo local de `qa23u` nem o histórico de auditoria do teste. Não houve migração no banco de staging nem push.
