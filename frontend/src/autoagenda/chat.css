@@ -320,4 +320,4 @@
 .sa-chat .sa-detail-icon{color:var(--azul);transform-box:fill-box;transform-origin:center;animation:sa-icon-breathe .7s ease-out 1 both;animation-delay:inherit}
 @keyframes sa-greet{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-12deg) translateY(-2px)}55%{transform:rotate(12deg) translateY(-3px)}80%{transform:rotate(-6deg)}}
 @keyframes sa-icon-breathe{0%{transform:translateY(2px) scale(.9);opacity:.4}55%{transform:translateY(-3px) scale(1.12);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.sa-chat .sa-welcome-icon,.sa-chat .sa-detail-icon,.sa-chat .sa-message-line,.sa-chat .sa-booking-summary>div{animation:none}}
+@media(prefers-reduced-motion:reduce){.sa-chat .sa-welcome-icon,.sa-chat .sa-detail-icon{animation:none}}

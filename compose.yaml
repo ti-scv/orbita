@@ -78,7 +78,6 @@ services:
       api: {condition: service_healthy}
     restart: unless-stopped
   autoagenda-api:
-    profiles: ["autoagenda"]
     build: ./backend
     env_file: .env
     environment:
@@ -92,11 +91,10 @@ services:
     restart: unless-stopped
     mem_limit: 768m
   autoagenda-web:
-    profiles: ["autoagenda"]
     build:
       context: ./frontend
       dockerfile: Dockerfile.autoagenda
-    ports: ["${AUTOAGENDA_BIND:-127.0.0.1}:${AUTOAGENDA_PORT:-8081}:80"]
+    ports: ["${AUTOAGENDA_PORT:-8081}:80"]
     depends_on: [autoagenda-api]
     restart: unless-stopped
     mem_limit: 128m

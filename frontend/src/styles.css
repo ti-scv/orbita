@@ -5885,12 +5885,13 @@ body:has([role="dialog"][aria-modal="true"]) {
   flex-shrink: 0;
 }
 .brand-image-small {
-  width: 14px;
-  height: 14px;
+  width: 45px;
+  height: 45px;
 }
 
 /* Supplied complete wordmark; keep the icon-only variant for compact surfaces. */
 .brand-image.brand-image-wordmark{width:76px;height:76px;object-fit:contain;}
+.sidebar-heading .brand-image.brand-image-wordmark{width:108px;height:108px;}
 .sidebar-heading{align-items:flex-start;}
 .sidebar-heading .brand{min-width:0;flex:1;justify-content:center;}
 .sidebar-heading .sidebar-toggle{margin-top:7px;}
