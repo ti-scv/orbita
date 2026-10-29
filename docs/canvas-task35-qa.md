@@ -227,3 +227,11 @@ PY
 ```
 
 A exclusão da conexão também remove o vínculo remoto por cascata; a restauração acima não desfaz o vínculo local de `qa23u` nem o histórico de auditoria do teste. Não houve migração no banco de staging nem push.
+
+## Revisão 35i — frontend
+
+Os formulários de tipos e a matriz de usuário agrupam Mensagens (Visão geral, Mensagens, Grupos e Pendências), Configurações, Relatórios e WhatsApp. As demais seções da API continuam disponíveis. O bloco WhatsApp explica que leitura permite ver o estado e escrita permite conectar e desconectar. Na escolha de tipo, um vínculo novo dispensa confirmação; ao cancelar a substituição de um vínculo existente, o seletor conserva o valor anterior.
+
+Ao marcar uma unidade remota depois de selecionar um tipo local, seus níveis são copiados para a solicitação. A prévia mostra os níveis efetivos limitados pela conexão e pelo perfil, e os limites identificados. A solicitação original chega ao servidor para que a resposta informe as seções limitadas; depois de salvar, o aviso lista as unidades e seções retornadas. A unidade remota esclarece que não possui tipo próprio. Listas de usuários e tipos distinguem carregamento de lista vazia. O ícone Activity usado pelo menu e pelos blocos usa o componente duotone central, com preenchimento reforçado; o rodapé usa texto de maior contraste.
+
+Validação em Node 24: suíte completa, build, TypeScript e ESLint executados localmente; veja qa25-result.md na caixa local para o resultado final. A captura `shots/qa25-tipos.png` foi feita em prévia Vite temporária na porta 8102, com API simulada e o componente real; mostra os blocos e o ícone de Relatórios. A prévia foi encerrada e seus arquivos temporários removidos. Não foi executado teste autenticado de salvamento remoto de ponta a ponta nesta revisão, nem comparação visual de rodapé nos dois temas; a evidência não comprova esses cenários. Staging 8100 não foi reconstruído, e não houve push nem alterações no banco.
