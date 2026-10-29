@@ -130,3 +130,28 @@ Resultado parcial: ainda há verificações de perfil nas views e serviços, inc
 Em PostgreSQL descartável, com arquivos de teste montados somente para leitura e chaves fictícias, a suíte completa teve **1163 aprovados e 5 falhas** em `test_report_removal.py`, todas respostas 503 da flag de remoção já conhecidas. Após essa execução, o teste de limite de delegação foi refinado e passou isoladamente. Não foram usados staging nem banco real.
 
 `makemigrations --check --dry-run` ainda propõe remover os campos `removed_at`, `removed_by` e `removed_was_enabled` de `ReportApplicationConnection`, `ReportConnection` e `ReportDefinition` em `operations`. Essa diferença já existia; não foi gerada nem aplicada migração para ela.
+
+## Continuação 35a5: tipo escolhido no vínculo
+
+`core.0012_membership_permission_role` adiciona ao vínculo local uma referência anulável ao tipo da mesma unidade, sem inferir tipos para vínculos antigos. A exclusão do tipo limpa a referência e preserva as permissões. Tipos não se aplicam a vínculos remotos; estes continuam individuais. A migração é aditiva e reversível: em banco **descartável**, reverta com `python manage.py migrate core 0011_preserve_settings_access` e reaplique com `python manage.py migrate core 0012_membership_permission_role`. A reversão perde as referências escolhidas, mas preserva os níveis e os tipos. Não executar no banco real.
+
+### Contrato para o frontend
+
+Cada item de `grants` na listagem `GET /api/v1/users/` e na resposta de criação/configuração contém, além de `unit`, `role` e `permissions`:
+
+```json
+{"unit":"ame","role":"viewer","permissions":{"messages":"read"},"permission_role":{"id":12,"name":"Atendimento"},"permission_role_outdated":false}
+```
+
+`permissions` no exemplo foi abreviado: a resposta contém todas as seções efetivas. `permission_role` é um objeto com `id` e nome atual, ou `null` para permissões individuais; `permission_role_outdated` é booleano e é `false` quando não há tipo. Ele indica diferença entre os níveis efetivos do vínculo e os níveis atuais do tipo, depois das restrições do perfil, incluindo as demais seções. Renomear um tipo atualiza o nome exibido; alterar seus níveis nunca modifica os acessos concedidos. Para vínculo remoto, inclusive acesso implícito, esses campos são sempre `null` e `false`.
+
+Nos pedidos `POST /api/v1/users/` e `POST /api/v1/users/{id}/configure/`, `permission_role` é um **inteiro**, não o objeto da resposta:
+
+- Enviar um ID válido da unidade local aplica os níveis atuais do tipo e substitui `permissions` enviado para esse acesso. Restrições de perfil e de delegação continuam válidas. Reenviar o ID reaplica o tipo, inclusive quando desatualizado.
+- Enviar `null` limpa a referência e usa as `permissions` enviadas; assim o frontend seleciona “Permissões individuais”.
+- Omitir o campo usa as `permissions` enviadas. Em um vínculo existente, preserva a referência somente se perfil e níveis efetivos permanecerem iguais aos já armazenados; alterações manuais tornam o vínculo individual (`null`). Para um vínculo novo, a omissão também resulta em individual. Para preservar um tipo desatualizado ao salvar outros dados, omita o campo e envie o perfil e os níveis recebidos, sem alterações.
+- Um ID de outra unidade ou um ID em vínculo remoto é rejeitado. O acesso aos endpoints continua sujeito às permissões de Configurações e às regras de escopo existentes.
+
+Edições por outros caminhos que alterem diretamente o JSON do vínculo sem limpar a referência aparecem como desatualizadas; a API de usuários limpa a referência quando recebe edição manual com o campo omitido. O frontend deve omitir o campo ou enviar `null` ao editar níveis individuais, pois um ID explícito sempre reaplica o tipo. A comparação não altera os níveis armazenados.
+
+Os testes `test_task35a5_roles.py` cobrem seleção, alteração posterior do tipo, preservação, personalização, limpeza, escopo, autorização, vínculo remoto e ida e volta da migração em banco de testes.
