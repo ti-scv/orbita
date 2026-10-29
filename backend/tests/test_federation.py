@@ -436,3 +436,29 @@ def test_existing_connection_cannot_be_rebound_to_another_namespace(connected):
         )
     assert response.status_code == 400
     assert str(RemoteInstance.objects.get().remote_instance_id) == f["manifest"]["instance_id"]
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("resource,method,action,section", [
+    ("reports/", "get", None, "reports"),
+    ("report-access/", "get", None, "reports"),
+    ("report-connections/", "get", None, "reports"),
+    ("report-automations/", "get", None, "reports"),
+    ("report-whatsapp/", "get", None, "reportWhatsApp"),
+    ("report-whatsapp/", "post", "connect", "reportWhatsApp"),
+    ("report-whatsapp/", "post", "disconnect", "reportWhatsApp"),
+])
+@pytest.mark.parametrize("level", ["none", "read", "write"])
+def test_remote_report_sections_enforce_independent_levels(connected, resource, method, action, section, level):
+    f = connected
+    opposite = "reports" if section == "reportWhatsApp" else "reportWhatsApp"
+    policy = {section: level, opposite: "write"}
+    Membership.objects.filter(user=f["user"], unit=f["unit"]).update(permissions=policy)
+    RemoteInstance.objects.filter(pk=f["connection"]["id"]).update(remote_permissions=policy)
+    with patch("core.federation.remote_http", return_value=(200, {"Content-Type": "application/json"}, b"{}")) as network:
+        if method == "get":
+            response = f["client"].get(f["proxy"] + resource)
+        else:
+            response = f["client"].post(f["proxy"] + resource, {"action": action}, format="json", HTTP_IDEMPOTENCY_KEY="qa-35g-action")
+    allowed = level == "write" or (method == "get" and level == "read")
+    assert response.status_code == (200 if allowed else 403)
+    assert network.call_count == int(allowed)
