@@ -3014,3 +3014,12 @@
 
 .operational-overview .overview-toolbar > .filter-select { width: 240px; flex: 0 1 240px; min-width: 190px; max-width: 100%; }
 .operational-overview .operational-table th { text-transform: none; letter-spacing: normal; }
+
+.access-grant > .op-field + .op-field { margin-top: 16px; }
+[data-theme="dark"] .op-pager .button:disabled,
+[data-theme="dark"] .report-workspace .op-pager .button:disabled {
+  opacity: 1;
+  color: #aab8ca;
+  border-color: #52647b;
+  background: #263447;
+}
