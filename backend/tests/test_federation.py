@@ -441,6 +441,11 @@ def test_existing_connection_cannot_be_rebound_to_another_namespace(connected):
 @pytest.mark.parametrize("resource,method,action,section", [
     ("reports/", "get", None, "reports"),
     ("report-access/", "get", None, "reports"),
+    ("report-requests/", "get", None, "reports"),
+    ("report-schedules/", "get", None, "reports"),
+    ("report-recipients/", "get", None, "reports"),
+    ("report-grants/", "get", None, "reports"),
+    ("report-executions/", "get", None, "reports"),
     ("report-connections/", "get", None, "reports"),
     ("report-automations/", "get", None, "reports"),
     ("report-whatsapp/", "get", None, "reportWhatsApp"),
