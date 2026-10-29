@@ -59,3 +59,16 @@ Para revisar, execute `ssh -L 8110:127.0.0.1:8110 -L 8111:127.0.0.1:8111 scv59` 
 Comparação de suítes completas, com PostgreSQL isolado e chave Oracle fictícia: merge, 1297 passaram, 5 ignorados e 2 falharam; release `428dd33`, 1295 passaram, 5 ignorados e as mesmas 2 falhas (`test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates`). Logs: `docker logs orbita-36e-tests-current` e `docker logs orbita-36e-tests-base`. Frontend `npm test -- --maxWorkers=2`: ambas as versões passaram, 76 arquivos e 670 testes. Logs em `/tmp/orbita-36e/frontend-current.log` e `/tmp/orbita-36e/frontend-base.log`; build da imagem do painel passou. `makemigrations --check --dry-run` aponta remoções pendentes de campos em `operations` tanto no merge quanto na release; nenhuma migração foi gerada para isso.
 
 FIM-TAREFA-36E concluída 322f7a2ff31648aef8824afdac4e2e36875e1ca6
+
+
+## Revisão 36f — 29/10/2026
+
+Código de revisão: `ec4d565556974da688aa570f01d10ac5a7393235`. Identidades sincronizadas aparecem na tabela, com origem, situação, filtro e ações. A coluna de unidades agrupa descrições repetidas. A sincronização apresenta contagens e pode ser acionada também em Usuários e acessos. Conflitos indicam o usuário local e a origem; manter pendente e criar conta separada são decisões auditadas. A auditoria apresenta títulos e detalhes disponíveis em português, inclusive informações recuperáveis de registros antigos. A senha inicial tem validação própria e explicação de autenticação local.
+
+Os ambientes descartáveis `orbita-36d-*` foram atualizados com `orbita-36f-api` e `orbita-36f-panel`, em 8110 e 8111, com os mesmos bancos isolados. `pendente36a`, anteriormente liberado na revisão, foi restaurado a pendente, sem senha utilizável nem concessões. Após sincronizar, estado confirmado: dois pendentes, `teste36` em conflito, `liberado36` liberado e `desativado36` e `tipo36` removidos. Login de revisão e encaminhamento SSH permanecem como descritos em 36e. Os contêineres anteriores foram preservados parados com sufixo `-36e-backup`.
+
+Verificação: build do frontend passou; suíte frontend 76 arquivos e 670 testes passaram. Backend com PostgreSQL de teste e chave fictícia: 1297 passaram, 5 ignorados e 2 falharam, as mesmas falhas registradas em `428dd33` na seção 36e (`test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates`); portanto a suíte backend não está verde, apesar de não haver regressão identificada na comparação. Testes direcionados de sincronização e logs: 3 passaram. Logs em `/tmp/orbita-36f-backend.log`, `/tmp/orbita-36f-frontend.log` e `/tmp/orbita-36f-tests-target.log`.
+
+Chromium em 8110 confirmou login sem recarga, estados e ações da tabela, diálogo de conflito, validação de senha em português e resultado da sincronização. Evidência em `/tmp/orbita-36d/usuarios-36f.png`; logs `/tmp/orbita-36f-browser.log` e `/tmp/orbita-36f-check.log`. A queixa de botão preso em “Entrando…” não foi reproduzida nesta execução; `Login.tsx`, `App.tsx` e `api.ts` não diferem de `428dd33`, assim como os arquivos de autenticação e permissões examinados. Isso não prova que o comportamento intermitente não ocorra por outra causa. `Login.tsx` não foi alterado.
+
+FIM-TAREFA-36F parcial ec4d565556974da688aa570f01d10ac5a7393235
