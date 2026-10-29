@@ -95,7 +95,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
 
 function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserRow;options:Options;roles:Record<string, PermissionRole[]>;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
   const [username,setUsername]=useState(row?.username||""),[name,setName]=useState(row?.full_name||""),[password,setPassword]=useState("");
-  const normalize = (items: Grant[]) => items.map(g => { const option = options.units.find(o => o.slug === g.unit); return option ? limitRemoteGrant(g, option) : g; });
+  const normalize = (items: Grant[]) => items.map(g => ({...g, permissions: {...g.permissions}}));
   const limited = (row?.grants || []).filter(g => { const option = options.units.find(o => o.slug === g.unit); return option?.remote && JSON.stringify(limitRemoteGrant(g, option)) !== JSON.stringify(g); });
   const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(() => normalize(row?.grants||[]));
   const global = !row || row.global_editable;
