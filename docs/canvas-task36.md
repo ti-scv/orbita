@@ -84,3 +84,15 @@ Os contêineres descartáveis `orbita-36d-*` foram atualizados com imagens `orbi
 Após o ajuste final, os testes direcionados `tests/test_logs.py` e `tests/test_user_sync_36c.py` passaram: 3 aprovados (`/tmp/orbita-36g-target.log`).
 
 FIM-TAREFA-36G concluída ebfb232
+
+## Revisão 36h — 29/10/2026
+
+Código: `fac8d09a8f12305d9b01fc18b4d36043b33baa75`. Em Liberar usuário, o checkbox da unidade fica dentro do cartão, com espaçamento para a borda; o grupo mantém nome acessível. O mesmo formulário é usado para criar e editar usuários.
+
+No Chromium em 8110, o cartão de AME Votuporanga foi verificado nos temas claro e escuro: rótulo a 17 px das bordas superior e lateral, e seleção da unidade abriu os campos de perfil. Evidências em `/tmp/orbita-36d/36h-light.png` e `/tmp/orbita-36d/36h-dark.png`; log `/tmp/orbita-36h-visual.log`. Não houve salvamento do formulário.
+
+Investigação do console: em uma sessão nova houve resposta 401 para `GET /api/v1/auth/session/` antes do login, registrada pelo navegador como falha de recurso; a consulta inicial já existia em `428dd33`. Após login, espera em Visão geral, recarga autenticada e navegação para Relatórios, não foram capturados erros de console, exceções de página ou respostas HTTP de erro. Assim, não foi reproduzido outro erro persistente autenticado; isso não descarta comportamento intermitente. Log `/tmp/orbita-36h-console.log`. `Login.tsx` não foi alterado.
+
+Frontend: 77 arquivos e 672 testes passaram, e o build passou (`/tmp/orbita-36h-frontend.log`). A imagem `orbita-36h-panel` foi construída e somente os painéis descartáveis de 8110 e 8111 foram substituídos; APIs, bancos e dados foram preservados. Ambos responderam HTTP 200; painéis anteriores estão parados com sufixo `-36g-backup`.
+
+FIM-TAREFA-36H concluída fac8d09a8f12305d9b01fc18b4d36043b33baa75
