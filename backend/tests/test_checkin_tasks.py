@@ -53,3 +53,15 @@ def test_tick_creates_review_for_stale_revision():
     assert checkin.response == "sent"
     assert not checkin.events.exists()
     assert Issue.objects.filter(category="checkin_deadline_review").count() == 1
+
+
+@pytest.mark.django_db
+@override_settings(CHECKIN_SCHEDULER_ENABLED=True)
+def test_tick_discovers_one_cycle_per_eligible_appointment():
+    now = timezone.now()
+    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    Configuration.objects.create(unit=unit, enabled=True, appointment_enabled=True)
+    appointment = Appointment.objects.create(unit=unit, external_id="new", kind="exam", patient="Teste", procedure="Teste", scheduled_at=now + timedelta(days=7), arrival_time="")
+    tick()
+    tick()
+    assert CheckIn.objects.filter(appointment=appointment, cycle=1).count() == 1
