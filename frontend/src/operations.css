@@ -3034,3 +3034,5 @@
   border-color: #75869a;
   background: #29394d;
 }
+
+.modal.inline-dialog .access-grant > label.op-field + label.op-field { margin-top: 20px; }
