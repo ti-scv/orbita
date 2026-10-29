@@ -1,10 +1,11 @@
 """Create a disabled local check-in Canvas draft, without grants or delivery."""
+from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from core.models import Unit
 from operations.checkin_report import HANDLER
 from operations.models import ReportDefinition
-from operations.report_canvas.ports import tabular
+from operations.report_canvas.ports import tabular, block, image_asset
 from operations.report_canvas.schema import validate_layout
 
 class Command(BaseCommand):
@@ -24,6 +25,12 @@ class Command(BaseCommand):
             parameter_schema={"start": {"type": "date", "required": True},
                               "end": {"type": "date", "required": True, "not_before": "start"}},
         )
-        report.canvas_layout = validate_layout(tabular(report))
+        layout = tabular(report)
+        icon = block("checkin_icon", "image", 32, 24, 42, 42)
+        icon["asset_id"] = image_asset(report, Path(__file__).resolve().parents[2] / "assets" / "checkin-lightbulb.png")
+        layout["pages"][0]["blocks"].insert(0, icon)
+        title = layout["pages"][0]["blocks"][1]
+        title.update(x=86, width=1005)
+        report.canvas_layout = validate_layout(layout)
         report.save(update_fields=["canvas_layout"])
         self.stdout.write(f"report={report.pk}; desativado, sem concessões ou envios")
