@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from core.models import Membership, RemoteMembership, UserAccessProfile
 
 SECTIONS = {
+    "autoagenda": "Autoagendamento",
     "overview": "Visão geral",
     "costs": "Custos Meta",
     "appointments": "Agendamentos",
@@ -22,6 +23,7 @@ SECTIONS = {
 LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
+    "autoagenda": ["autoagenda"],
     "indicators": ["overview"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
@@ -94,6 +96,8 @@ def role_permissions(role, overrides=None):
         value["users"] = "none"
     if role != "admin" or (overrides and "costs" not in overrides):
         value["costs"] = "none"
+    if role != "admin" or (overrides and "autoagenda" not in overrides):
+        value["autoagenda"] = "none"
     value.update(
         {k: v for k, v in (overrides or {}).items() if k in SECTIONS and v in LEVELS}
     )
@@ -116,7 +120,7 @@ def intersect_permissions(*policies):
 
 def local_permissions(user, unit):
     if user.is_superuser:
-        return role_permissions("admin", {"reportWhatsApp": "write"})
+        return role_permissions("admin", {"reportWhatsApp": "write", "autoagenda": "write"})
     member = Membership.objects.filter(user=user, unit=unit).first()
     return (
         role_permissions(member.role, member.permissions)
@@ -135,7 +139,7 @@ def remote_access(user, connection):
     if grant:
         role, policy = grant.role, role_permissions(grant.role, grant.permissions)
     elif user.is_superuser:
-        role, policy = "admin", role_permissions("admin", {"reportWhatsApp": "write"})
+        role, policy = "admin", role_permissions("admin", {"reportWhatsApp": "write", "autoagenda": "write"})
     elif not explicit:
         member = Membership.objects.filter(
             user=user, unit=connection.local_unit

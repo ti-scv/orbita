@@ -1,0 +1,302 @@
+<?php
+// Implementação real: consultas às views dbamv.vdic_auto_agenda_san_00X e procedure de agendamento.
+
+class RepositorioOracle implements Repositorio
+{
+    private $db;
+    private $arquivoCache;
+    private $ttl;
+    private $detalhe;
+
+    /**
+     * $arquivoCache/$ttlSegundos: guardam a lista de especialidades (view 004, lenta: ~1 min) em arquivo.
+     * Sem arquivo ou com ttl 0 o cache fica desligado.
+     */
+    public function __construct(Database $db, $arquivoCache = null, $ttlSegundos = 0, callable $detalhe = null)
+    {
+        $this->db = $db;
+        $this->arquivoCache = $arquivoCache;
+        $this->ttl = (int) $ttlSegundos;
+        $this->detalhe = $detalhe;
+    }
+
+    public function beneficiariosPorCpf($cpf)
+    {
+        return $this->db->consultar(
+            "select v1.cd_matricula, v1.ds_plano, v1.nm_responsavel_financeiro
+               from dbamv.vdic_auto_agenda_san_001 v1
+              where lpad(v1.nr_cpf, 11, '0') = :cpf
+              order by v1.ds_plano",
+            [':cpf' => $cpf]
+        );
+    }
+
+    public function beneficiario($matricula)
+    {
+        $r = $this->db->consultar(
+            "select v1.cd_matricula, v1.nm_segurado, v1.cd_plano, v1.ds_plano, v1.cd_paciente_mv, v1.elegibilidade, v1.idade
+               from dbamv.vdic_auto_agenda_san_001 v1
+              where v1.cd_matricula = :mat",
+            [':mat' => $matricula],
+            1
+        );
+        return $r ? $r[0] : null;
+    }
+
+    public function especialidades($idade)
+    {
+        // A view 004 é lenta: o cache guarda as linhas (com idade_de/idade_ate) e o filtro pela idade é feito aqui
+        $linhas = $this->lerCache();
+        if ($linhas === null) {
+            $linhas = $this->consultarEspecialidades();
+            $this->gravarCache($linhas);
+        }
+        $r = [];
+        foreach ($linhas as $l) {
+            if ($idade !== null && $idade !== '' && (int) $idade >= (int) $l['IDADE_DE'] && (int) $idade <= (int) $l['IDADE_ATE']) {
+                $r[$l['CD_ESPECIALID']] = ['CD_ESPECIALID' => $l['CD_ESPECIALID'], 'DS_ESPECIALID' => $l['DS_ESPECIALID']];
+            }
+        }
+        // Mesma ordem do SQL do step 7: por descrição (binário), com a 999 sempre no final
+        usort($r, function ($x, $y) {
+            return strcmp($x['DS_ESPECIALID'], $y['DS_ESPECIALID']);
+        });
+        $r[] = ['CD_ESPECIALID' => 999, 'DS_ESPECIALID' => 'NENHUMA DAS ESPECIALIDADES'];
+        return $r;
+    }
+
+    private function lerCache()
+    {
+        if (!$this->arquivoCache || $this->ttl <= 0) {
+            return null;
+        }
+        clearstatcache(true, $this->arquivoCache);
+        if (!is_file($this->arquivoCache)) {
+            return null;
+        }
+        $idade = time() - (int) @filemtime($this->arquivoCache);
+        $dados = json_decode((string) @file_get_contents($this->arquivoCache), true);
+        // Cache no formato antigo (sem faixa de idade) é descartado
+        if ($idade > $this->ttl || !is_array($dados) || !$dados || !array_key_exists('IDADE_DE', $dados[0])) {
+            return null;
+        }
+        if ($this->detalhe) {
+            call_user_func($this->detalhe, 'Especialidades (view 004) lidas do cache, gravado há ' . $idade . ' s (validade ' . $this->ttl . ' s); consulta ao banco dispensada');
+        }
+        return $dados;
+    }
+
+    private function gravarCache(array $linhas)
+    {
+        if (!$this->arquivoCache || $this->ttl <= 0 || !$linhas) {
+            return;
+        }
+        // Grava em arquivo temporário e renomeia, para outra requisição nunca ler um arquivo pela metade
+        $tmp = $this->arquivoCache . '.' . getmypid() . '.tmp';
+        if (@file_put_contents($tmp, json_encode($linhas, JSON_UNESCAPED_UNICODE)) !== false) {
+            if (!@rename($tmp, $this->arquivoCache)) {
+                @copy($tmp, $this->arquivoCache);   // Windows não renomeia sobre arquivo existente em uso
+                @unlink($tmp);
+            }
+        }
+    }
+
+    private function consultarEspecialidades()
+    {
+        return $this->db->consultar(
+            "select distinct v4.cd_especialid, v4.ds_especialid, v4.idade_de, v4.idade_ate
+               from dbamv.vdic_auto_agenda_san_004 v4"
+        );
+    }
+
+    public function prestadores($especialidade, $idade)
+    {
+        return $this->db->consultar(
+            "select distinct v4.cd_prestador, v4.nm_prestador
+               from dbamv.vdic_auto_agenda_san_004 v4
+              where v4.cd_especialid = :esp
+                and :idade between v4.idade_de and v4.idade_ate
+              order by 2",
+            [':esp' => $especialidade, ':idade' => $idade]
+        );
+    }
+
+    public function proximaConsulta($matricula, $especialidade, $prestador, $paciente)
+    {
+        // View 002 + retornos da 006 (cd_tip_mar 2 com atendimento): vale o menor entre v6.dt_agenda e
+        // v2.dt_proxima_consulta por linha; havendo várias linhas, vale a maior data. Sem linha, max() devolve null.
+        $r = $this->db->consultar(
+            "select to_char(max(x.dt_proxima_consulta), 'DD/MM/YYYY') dt_proxima_consulta,
+                    case when max(x.dt_proxima_consulta) > sysdate + 1 then 1 else 0 end retorno
+               from (select v2.dt_emissao, min(nvl(v6.dt_agenda, v2.dt_proxima_consulta)) dt_proxima_consulta,
+                            v2.cd_especialidade_mv, v2.cd_prestador_mv, v2.cd_matricula
+                       from dbamv.vdic_auto_agenda_san_002 v2,
+                            (select * from dbamv.vdic_auto_agenda_san_006 v6
+                              where v6.cd_atendimento is not null
+                                and v6.cd_tip_mar = 2
+                                and v6.cd_paciente = :pac) v6
+                      where v2.cd_matricula = :mat
+                        and v2.cd_especialidade_mv = :esp
+                        and v2.cd_prestador_mv = :prest
+                        and v2.cd_especialidade_mv = v6.cd_especialid(+)
+                        and v2.cd_prestador_mv = v6.cd_prestador(+)
+                      group by v2.dt_emissao, v2.cd_especialidade_mv, v2.cd_prestador_mv, v2.cd_matricula) x",
+            [':pac' => $paciente, ':mat' => $matricula, ':esp' => $especialidade, ':prest' => $prestador]
+        );
+        return $r[0];
+    }
+
+    public function datasDisponiveis($especialidade, $prestador, $dtProxima)
+    {
+        $filtro = "v3.qt_agenda_tm > v3.qt_agendados_tm
+               and v3.cd_prestador = :prest
+               and v3.cd_especialid = :esp";
+        $binds = [':esp' => $especialidade, ':prest' => $prestador];
+
+        if ($dtProxima === null) {
+            // Step 11: somente consultas
+            $datas = "select distinct trunc(v3.dt_agenda) dt, v3.cd_tip_mar
+                        from dbamv.vdic_auto_agenda_san_003 v3
+                       where trunc(v3.dt_agenda) >= trunc(sysdate + 1)
+                         and v3.cd_tip_mar = 1
+                         and $filtro";
+        } else {
+            // Step 11.1: retorno até a véspera da próxima consulta + consultas a partir dela
+            $datas = "select distinct trunc(v3.dt_agenda) dt, v3.cd_tip_mar
+                        from dbamv.vdic_auto_agenda_san_003 v3
+                       where trunc(v3.dt_agenda) between trunc(sysdate + 1) and to_date(:dtprox, 'DD/MM/YYYY') - 1
+                         and v3.cd_tip_mar = 2
+                         and $filtro
+                      union all
+                      select distinct trunc(v3.dt_agenda) dt, v3.cd_tip_mar
+                        from dbamv.vdic_auto_agenda_san_003 v3
+                       where trunc(v3.dt_agenda) >= to_date(:dtprox, 'DD/MM/YYYY')
+                         and v3.cd_tip_mar = 1
+                         and $filtro";
+            $binds[':dtprox'] = $dtProxima;
+        }
+
+        return $this->db->consultar(
+            "select to_char(d.dt, 'DD/MM/YYYY') dt_agenda, d.cd_tip_mar
+               from ($datas) d
+              order by d.dt",
+            $binds
+        );
+    }
+
+    public function horarios($especialidade, $prestador, $tipoMarcacao, $data)
+    {
+        // Regra do cliente: só os 3 primeiros horários livres por escala e tipo de marcação (rn <= 3)
+        return $this->db->consultar(
+            "select * from (
+                select v3.cd_agenda_central, v3.cd_it_agenda_central, v3.cd_unidade_atendimento, v3.cd_setor,
+                       v3.cd_item_agendamento, v3.cd_especialid, v3.ds_especialid, v3.cd_prestador, v3.nm_prestador,
+                       v3.cd_servico, v3.cd_tip_mar, v3.ds_tip_mar, v3.hr_agenda, v3.tempo_consulta,
+                       to_char(v3.dh_agenda, 'DD/MM/YYYY HH24:MI:SS') dh_agenda,
+                       row_number() over (partition by v3.cd_escala_central, v3.cd_tip_mar
+                                          order by v3.dh_agenda, v3.cd_it_agenda_central) rn
+                  from dbamv.vdic_auto_agenda_san_003 v3
+                 where trunc(v3.dt_agenda) = to_date(:data, 'DD/MM/YYYY')
+                   and v3.cd_tip_mar = :tip
+                   and v3.cd_prestador = :prest
+                   and v3.cd_especialid = :esp
+                   and v3.qt_agenda_tm > v3.qt_agendados_tm
+             )
+             where rn <= 3
+             order by hr_agenda",
+            [':data' => $data, ':tip' => $tipoMarcacao, ':prest' => $prestador, ':esp' => $especialidade]
+        );
+    }
+
+    public function agendamentoExistente($especialidade, $paciente)
+    {
+        // View 006: agendamentos ativos do paciente, já com a especialidade
+        $r = $this->db->consultar(
+            "select to_char(v6.dh_agenda, 'DD/MM/YYYY HH24:MI:SS') dh_agenda, v6.nm_prestador
+               from dbamv.vdic_auto_agenda_san_006 v6
+              where v6.cd_especialid = :esp
+                and v6.cd_paciente = :pac
+                and v6.dh_agenda >= sysdate
+              order by v6.dh_agenda",
+            [':esp' => $especialidade, ':pac' => $paciente],
+            1
+        );
+        return $r ? $r[0] : null;
+    }
+
+    public function agendamentosFuturos($paciente)
+    {
+        // v6.* porque só é certo que a view 006 tem dh_agenda, nm_prestador, cd_especialid e cd_paciente; a descrição da
+        // especialidade e o tipo (consulta/retorno) são usados se a view os trouxer (ver as colunas em logs/detalhe-*.txt).
+        $linhas = $this->db->consultar(
+            "select * from (
+                select v6.*, to_char(v6.dh_agenda, 'DD/MM/YYYY HH24:MI:SS') dh_agenda_txt
+                  from dbamv.vdic_auto_agenda_san_006 v6
+                 where v6.cd_paciente = :pac
+                   and v6.dh_agenda >= sysdate
+                 order by v6.dh_agenda
+             ) where rownum <= 20",
+            [':pac' => $paciente]
+        );
+        foreach ($linhas as &$l) {
+            $l['DH_AGENDA'] = $l['DH_AGENDA_TXT'];   // o DATE original vem sem hora (NLS da sessão)
+        }
+        return $linhas;
+    }
+
+    public function agendar(array $horario, array $beneficiario, array $parametros)
+    {
+        $stmt = $this->db->executar(
+            "begin
+                dbamv.rf_prc_auto_agenda_agendar(
+                    p_cd_agenda_central      => :agenda,
+                    p_cd_it_agenda_central   => :it_agenda,
+                    p_cd_paciente            => :paciente,
+                    p_dh_agenda              => to_date(:dh_agenda, 'DD/MM/YYYY HH24:MI:SS'),
+                    p_cd_item_agendamento    => :item,
+                    p_cd_convenio            => :convenio,
+                    p_cd_plano               => :plano,
+                    p_cd_unidade_atendimento => :unidade,
+                    p_cd_tipo_marcacao       => :tip_mar,
+                    p_cd_setor               => :setor,
+                    p_cd_servico             => :servico,
+                    p_cd_prestador           => :prestador,
+                    p_usuario                => :usuario,
+                    p_tempo_consulta         => :tempo,
+                    p_celular_agendamento    => :celular
+                );
+             end;",
+            [
+                ':agenda'    => $horario['CD_AGENDA_CENTRAL'],
+                ':it_agenda' => $horario['CD_IT_AGENDA_CENTRAL'],
+                ':paciente'  => $beneficiario['CD_PACIENTE_MV'],
+                ':dh_agenda' => $horario['DH_AGENDA'],
+                ':item'      => $horario['CD_ITEM_AGENDAMENTO'],
+                ':convenio'  => $parametros['convenio'],
+                ':plano'     => $beneficiario['CD_PLANO'],
+                ':unidade'   => $horario['CD_UNIDADE_ATENDIMENTO'],
+                ':tip_mar'   => $horario['CD_TIP_MAR'],
+                ':setor'     => $horario['CD_SETOR'],
+                ':servico'   => $horario['CD_SERVICO'],
+                ':prestador' => $horario['CD_PRESTADOR'],
+                ':usuario'   => $parametros['usuario'],
+                ':tempo'     => $horario['TEMPO_CONSULTA'],
+                ':celular'   => $parametros['celular'],
+            ]
+        );
+        oci_free_statement($stmt);
+    }
+
+    public function agendamentoConfirmado(array $horario, $paciente)
+    {
+        $r = $this->db->consultar(
+            "select count(*) qtd
+               from dbamv.vdic_auto_agenda_san_005 v5
+              where v5.cd_paciente = :pac
+                and v5.cd_prestador = :prest
+                and v5.dh_agenda = to_date(:dh, 'DD/MM/YYYY HH24:MI:SS')",
+            [':pac' => $paciente, ':prest' => $horario['CD_PRESTADOR'], ':dh' => $horario['DH_AGENDA']]
+        );
+        return (int) $r[0]['QTD'] > 0;
+    }
+}

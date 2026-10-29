@@ -1,3 +1,4 @@
+from autoagenda import api as autoagenda
 from operations.report_app_api import AppConnectionViewSet
 from django.contrib import admin
 from django.urls import include, path
@@ -79,6 +80,12 @@ for prefix, view in [
     router.register(prefix, view, basename=prefix)
 
 urlpatterns = [
+    path("api/v1/autoagenda/config/", autoagenda.ConfigurationView.as_view()),
+    path("api/v1/autoagenda/check/", autoagenda.ConnectionCheck.as_view()),
+    path("api/v1/autoagenda/console/", autoagenda.ConsoleView.as_view()),
+    path("api/v1/autoagenda/conversations/<uuid:pk>/", autoagenda.ConversationView.as_view()),
+    path("api/v1/autoagenda/links/", autoagenda.LinkView.as_view()),
+    path("api/v1/autoagenda/public/", autoagenda.PublicView.as_view()),
     path("api/v1/report-whatsapp/authorize/", ReportWhatsAppAuthorizeView.as_view()),
     path("api/v1/report-whatsapp/", ReportWhatsAppView.as_view()),
     path("api/v1/report-whatsapp/inbound/", ReportWhatsAppInboundView.as_view()),

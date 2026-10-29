@@ -1,4 +1,5 @@
 import { Activity, Lightbulb } from "./components/icons";
+import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -82,6 +83,7 @@ const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
+  {id:"autoagenda",label:"Autoagendamento",icon:CalendarDays},
   { id: "issues", label: "Pendências", icon: ClipboardList },
   { id: "reports", label: "Relatórios", icon: Lightbulb },
   { id: "settings", label: "Configurações", icon: Settings2 },
@@ -301,7 +303,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (!canAccess(session, unit, page) || canvasId || page === "reports") {
+    if (!canAccess(session, unit, page) || canvasId || page === "reports" || page === "autoagenda") {
       setBusy(false);
       return;
     }
@@ -726,6 +728,7 @@ function Workspace({
               </button>
             </div>
           )}
+          {page === "autoagenda" && <AutoAgendaWorkspace unit={unit} write={role!=="viewer"} admin={actualRole==="admin"}/> }
           {["care", "campaigns", "reports"].includes(page) && (
             <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
               username={session.username} userAccess={false} reportAdmin={actualRole === "admin"} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} /></Suspense>
@@ -752,7 +755,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {page === "reports" ? null : !data ? (
+          {page === "reports" || page === "autoagenda" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />

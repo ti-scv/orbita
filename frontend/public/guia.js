@@ -1,4 +1,15 @@
 const guides = {
+  autoagenda: {
+    title: "Autoagendamento Sansaúde", path: "/autoagendamento",
+    sections: [
+      ["Sessões", "Cada paciente utiliza um link temporário e uma sessão própria. Em andamento mostra sessões iniciadas; Todas as sessões inclui links gerados e encerramentos. Acompanhamento mostra mensagens e opções já enviadas, sem capturar teclas ou interferir nas escolhas do paciente."],
+      ["Fila humana", "Recebe problemas de elegibilidade, falta de horários e pedidos de atendimento. A equipe registra ações e conclui a solicitação. Solicitar cancelamento não altera o hospitalar automaticamente. O retorno ao WhatsApp abre o número configurado; não envia mensagem por conta própria."],
+      ["Reservas", "O chat pode estar ativo com a gravação desativada. Antes da gravação, o backend confere elegibilidade e horário e exige habilitação explícita. Resultados incertos ficam para conferência na view 005; a procedure não é repetida automaticamente."],
+      ["Configuração", "Administradores configuram Oracle, ambiente, endereço público, retorno, opções e textos de cada etapa em modal. Alterar a conexão invalida o teste e desativa reservas. A nova senha Oracle exige a senha do administrador e fica criptografada no banco."],
+      ["Indicadores", "As contagens referem-se às sessões e reservas deste módulo. Links ainda não utilizados entram no total de sessões. Agendamentos antigos do hospitalar aparecem ao paciente em Meus agendamentos, mas não são importados como reservas novas do módulo."],
+      ["Serviço público", "O chat roda em serviço próprio na porta 8081, separado do painel 8080. Configure no proxy reverso o encaminhamento integral para 8081 e depois ajuste URL pública no modal. Nunca direcione o paciente ao painel administrativo."],
+    ],
+  },
   costs: {
     title: "Custos Meta", path: "/custos-meta",
     sections: [

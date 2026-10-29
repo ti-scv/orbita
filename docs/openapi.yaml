@@ -487,6 +487,215 @@ paths:
               schema:
                 $ref: '#/components/schemas/AckOutput'
           description: ''
+  /api/v1/autoagenda/check/:
+    post:
+      operationId: autoagenda_check_create
+      tags:
+      - Autoagendamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/autoagenda/config/:
+    get:
+      operationId: autoagenda_config_retrieve
+      tags:
+      - Autoagendamento
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    put:
+      operationId: autoagenda_config_update
+      tags:
+      - Autoagendamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/autoagenda/console/:
+    get:
+      operationId: autoagenda_console_retrieve
+      tags:
+      - Autoagendamento
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/autoagenda/conversations/{id}/:
+    get:
+      operationId: autoagenda_conversations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Autoagendamento
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+    post:
+      operationId: autoagenda_conversations_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Autoagendamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/autoagenda/links/:
+    post:
+      operationId: autoagenda_links_create
+      tags:
+      - Autoagendamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/autoagenda/public/:
+    post:
+      operationId: autoagenda_public_create
+      tags:
+      - Autoagendamento
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/campaigns/:
     get:
       operationId: campaigns_list
@@ -3205,6 +3414,102 @@ paths:
               schema:
                 $ref: '#/components/schemas/AppConnection'
           description: ''
+  /api/v1/report-app-connections/{id}/dependencias/:
+    get:
+      operationId: report_app_connections_dependencias_retrieve
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report application
+          connection.
+        required: true
+      tags:
+      - report-app-connections
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConnection'
+          description: ''
+  /api/v1/report-app-connections/{id}/remover/:
+    post:
+      operationId: report_app_connections_remover_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report application
+          connection.
+        required: true
+      tags:
+      - report-app-connections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConnection'
+          description: ''
+  /api/v1/report-app-connections/{id}/restaurar/:
+    post:
+      operationId: report_app_connections_restaurar_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report application
+          connection.
+        required: true
+      tags:
+      - report-app-connections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AppConnection'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConnection'
+          description: ''
   /api/v1/report-app-connections/options/:
     get:
       operationId: report_app_connections_options_retrieve
@@ -3451,6 +3756,99 @@ paths:
   /api/v1/report-connections/{id}/configure/:
     post:
       operationId: report_connections_configure_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report connection.
+        required: true
+      tags:
+      - report-connections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Connection'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/v1/report-connections/{id}/dependencias/:
+    get:
+      operationId: report_connections_dependencias_retrieve
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report connection.
+        required: true
+      tags:
+      - report-connections
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/v1/report-connections/{id}/remover/:
+    post:
+      operationId: report_connections_remover_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report connection.
+        required: true
+      tags:
+      - report-connections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Connection'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/v1/report-connections/{id}/restaurar/:
+    post:
+      operationId: report_connections_restaurar_create
       description: Configuration revisions are appended; there is no delete endpoint.
       parameters:
       - in: path
@@ -4740,6 +5138,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/CanvasAssetSchema'
           description: ''
+  /api/v1/reports/{id}/canvas-column-origin/:
+    post:
+      operationId: reports_canvas_column_origin_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report definition.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+          description: ''
   /api/v1/reports/{id}/canvas-preview/:
     post:
       operationId: reports_canvas_preview_create
@@ -4810,6 +5243,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/CanvasSourcePreviewResult'
           description: ''
+  /api/v1/reports/{id}/canvas-validate/:
+    post:
+      operationId: reports_canvas_validate_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report definition.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+          description: ''
   /api/v1/reports/{id}/configure/:
     post:
       operationId: reports_configure_create
@@ -4835,6 +5303,29 @@ paths:
             schema:
               $ref: '#/components/schemas/Catalog'
         required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+          description: ''
+  /api/v1/reports/{id}/dependencias/:
+    get:
+      operationId: reports_dependencias_retrieve
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report definition.
+        required: true
+      tags:
+      - reports
       security:
       - orbitaInstanceKey: []
       - cookieAuth: []
@@ -4878,6 +5369,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PreviewOutput'
+          description: ''
+  /api/v1/reports/{id}/remover/:
+    post:
+      operationId: reports_remover_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report definition.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
+          description: ''
+  /api/v1/reports/{id}/restaurar/:
+    post:
+      operationId: reports_restaurar_create
+      description: Configuration revisions are appended; there is no delete endpoint.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Um valor inteiro único que identifica este report definition.
+        required: true
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Catalog'
+        required: true
+      security:
+      - orbitaInstanceKey: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Catalog'
           description: ''
   /api/v1/reports/app-data/:
     get:
@@ -6770,11 +7331,40 @@ components:
           type: boolean
         elapsed_ms:
           type: integer
+        total_rows_exact:
+          type: boolean
+        total_rows_capped:
+          type: boolean
+        has_more:
+          type: boolean
+        offset:
+          type: integer
+        next_offset:
+          type: integer
+          nullable: true
+        cache_hit:
+          type: boolean
+        external:
+          type: boolean
+        notice:
+          type: string
+        timings:
+          type: object
+          additionalProperties: {}
       required:
+      - cache_hit
       - columns
       - elapsed_ms
+      - external
+      - has_more
+      - next_offset
+      - notice
+      - offset
       - rows
+      - timings
       - total_rows
+      - total_rows_capped
+      - total_rows_exact
       - truncated
     CanvasSourcePreviewSchema:
       type: object
@@ -6788,6 +7378,11 @@ components:
           maximum: 500
           minimum: 1
           default: 50
+        offset:
+          type: integer
+          maximum: 10000
+          minimum: 0
+          default: 0
       required:
       - source
     Case:

@@ -76,6 +76,29 @@ services:
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped
+  autoagenda-api:
+    profiles: ["autoagenda"]
+    build: ./backend
+    env_file: .env
+    environment:
+      <<: *backend_environment
+      SEND_MODE: simulated
+      META_REAL_ENABLED: "0"
+      REPORT_BAILEYS_ALLOW_SENDS: "0"
+    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "90", "--log-level", "warning"]
+    depends_on:
+      db: {condition: service_healthy}
+    restart: unless-stopped
+    mem_limit: 768m
+  autoagenda-web:
+    profiles: ["autoagenda"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.autoagenda
+    ports: ["${AUTOAGENDA_BIND:-127.0.0.1}:${AUTOAGENDA_PORT:-8081}:80"]
+    depends_on: [autoagenda-api]
+    restart: unless-stopped
+    mem_limit: 128m
   tests:
     profiles: ["test"]
     build: ./backend
