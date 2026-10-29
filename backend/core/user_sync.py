@@ -5,6 +5,7 @@ from uuid import UUID
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 
 from core.federation_network import RemoteUnavailable, decrypt_key, remote_http
 from core.models import Audit, RemoteInstance, SyncedUserIdentity, UserAccessProfile
@@ -36,7 +37,7 @@ def sync_users(connection, actor=None):
                     raise ValueError
                 seen.add(remote_id)
                 parsed.append((remote_id, login, name, email))
-        except (KeyError, TypeError, ValueError, UnicodeError):
+        except (KeyError, TypeError, ValueError, UnicodeError, AttributeError):
             raise RemoteUnavailable("invalid_identity_export") from None
         with transaction.atomic():
             connection = RemoteInstance.objects.select_for_update().get(pk=connection.pk)
@@ -62,7 +63,8 @@ def sync_users(connection, actor=None):
             Audit.objects.create(unit=connection.local_unit, actor=actor, action="user_sync.completed",
                                  object_id=str(connection.pk), details={"count": len(parsed)})
         return {"ok": True, "count": len(parsed)}
-    except RemoteUnavailable as exc:
+    except (RemoteUnavailable, ValidationError) as exc:
+        code = exc.code if isinstance(exc, RemoteUnavailable) else "invalid_connection"
         Audit.objects.create(unit=connection.local_unit, actor=actor, action="user_sync.failed",
-                             object_id=str(connection.pk), details={"code": exc.code})
-        return {"ok": False, "error": "Não foi possível sincronizar usuários. Tente novamente.", "code": exc.code}
+                             object_id=str(connection.pk), details={"code": code})
+        return {"ok": False, "error": "Não foi possível sincronizar usuários. Tente novamente.", "code": code}

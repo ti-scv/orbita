@@ -409,7 +409,8 @@ def test_real_http_handshake_and_relay_without_replication(federation):
         response = f["client"].get(f"/api/v1/remote/{connection_id}/appointments/?page=1")
         assert response.status_code == 200 and response.json()["results"][0]["id"] == 555
         assert observed[0]["path"] == MANIFEST
-        assert "unit=remote-clinic" in observed[1]["path"]
+        assert observed[1]["path"] == "/api/v1/federation/user-identities/"
+        assert "unit=remote-clinic" in observed[2]["path"]
         assert all(item["authorization"] == "Bearer " + f["key"]["key"] for item in observed)
         assert observed[1]["role"] == "operator"
         assert counts == (Unit.objects.count(), Appointment.objects.count(), Message.objects.count())
