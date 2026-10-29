@@ -1,0 +1,77 @@
+# Check-in C — implementação parcial
+
+Base: cd495d5. A entrega não está pronta para ativação. Não há criação de intenções, fila, tarefa, transporte ou tratamento de respostas nesta branch. Os defaults do A0 permanecem desligados; nenhum envio real foi feito.
+
+## Implementado
+
+`checkin.programming.calculate_schedule` calcula em UTC a antecedência em horas ou dias de duração, convertendo a janela comercial pelo fuso configurado. O fechamento é exclusivo, com precisão de microssegundo: 18:00 não é permitido e o último instante é 17:59:59.999999. Dias bloqueados e feriados antecipam para a janela anterior. Limites de janela ambíguos ou inexistentes por mudança de fuso exigem revisão. Horário de envio que já passou exige revisão; o prazo é o horário do atendimento. O cálculo valida unidade e configuração e não persiste nem agenda nada. `checkin.message.message_text` produz o texto curto sem informações clínicas; ainda não é template Meta aprovado.
+
+## Integração pendente obrigatória
+
+- Criar intenção idempotente por ciclo/destinatário, com isolamento de Sansaúde e opção específica de cada origem; definir política conservadora entre origens antes de habilitar. Persistir pendências para horário ausente ou vencido e definir criação explícita de ciclos.
+- Integrar tarefa/beat e fila `messaging`, validando novamente origem, revisão, cancelamento, reagendamento, destinatário, unidade, configuração e janela imediatamente antes de enviar. Definir template Meta aprovado com opções; usar transporte de lembretes e guardar identificadores, com controle concorrente e resultado incerto sem reenvio cego. Só aceite confirmado transiciona para `sent` pelo serviço A0. Testes devem usar transporte simulado exclusivamente.
+- Integrar webhook `responses.services.apply_reply`: correlação segura por contexto, canal, destinatário, mensagem, ciclo e revisão, e encaminhamento de respostas ambíguas, sem contexto, fora de ordem ou antigas para pendência. Tratar duplicatas idempotentemente. Solicitação de cancelamento cria pendência sem escrever na agenda nem no Oracle. Integrar prazo e `no_response` sem confundir com comparecimento.
+- Integrar configuração com A1/B e estabelecer forma operacional de revisão. Não mudar os nomes ou estados do contrato A0. Nenhuma migração foi criada nesta entrega; eventual persistência de intenção deve ser aditiva e reversível e reconciliada na integração.
+- Testar concorrência, falhas, reinício, resultado incerto, respostas e invalidação de origem antes de ativar.
+
+## Testes
+
+Os testes específicos em `backend/tests/test_checkin_programming.py` cobrem janela, abertura/fechamento, feriado, horas/dias, atraso, fuso ambíguo e texto. As suítes completas são executadas isoladamente com SQLite de teste e transporte simulado; consultar os resultados registrados no commit de documentação. Não se acessou Oracle nem se enviou WhatsApp.
+
+Primeira execução específica: 5 passaram (antes da inclusão do teste do texto e da troca de validação por `clean`). Repetição com 6 casos e suítes completas da base e da branch foram iniciadas, ainda sem resultado no momento deste registro; portanto não há comprovação de ausência de regressão. A preparação das dependências frontend também foi iniciada. Os comandos usam contêineres separados; backend sem rede e banco SQLite temporário.
+
+## Continuação 38-C-2 — ciclos
+
+`checkin.intents.create_intent` cria um ciclo explícito por origem e revisão, serializado pela configuração e pela origem, e retorna o ciclo já existente em chamadas repetidas. Exige Sansaúde, configuração habilitada e exatamente uma das origens habilitada; Appointment precisa estar agendado e Booking confirmado. Um ciclo pendente ou enviado impede outro ciclo da mesma origem até revisão ou conclusão. Esta política conservadora também bloqueia ciclo novo após revisão da origem enquanto o anterior continuar ativo; a invalidação automática permanece pendente. Horário inválido ou janela vencida mantém o ciclo sem data de envio e cria uma pendência de revisão. Não há migração nova. Essa função ainda não é chamada automaticamente, não identifica destinatário e não cria Message; não habilita envio.
+
+A integração com fila Meta, validação na expedição, correlação de respostas, prazo, invalidação e a política para destinatários continuam pendentes. A pendência de programação usa Issue existente e identifica o ciclo na descrição; não existe ainda interface específica de revisão. Não ativar em produção antes de integrar e validar esses pontos, inclusive o template Meta aprovado.
+
+Testes específicos em contêiner sem rede e banco SQLite: `pytest tests/test_checkin_intents.py tests/test_checkin_programming.py -q -p no:cacheprovider`, 10 passaram. As suítes completas foram enfileiradas com `flock /tmp/orbita-suite.lock`, backend com transporte simulado e frontend com `--maxWorkers=2`, caches desativados e `VITE_CACHE` em `/tmp`; resultados precisam ser conferidos antes de afirmar ausência de regressões.
+
+## Continuação 38-C-3 — manutenção periódica parcial
+
+O beat chama `checkin.tick` a cada minuto; a tarefa só atua quando `CHECKIN_SCHEDULER_ENABLED=1` e a configuração Sansaúde está habilitada. Processa prazos vencidos de ciclos já enviados pela transição auditada A0, idempotentemente, sem inferir comparecimento; revisão antiga gera pendência. O interruptor adicional começa desligado. **Não habilitar:** esta etapa não cria ciclos automaticamente, mensagens ou envios; o restante da integração descrita acima continua obrigatório.
+
+### Proposta para integração por destinatário (não implementada)
+
+O contrato A0 tem um único `message_id`, `provider_message_id` e estado de resposta por ciclo, enquanto Appointment pode ter vários telefones. Antes de habilitar envios a múltiplos destinatários, propor uma tabela aditiva de entregas por check-in e telefone, com chave única, vínculo de Message e IDs do provedor, e definir como respostas divergentes e aceites parciais se refletem no estado único do ciclo. Não alterar os campos ou estados congelados sem reconciliar essa política. Para Booking é necessário validar o telefone da conversa e mudanças no horário, pois a revisão da origem ainda é fixa em 1. Até a solução e os testes de concorrência e de invalidação estarem integrados, não ligar o agendador nem a fila.
+
+Verificação específica em contêiner sem rede, SQLite temporário e `SEND_MODE=simulated`: `pytest tests/test_checkin_tasks.py tests/test_checkin_intents.py tests/test_checkin_programming.py -q -p no:cacheprovider`, 12 passaram. Suítes completas desta continuação foram colocadas na fila de `/tmp/orbita-suite.lock`; consultar `/tmp/38c3-back.log`, `/tmp/38c3-back.exit`, `/tmp/38c3-front.log` e `/tmp/38c3-front.exit` para os resultados, sem presumir sucesso. As execuções 38-C-2 registraram frontend 671 testes aprovados; backend da branch teve 6 falhas e 30 erros, e a base teve 8 falhas e 30 erros. Há falhas de concorrência e configuração no ambiente SQLite além das exceções aceitas originalmente, portanto não se demonstrou ausência de regressão.
+
+## Continuação 38-C-4 — descoberta automática
+
+Com `CHECKIN_SCHEDULER_ENABLED` e configuração habilitados, o tick descobre até 100 Appointment futuros agendados ou Booking confirmados por execução, conforme a única origem habilitada. A criação usa o serviço idempotente existente, que revalida origem e configuração sob bloqueio; ciclos existentes e ciclos ativos são excluídos da descoberta. Horários inválidos ou vencidos geram revisão. Booking usa revisão 1 do contrato e requer revalidação do horário antes de qualquer envio. A descoberta e o envio continuam desligados por padrão.
+
+Verificação específica, em contêiner sem rede, SQLite temporário e transporte simulado: 13 testes passaram (`test_checkin_tasks`, `test_checkin_intents`, `test_checkin_programming`).
+
+### Mensagem por ciclo
+
+`checkin.deliveries.create_message` cria uma prévia idempotente para um único contato: o primeiro `phone_numbers` do Appointment (com fallback para `phone`), como nos lembretes, ou o telefone da conversa do Booking. Normaliza o telefone e registra pendência se inválido. Exige template local `checkin_agendamento`, `pt_BR`, finalidade `checkin`, habilitado para teste, com campos `date` e `time` e texto exatamente correspondente ao conteúdo curto de check-in; a ausência gera pendência. Isso não comprova aprovação no catálogo Meta: aprovação, opções, mapeamento e validação do catálogo precisam ser integrados antes de qualquer envio. A função ainda não é chamada pelo tick nem coloca mensagens na fila. Nenhum envio foi realizado. A proposta de múltiplos destinatários permanece acima, sem alteração do contrato.
+
+### Fila
+
+O tick prepara e enfileira prévias de ciclos pendentes na fila `messaging` existente, sem adicionar transporte. O `send_guard` bloqueia deliberadamente todos os check-ins enquanto a revalidação de expedição não estiver implementada; portanto esta etapa isolada não envia. O interruptor do tick permanece desligado por padrão.
+
+### Revalidação inicial
+
+A guarda da fila consulta novamente a configuração, unidade, origem, estado, revisão, horário, contato, opt-out e janela comercial. Falhas bloqueiam a mensagem; a expedição permanece bloqueada mesmo após validação, até integrar confirmação de aceite e tratamento concorrente. A verificação ainda precisa de bloqueios transacionais compatíveis com a expedição, de validação do template no catálogo Meta e de testes de concorrência: não habilitar.
+
+### Respostas
+
+O webhook reconhece mensagens de finalidade `checkin` somente com contexto explícito, unidade, canal e remetente correspondentes; sem contexto, não tenta adivinhar o ciclo. Respostas textuais exatas “Confirmar” e “Solicitar cancelamento” usam a transição auditada; cancelamento cria uma pendência e não altera agenda nem Oracle. Resposta ambígua, anterior, conflitante ou para origem alterada gera pendência. A ligação de IDs após aceite ainda está pendente, portanto este caminho não habilita envios.
+
+### Aceite simulado
+
+A fila despacha check-in apenas com `SEND_MODE=simulated` e `SimulatedTransport`, respeitando a pausa da unidade. No aceite confirmado, o ID do provedor é associado ao ciclo e a transição auditada marca `sent`; resultado incerto permanece em quarentena e não marca envio. A expedição bloqueia e revalida configuração e origem, contato, template e janela, incluindo mudanças na configuração desde a criação da prévia. As mensagens reais continuam bloqueadas: a guarda e o filtro do piloto Meta existente exigem liberação de grupo e um template aprovado de lembretes, e ainda não há template Meta de check-in aprovado e mapeado nesta entrega. Não habilitar até implementar e validar essa integração e os cenários de concorrência/reconciliação de aceite. Não se enviou mensagem real.
+
+Verificação específica: 20 testes passaram em contêiner sem rede, SQLite temporário e transporte simulado, incluindo aceite, resultado incerto, alteração de origem e contato e respostas.
+
+A correlação também envia para revisão respostas fora de ordem ou associadas a contato alterado. Repetição dos testes específicos após essa verificação: 21 passaram.
+
+Os 21 testes específicos também passaram em PostgreSQL isolado. As consultas que bloqueiam um ciclo restringem `FOR UPDATE` à própria tabela para permitir suas relações opcionais em PostgreSQL.
+
+### Comparação final de regressão 38-C-4
+
+No mesmo ambiente isolado com PostgreSQL 17, transporte simulado e suítes completas serializadas por `flock /tmp/orbita-suite.lock`, a base `cd495d5` teve 1.300 testes aprovados, 5 ignorados e as duas falhas conhecidas `test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates`. A versão `115c3bd` teve 1.321 aprovados, 5 ignorados e as mesmas duas falhas. No frontend, base e versão final tiveram 76 arquivos e 671 testes aprovados cada, com no máximo dois workers. Logs em `/tmp/checkin38c4.mBghpP/base-pg.log`, `resume-pg.log`, `resume-base-front.log` e `resume-verified-front-retry.log`.
+
+Os cinco itens desta continuação foram implementados nos commits registrados acima, com expedição exclusivamente simulada. O interruptor continua desligado por padrão e a ativação real depende dos pontos de integração e do template Meta aprovados descritos nesta documentação.

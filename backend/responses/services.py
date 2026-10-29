@@ -135,6 +135,7 @@ def apply_reply(event, unit):
     else:
         from django.db.models import Q
 
+        candidates = candidates.exclude(purpose="checkin")
         candidates = candidates.filter(
             Q(case__isnull=True) | Q(appointment_revision=F("case__event__revision"))
         )
@@ -152,6 +153,10 @@ def apply_reply(event, unit):
             if len(choices) == 2:
                 break
         message = choices[0] if len(choices) == 1 else None
+    if message and message.purpose == "checkin":
+        from checkin.replies import apply_checkin_reply
+        apply_checkin_reply(event, unit, message)
+        return
     from operations.services import apply_outcome, contextual_classify
 
     classification = contextual_classify(
