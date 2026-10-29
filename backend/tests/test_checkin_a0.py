@@ -46,6 +46,8 @@ def test_transitions_idempotency_and_revision(data):
     with pytest.raises(Conflict): transition(**{**args, "response": "confirmed"})
     with pytest.raises(Conflict): transition(**{**args, "idempotency_key": "other"})
     with pytest.raises(ValidationError): transition(unit=unit, checkin_id=record.pk, version=2, idempotency_key="early", origin="automatic", response="no_response")
+    actor = get_user_model().objects.create_user(username="operator")
+    with pytest.raises(ValidationError): transition(unit=unit, checkin_id=record.pk, version=2, idempotency_key="early-manual", origin="operator", actor=actor, reason="teste", response="no_response")
     record, _ = transition(unit=unit, checkin_id=record.pk, version=2, idempotency_key="yes", origin="automatic", response="confirmed")
     with pytest.raises(ValidationError): transition(unit=unit, checkin_id=record.pk, version=3, idempotency_key="absent", origin="oracle", attendance="absent")
     record, _ = transition(unit=unit, checkin_id=record.pk, version=3, idempotency_key="attended", origin="oracle", attendance="attended", evidence={"cd_atendimento_present": True})
