@@ -188,3 +188,15 @@ Os tipos exibem Visão geral, Mensagens, Grupos e Pendências individualmente e 
 Após login, rota conhecida não permitida é redirecionada para a primeira tela permitida. O ícone de Relatórios recebeu fundo suave; tamanho e contraste do rodapé foram ajustados. A barra lateral usa o perfil real da unidade, como a lista, e trocar o perfil de um vínculo com tipo pede confirmação.
 
 Verificações: Vitest em Node 24, 648 testes aprovados; testes `test_instance_users.py` e `test_task35a5_roles.py`, 12 aprovados em banco de teste descartável. Build do frontend concluído; staging 8100 reconstruído com API da árvore 35b reiniciada. As rotas `/`, `/configuracoes`, `/relatorios`, `/mensagens` e `/grupos` retornaram HTTP 200. Essas verificações HTTP não substituem QA autenticado ou medição de tempo no navegador. Não houve migração, push nem uso de 8091.
+
+## Revisão 35f — resultado parcial
+
+A autorização dos recursos exclusivos `indicators`, `messages`, `replies`, `appointment-groups` e `issues` agora usa, respectivamente, Visão geral, Mensagens, Mensagens, Grupos e Pendências. Consultas de agendamentos filtradas por grupo ou pendências também reconhecem essas subáreas. Testes cobrem permissões individuais e aplicadas por tipo; os recursos compartilhados ainda precisam de revisão completa de segurança e fluxo de ponta a ponta antes de considerar a separação concluída.
+
+O backend limita concessões remotas ao teto da conexão e do perfil, devolvendo unidade e seções limitadas; o formulário identifica os limites conhecidos e mostra avisos devolvidos pelo backend. A concessão local continua sujeita à permissão do administrador. O cenário exato solicitado não foi reproduzido: neste banco descartável não havia conexões remotas cadastradas, `qa23u` não tinha vínculo remoto e `teste35b` não tem WhatsApp local para delegar. Ainda é necessário montar o cenário completo com a unidade AME remota e validar o salvamento e o aviso no navegador.
+
+Medição headless autenticada, Chromium com cache desativado, desde a navegação a `/configuracoes` incluindo abrir Usuários e acessos até a primeira linha visível: antes da reconstrução, 1,201 / 1,178 / 1,050 s; depois, 1,051 / 1,263 / 1,208 s. A meta de 3 s foi atendida nas seis medições; não houve alteração de desempenho nesta revisão. A estimativa anterior de 6,6 s da QA23 não tem metodologia comparável registrada.
+
+Vitest: 648 aprovados. Testes backend direcionados após atualização de expectativas: 56 aprovados. A suíte ampla anterior à atualização dos testes terminou com 1.162 aprovados, 16 falhas e 7 erros: entre as falhas estavam expectativas antigas sobre permissão geral e rejeição de limites remotos, além de falhas de remoção de relatórios; os erros de SQL operacional ocorreram na preparação da fonte. A repetição isolada de remoção retornou HTTP 503. A suíte ampla não foi repetida após atualizar as expectativas e não pode ser considerada aprovada.
+
+Frontend do staging 8100 reconstruído e API descartável reiniciada; `/`, `/configuracoes`, `/relatorios`, `/mensagens` e `/grupos` responderam 200. Nenhuma migração ou push foi realizada.
