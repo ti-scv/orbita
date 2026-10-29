@@ -26,8 +26,12 @@ O downgrade seguido de upgrade foi executado em uma cópia descartável do banco
 bash /opt/orbita-deploy-32c69c7/rollback-images-v3.sh
 ```
 
-Esse comando recria api, worker, scheduler e panel com as imagens de rollback configuradas; **não reverte migrações, esquema ou dados**. Reverter migrações é uma operação separada, com perda dos tipos e associações descrita acima; validar compatibilidade da versão anterior e decidir o procedimento de dados antes de executá-la.
+Esse comando recria api, worker, scheduler e panel com as imagens configuradas orbita-api:canvas-27ef2cc e orbita-panel:canvas-27ef2cc, não com a base 32c69c7; **não reverte migrações, esquema ou dados**. Reverter migrações é uma operação separada, com perda dos tipos e associações descrita acima; validar compatibilidade da versão anterior e decidir o procedimento de dados antes de executá-la.
 
 ## Staging descartável
 
 `127.0.0.1:8105`, rede `orbita-release-37r`, banco `orbita-release-37r-db` copiado do banco de teste 8100; não usa 8091 nem banco real. Conta `teste37` é superusuário; senha exclusivamente em `/workspace/orbita-canvas/teste37.txt` na máquina da tarefa. Os tipos e usuários qa23/qa25 e a instância simulada vieram do banco 8100. As unidades qa33c/d/e e um relatório simples por unidade foram criados como equivalentes, não são cópias dos relatórios originais. Login e saúde retornaram HTTP 200. Os dados são descartáveis.
+
+## Validação da integração
+
+Backend em PostgreSQL isolado, com dados de apoio montados e chaves descartáveis: 1.282 testes aprovados e cinco pulados com a flag de remoção desligada. Em execução separada com a flag ligada somente no teste, os cinco testes de remoção e os testes direcionados de relatórios somaram 62 aprovados. Os testes de paginação foram ajustados para aceitar continuações e procurar os textos no documento inteiro. Frontend em Node 24: 665 testes aprovados em 75 arquivos, TypeScript, ESLint de hooks e build aprovados; build avisa sobre chunk maior que 500 kB. A primeira execução do backend sem as chaves e arquivos de apoio apropriados apresentou falhas de configuração; foi substituída pela execução completa acima.
