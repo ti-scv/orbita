@@ -10,7 +10,7 @@ export const iconDefinitions: Record<string, IconDefinition> = {
         }
       ]
     ],
-    "fill": [["path", {"d": "M2 12h4l3-9 6 18 3-9h4v10H2Z"}]]
+    "fill": [["circle", {"cx": "12", "cy": "12", "r": "10"}]]
   },
   "AlertCircle": {
     "stroke": [
