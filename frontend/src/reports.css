@@ -1014,13 +1014,6 @@
   border-top-color: var(--border-strong, #383838);
   color: #8593a6;
 }
-[data-theme="dark"] .report-workspace .op-pager .button:disabled,
-[data-theme="dark"] .snapshot-workspace > .report-actions .button:disabled {
-  opacity: 0.5;
-  color: #64748b;
-  border-color: #334155;
-  background: #1e293b;
-}
 
 
 /* Keep actions together; wrap filters before their selected labels are cut. */

@@ -65,3 +65,12 @@ Navegador Chromium headless na rede Docker do staging, antes da troca do painel:
 - Backend direcionado: 5 passaram. Primeira tentativa com a imagem de staging não tinha pytest-xdist; repetição serial passou.
 - Suítes completas sob `flock /tmp/orbita-suite.lock`: backend em PostgreSQL isolado, `pytest -n 2`, 1.345 passaram e 1 ignorado; frontend Node 24, Vitest `--maxWorkers=2`, 78 arquivos e 678 testes passaram. Logs: `/tmp/checkin-38k-back-full.log` e `/tmp/checkin-38k-front-full.log`.
 - Build do frontend em Docker passou; imagem `checkin-38k-panel` servida na porta 8117. API reiniciada para carregar a formatação do PDF; banco e configuração anteriores preservados. O painel anterior foi mantido parado como `checkin-38i-panel-previous`.
+
+## Correção 38L
+
+Base: `0d4b737` (38K). Removidas as exceções do tema escuro que substituíam o estado desabilitado de `.op-pager` e das ações de snapshots por cores fixas e, na paginação compartilhada, opacidade integral. Os botões usam as variáveis de tema existentes; desabilitados mantêm opacidade 0,55 e cursor `not-allowed` nos dois temas. Estado ativo e hover conservam as regras e variáveis do botão. `Login.tsx` não foi alterado.
+
+- Testes direcionados de Relatórios: 2 arquivos, 11 testes passaram; suíte completa do frontend: 78 arquivos, 678 testes passaram. Ambos em Node 24 sob `flock /tmp/orbita-suite.lock`, Vitest `--maxWorkers=2`. Logs: `/tmp/checkin-38l-front-target.log` e `/tmp/checkin-38l-front-full.log`.
+- Build do frontend em Docker passou (`/tmp/checkin-38l-build.log`); imagem `checkin-38l-panel` servida no staging 8117, com API e banco existentes. HTTP na porta respondeu 200.
+- Chromium headless autenticado em Relatórios conferiu nos dois temas opacidade 0,55 e cursor `not-allowed` no botão desabilitado, opacidade 1 e cursor `pointer` no ativo, e mudança de cores no hover (`/tmp/checkin-38l-qa.log`). Capturas em `docs/checkin-38l/`: `light-pagina-1.png`, `light-pagina-2.png`, `dark-pagina-1.png`, `dark-pagina-2.png`. O staging tem somente um relatório e ambos os botões estavam realmente desabilitados; para mostrar os dois estados lado a lado, o atributo `disabled` foi alterado apenas no DOM do navegador para as capturas, sem mudar os dados ou simular navegação real. Os nomes dos arquivos indicam a disposição dos estados, não uma mudança de página.
+- A primeira inspeção mediu a transição CSS antes de terminar e a segunda manteve o estado artificial entre temas; ambas foram corrigidas na verificação final acima.
