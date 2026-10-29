@@ -31,6 +31,7 @@ services:
     environment: &backend_environment
       DATABASE_HOST: db
       REDIS_URL: redis://redis:6379/0
+      REPORT_REMOVAL_ENABLED: "1"
     command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py bootstrap && python manage.py bootstrap_operations && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120 --access-logfile -"]
     depends_on:
       db: {condition: service_healthy}

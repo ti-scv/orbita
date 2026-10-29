@@ -307,3 +307,17 @@
 .sa-chat .app{min-height:0}.sa-chat .conversa{min-height:0}.sa-chat .balao{white-space:pre-wrap}.sa-chat .campo input{min-width:0}.sa-chat .sa-error{margin:0;padding:10px 16px;color:#9c2929;background:#fff2ef}.sa-chat .selo-teste{font-size:10px}.sa-chat .sa-link{color:var(--azul-escuro)}
 
 .sa-chat .enviar{color:#ffffff}.sa-chat .enviar svg{fill:none}
+.sa-chat .sa-welcome{display:flex;align-items:flex-start;gap:10px}
+.sa-chat .sa-welcome p,.sa-chat .sa-summary-intro{margin:0}
+.sa-chat .sa-welcome-icon{flex:none;color:var(--azul);transform-origin:50% 80%;animation:sa-greet 1.2s ease-in-out 1 both}
+.sa-chat .sa-booking-summary{margin:12px 0 2px;display:flex;flex-direction:column;gap:12px;white-space:normal}
+.sa-chat .sa-booking-summary>div{display:grid;grid-template-columns:20px auto 1fr;align-items:start;column-gap:8px}
+.sa-chat .sa-message-line{display:block;animation:sa-line-in .5s ease-out both}
+.sa-chat .sa-booking-summary>div{animation:sa-line-in .5s ease-out both}
+@keyframes sa-line-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.sa-chat .sa-booking-summary dt{font-weight:600}
+.sa-chat .sa-booking-summary dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.sa-chat .sa-detail-icon{color:var(--azul);transform-box:fill-box;transform-origin:center;animation:sa-icon-breathe .7s ease-out 1 both;animation-delay:inherit}
+@keyframes sa-greet{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-12deg) translateY(-2px)}55%{transform:rotate(12deg) translateY(-3px)}80%{transform:rotate(-6deg)}}
+@keyframes sa-icon-breathe{0%{transform:translateY(2px) scale(.9);opacity:.4}55%{transform:translateY(-3px) scale(1.12);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.sa-chat .sa-welcome-icon,.sa-chat .sa-detail-icon,.sa-chat .sa-message-line,.sa-chat .sa-booking-summary>div{animation:none}}
