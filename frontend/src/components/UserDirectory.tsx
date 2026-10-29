@@ -10,7 +10,7 @@ import type { PermissionRole } from "./PermissionRoles";
 
 type Grant = { unit: string; role: string; permissions: SectionPermissions; permission_role?: {id: number; name: string} | null; permission_role_outdated?: boolean; roleAction?: number | null; customized?: boolean };
 type UserRow = { id: number; username: string; full_name: string; active: boolean; version: number; grants: Grant[]; editable: boolean; global_editable: boolean };
-type Option = { slug: string; name: string; remote: boolean; instance_name?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
+type Option = { slug: string; name: string; remote: boolean; instance_name?: string; local_unit?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
 const profiles: Record<string, string> = { admin: "Administrativo", operator: "Operador", viewer: "Consulta" };
 const levels = {none: 0, read: 1, write: 2} as const;
@@ -30,6 +30,14 @@ export const templatePermissions = (role: PermissionRole, sections: Record<strin
 };
 
 
+export function applyTypeToGrants(grants: Grant[], option: Option, units: Option[], selected: PermissionRole, sections: Record<string, string>): Grant[] {
+  const permissions = templatePermissions(selected, sections);
+  return grants.map(g => g.unit === option.slug
+    ? {...g, permission_role: {id: selected.id, name: selected.name}, roleAction: selected.id, permission_role_outdated: false, permissions, customized: false}
+    : units.some(o => o.remote && o.editable && o.local_unit === option.slug && o.slug === g.unit)
+      ? {...g, permissions, permission_role: null, roleAction: null, customized: true}
+      : g);
+}
 
 export default function UserDirectory({unit, editable = true, onChanged}: {unit: string; editable?: boolean; onChanged?: () => Promise<void>}) {
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
@@ -106,14 +114,15 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
       <h3>Unidades e abas</h3>
       {limited.map(g => { const option = options.units.find(o=>o.slug===g.unit)!; const capped = limitRemoteGrant(g, option); const changes = Object.keys(g.permissions).filter(k=>g.permissions[k] !== capped.permissions[k]).map(k=>`${options.sections[k]}: ${g.permissions[k]} → ${capped.permissions[k]}`); if (g.role !== capped.role) changes.unshift(`Perfil: ${profiles[g.role]} → ${profiles[capped.role]}`); return <p role="status" key={g.unit}>Acesso em {option.name} limitado: {changes.join(", ")}.</p>; })}
       {options.units.map(option=>{
-        const grant=grants.find(g=>g.unit===option.slug);
+        const requestedGrant=grants.find(g=>g.unit===option.slug);
+        const grant=requestedGrant && limitRemoteGrant(requestedGrant, option);
         const selectedRole = grant?.permission_role && (roles[option.slug] || []).find(r => r.id === grant.permission_role?.id);
         return <fieldset key={option.slug} className="access-grant" disabled={!option.editable}>
           <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none(),customized:true}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
           {grant&&<><label className="op-field">Perfil<Select value={grant.role} onChange={e=>setRole(option.slug,e.target.value)}>{Object.entries(profiles).filter(([key])=>option.max_role==="admin"||key!=="admin"&&(option.max_role!=="viewer"||key==="viewer")).map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
-            {!option.remote && <label className="op-field">Tipo de usuário<Select value={selectedRole?.id || ""} onChange={e=>{const selected=(roles[option.slug] || []).find(r=>r.id===Number(e.target.value)); if (selected && !grant.permission_role && !window.confirm("Aplicar este tipo substituirá as permissões individuais. Continuar?")) return; update(option.slug, selected ? {permission_role:{id:selected.id,name:selected.name}, roleAction:selected.id, permission_role_outdated:false, permissions:templatePermissions(selected, options.sections), customized:false} : {permission_role:null, roleAction:null, permission_role_outdated:false, customized:true});}}><option value="">Permissões individuais</option>{(roles[option.slug] || []).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
+            {!option.remote && <label className="op-field">Tipo de usuário<Select value={selectedRole?.id || ""} onChange={e=>{const selected=(roles[option.slug] || []).find(r=>r.id===Number(e.target.value)); if (selected && !window.confirm("Aplicar este tipo substituirá as permissões individuais nesta unidade e nos acessos remotos vinculados. Continuar?")) return; if (selected) { setGrants(current=>applyTypeToGrants(current, option, options.units, selected, options.sections)); } else update(option.slug, {permission_role:null, roleAction:null, permission_role_outdated:false, customized:true});}}><option value="">Permissões individuais</option>{(roles[option.slug] || []).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
             {grant.customized && <p>Este acesso usa Permissões individuais e não segue um tipo de usuário.</p>}
-            {grant.permission_role_outdated && selectedRole && <p role="status">As permissões deste acesso estão desatualizadas em relação ao tipo. Os níveis atuais do acesso serão mantidos até reaplicar o tipo. <button type="button" className="button" onClick={()=>update(option.slug,{roleAction:selectedRole.id, permission_role_outdated:false, permissions:templatePermissions(selectedRole, options.sections)})}>Reaplicar tipo</button></p>}
+            {grant.permission_role_outdated && selectedRole && <p role="status">As permissões deste acesso estão desatualizadas em relação ao tipo. Os níveis atuais do acesso serão mantidos até reaplicar o tipo. <button type="button" className="button" onClick={()=>{if (window.confirm("Reaplicar este tipo substituirá as permissões nesta unidade e nos acessos remotos vinculados. Continuar?")) setGrants(current=>applyTypeToGrants(current, option, options.units, selectedRole, options.sections));}}>Reaplicar tipo</button></p>}
             {selectedRole && <><div className="table-scroll"><table className="directory-table"><thead><tr><th>Permissão do tipo</th><th>Acesso</th></tr></thead><tbody>{Object.entries(roleLabels).map(([key,label])=><tr key={key}><td>{label}</td><td>{(selectedRole.permissions[key] || (["overview","groups","issues"].includes(key) ? selectedRole.permissions.messages : "none")) === "write" ? "Ver e editar" : (selectedRole.permissions[key] || (["overview","groups","issues"].includes(key) ? selectedRole.permissions.messages : "none")) === "read" ? "Somente leitura" : "Sem acesso"}</td></tr>)}</tbody></table></div><button type="button" className="button" onClick={()=>update(option.slug,{permission_role:null, roleAction:null, permission_role_outdated:false, customized:true})}>Personalizar</button><p>Ao personalizar, este acesso deixa de seguir o tipo e passa a usar Permissões individuais.</p></>}
             {!selectedRole && <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
                const label = ({settings:"Configurações · Integrações e envios",operationsAdmin:"Configurações · Cadastros",users:"Configurações · Usuários"} as Record<string,string>)[key] || originalLabel;

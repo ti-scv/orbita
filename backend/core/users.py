@@ -48,6 +48,7 @@ def scope_options(user):
                     "name": remote.remote_unit.get("name", remote.name),
                     "remote": True,
                     "instance_name": remote.name,
+                    "local_unit": unit.slug,
                     "enabled": remote.enabled,
                     "editable": level == "write",
                     "max_role": remote.remote_role,
