@@ -467,3 +467,17 @@ def test_remote_report_sections_enforce_independent_levels(connected, resource, 
     allowed = level == "write" or (method == "get" and level == "read")
     assert response.status_code == (200 if allowed else 403)
     assert network.call_count == int(allowed)
+
+@pytest.mark.parametrize("resource,allowed", [
+    ("agenda-items/filter_options/?operational_pending=true", False),
+    ("agenda-items/types/?operational_pending=true", True),
+])
+def test_remote_pending_agenda_scope(connected, resource, allowed):
+    f = connected
+    policy = {"appointments": "none", "issues": "read", "groups": "none"}
+    Membership.objects.filter(user=f["user"], unit=f["unit"]).update(permissions=policy)
+    RemoteInstance.objects.filter(pk=f["connection"]["id"]).update(remote_permissions=policy)
+    with patch("core.federation.remote_http", return_value=(200, {"Content-Type": "application/json"}, b"[]")) as network:
+        response = f["client"].get(f["proxy"] + resource)
+    assert response.status_code == (200 if allowed else 403)
+    assert network.call_count == int(allowed)

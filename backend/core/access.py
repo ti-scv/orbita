@@ -158,13 +158,29 @@ def remote_access(user, connection):
     return role, policy
 
 
+def effective_permissions(request, unit):
+    policy = local_permissions(request.user, unit)
+    auth = request.auth
+    if getattr(auth, "effective_role", None):
+        policy = intersect_permissions(
+            policy, role_permissions(auth.effective_role, {"reportWhatsApp": "write"})
+        )
+        if getattr(auth, "section_limit", None) is not None:
+            policy = intersect_permissions(policy, auth.section_limit)
+    return policy
+
+
 def required_sections(resource, method, params):
     root = resource.split("/")[0]
     sections = list(RESOURCES.get(root, []))
     if method in {"GET", "HEAD", "OPTIONS"}:
         if root == "sheet-imports" and resource.rstrip("/") == "sheet-imports/schema":
             sections.append("operationsAdmin")
-        if root in {"appointments", "agenda-items"}:
+        # filter_options queries the whole unit, not the filtered queryset.
+        if (
+            root in {"appointments", "agenda-items"}
+            and resource.strip("/") != "agenda-items/filter_options"
+        ):
             if params.get("group"):
                 sections.append("groups")
             if params.get("operational_pending") == "true":
@@ -180,6 +196,20 @@ def check_resource(policy, resource, method, params):
         if any(v != "none" for v in policy.values()):
             return
     required = 1 if method in {"GET", "HEAD", "OPTIONS"} else 2
+    if root in {"cases", "contacts", "movements", "appointments", "agenda-items"} and params.get("group"):
+        if LEVELS[policy.get("groups", "none")] < required:
+            raise PermissionDenied("Sem permissão para a subárea de Grupos.")
+        # These actions query the entire unit and cannot be authorized by a group.
+        if resource.strip("/") not in {"cases/health", "cases/operators", "agenda-items/filter_options"}:
+            if root in {"cases", "contacts", "movements"} or method in {"GET", "HEAD", "OPTIONS"}:
+                return
+    if resource.strip("/") == "cases/health":
+        # The unit-wide aggregate includes messages, issues, imports and reports.
+        if all(LEVELS[policy.get(s, "none")] >= required for s in ("messages", "issues", "reports")) and any(
+            LEVELS[policy.get(s, "none")] >= required for s in ("settings", "operationsAdmin")
+        ):
+            return
+        raise PermissionDenied("Sem permissão para consultar a saúde operacional da unidade.")
     if any(
         LEVELS[policy.get(section, "none")] >= required
         for section in required_sections(resource, method, params)
@@ -203,10 +233,6 @@ class SectionPermission(IsAuthenticated):
         from core.permissions import get_unit
 
         unit = get_unit(request)
-        policy = local_permissions(request.user, unit)
-        if getattr(request.auth, "effective_role", None):
-            policy = intersect_permissions(
-                policy, role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"})
-            )
+        policy = effective_permissions(request, unit)
         check_resource(policy, path, request.method, request.query_params)
         return True

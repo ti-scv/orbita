@@ -56,7 +56,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
         event = getattr(obj, "sourceevent", None)
         case = next((c for c in event.cases.all() if c.purpose == "appointment"), None) if event else None
         messages = list(obj.messages.all())
-        current = [m for m in messages if m.appointment_revision == obj.revision]
+        request = self.context.get("request")
+        group = request.query_params.get("group") if request else None
+        current = [m for m in messages if m.appointment_revision == obj.revision and (not group or str(m.group_id) == group)]
         phones = obj.phone_numbers or [obj.phone]
         actions = (
             sorted(case.interactions.all(), key=lambda i: (i.occurred_at, i.pk), reverse=True) if case else []
