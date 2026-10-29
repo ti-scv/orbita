@@ -1319,3 +1319,8 @@
 .cv-root .cv-table-col-origin .cv-origin-text { flex:1; min-width:0; white-space:normal; overflow-wrap:anywhere; }
 .cv-root .cv-table-col-item > .cv-well-actions { grid-column:4; grid-row:2; }
 .cv-root .cv-table-col-item > .cv-col-missing-tag { grid-column:1 / -1; }
+
+/* Keep dark page-color samples distinct from the dark inspector surface. */
+[data-theme="dark"] .cv-root .cv-swatch-btn {
+  border-color: #a8b8cc;
+}
