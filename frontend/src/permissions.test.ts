@@ -80,7 +80,7 @@ describe("Permissões da tarefa 35", () => {
 describe("Autoagendamento Sansaúde", () => {
   const units = [...session.units, {id: 2, slug: "sansaude", name: "Sansaúde", paused: false, response_hours: 24}];
   it("permite admin e operador autorizado somente na unidade correta", () => {
-    for (const role of ["admin", "operator"]) {
+    for (const role of ["admin", "operator"] as const) {
       const granted = {...session, units, roles: {...session.roles, sansaude: role}, permissions: {ame: {autoagenda: "write" as const}, sansaude: {autoagenda: "write" as const}}};
       expect(canAccess(granted, "sansaude", "autoagenda", true)).toBe(true);
       expect(canAccess(granted, "ame", "autoagenda")).toBe(false);
