@@ -111,27 +111,44 @@ function AppRoot() {
     [bootError, setBootError] = useState(""),
     [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
-    const controller = new AbortController();
     let active = true;
-    const timer = window.setTimeout(() => {
-      controller.abort();
-      if (active) { setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente."); setChecking(false); }
-    }, 8000);
+    let controller: AbortController | undefined;
     setChecking(true);
     setBootError("");
-    Promise.all([initCsrf(controller.signal), request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal)])
-      .then(([, incoming]) => { if (active) setSession(incoming); })
-      .catch(error => {
-        if (!active || controller.signal.aborted) return;
-        if (error.status === 401) setSession(null);
-        else setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente.");
-      })
-      .finally(() => { window.clearTimeout(timer); if (active && !controller.signal.aborted) setChecking(false); });
-    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
+    async function load() {
+      for (let attempt = 0; attempt < 2 && active; attempt++) {
+        controller = new AbortController();
+        const timer = window.setTimeout(() => controller?.abort(), 20000);
+        try {
+          const [, incoming] = await Promise.all([
+            initCsrf(controller.signal),
+            request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal),
+          ]);
+          if (active) setSession(incoming);
+          return;
+        } catch (error) {
+          if (!active) return;
+          if ((error as {status?: number}).status === 401) {
+            setSession(null);
+            return;
+          }
+          if (attempt === 1) {
+            setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente.");
+            return;
+          }
+        } finally {
+          window.clearTimeout(timer);
+          controller.abort();
+        }
+        await new Promise(resolve => window.setTimeout(resolve, 500));
+      }
+    }
+    void load().finally(() => { if (active) setChecking(false); });
+    return () => { active = false; controller?.abort(); };
   }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
-    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
+    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(error => { if (error.status === 401) setSession(null); }); };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
