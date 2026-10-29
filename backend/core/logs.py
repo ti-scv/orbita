@@ -48,6 +48,7 @@ class LogSerializer(serializers.Serializer):
     error_code = serializers.CharField()
     count = serializers.IntegerField()
     completed_at = serializers.DateTimeField(allow_null=True)
+    detail = serializers.CharField(allow_blank=True, required=False)
 
 
 class LogViewSet(viewsets.GenericViewSet):
@@ -257,6 +258,40 @@ class LogViewSet(viewsets.GenericViewSet):
             "recipient",
             "provider_id",
         ]
-        return self.get_paginated_response(
-            self.get_serializer([dict(zip(keys, row)) for row in page], many=True).data
-        )
+        entries = [dict(zip(keys, row)) for row in page]
+        audits = {str(a.pk): a for a in Audit.objects.filter(unit=unit, pk__in=[e["id"] for e in entries if e["category"] == "audit"])}
+        titles = {"user_sync.completed": "Sincronização de usuários concluída", "user_sync.failed": "Falha na sincronização de usuários", "user_sync.released": "Usuário sincronizado liberado", "user_sync.conflict_resolved": "Conflito de login resolvido", "user_sync.conflict_deferred": "Conflito de login mantido pendente", "user.access_configured": "Acesso de usuário configurado"}
+        for entry in entries:
+            entry["detail"] = ""
+            audit = audits.get(entry["id"]) if entry["category"] == "audit" else None
+            if not audit or audit.action not in titles:
+                continue
+            entry["title"] = titles[audit.action]
+            d = audit.details or {}
+            parts = []
+            if not d.get("login") and audit.action in ("user.access_configured", "user_sync.released", "user_sync.conflict_resolved"):
+                from django.contrib.auth import get_user_model
+                user_id = audit.object_id if audit.action == "user.access_configured" else d.get("user_id")
+                login = get_user_model().objects.filter(pk=user_id).values_list("username", flat=True).first() if user_id else None
+                if login: parts.append("Usuário: " + login)
+            if not d.get("unit") and audit.action.startswith("user_sync."):
+                from core.models import RemoteInstance, SyncedUserIdentity
+                if audit.action in ("user_sync.completed", "user_sync.failed"):
+                    connection = RemoteInstance.objects.filter(pk=audit.object_id, local_unit=unit).first()
+                else:
+                    identity = SyncedUserIdentity.objects.filter(pk=audit.object_id, connection__local_unit=unit).select_related("connection").first()
+                    connection = identity.connection if identity else None
+                if connection: parts.append("Unidade de origem: " + (connection.remote_unit.get("name") or connection.name))
+            if d.get("login"): parts.append("Usuário: " + str(d["login"]))
+            if d.get("new_login"): parts.append("Novo login: " + str(d["new_login"]))
+            if d.get("unit"): parts.append("Unidade de origem: " + str(d["unit"]))
+            if audit.action == "user_sync.completed":
+                if "new" in d:
+                    parts.append(", ".join(f"{d[k]} {singular if d[k] == 1 else plural}" for k, singular, plural in (("new", "novo", "novos"), ("updated", "atualizado", "atualizados"), ("removed", "removido", "removidos"), ("conflicts", "conflito", "conflitos")) if k in d))
+                elif "count" in d:
+                    parts.append(f'Total recebido: {d["count"]}')
+            roles = {"admin": "Administrativo", "operator": "Operador", "viewer": "Consulta"}
+            for access in d.get("access", []):
+                parts.append(f'{access.get("unit", "")}: {roles.get(access.get("role"), access.get("role", ""))} · {access.get("type", "")}')
+            entry["detail"] = "; ".join(parts)
+        return self.get_paginated_response(self.get_serializer(entries, many=True).data)

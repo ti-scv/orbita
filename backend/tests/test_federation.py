@@ -409,9 +409,10 @@ def test_real_http_handshake_and_relay_without_replication(federation):
         response = f["client"].get(f"/api/v1/remote/{connection_id}/appointments/?page=1")
         assert response.status_code == 200 and response.json()["results"][0]["id"] == 555
         assert observed[0]["path"] == MANIFEST
-        assert "unit=remote-clinic" in observed[1]["path"]
+        assert observed[1]["path"] == "/api/v1/federation/user-identities/"
+        assert "unit=remote-clinic" in observed[2]["path"]
         assert all(item["authorization"] == "Bearer " + f["key"]["key"] for item in observed)
-        assert observed[1]["role"] == "operator"
+        assert observed[2]["role"] == "operator"
         assert counts == (Unit.objects.count(), Appointment.objects.count(), Message.objects.count())
     finally:
         server.shutdown()
@@ -481,3 +482,36 @@ def test_remote_pending_agenda_scope(connected, resource, allowed):
         response = f["client"].get(f["proxy"] + resource)
     assert response.status_code == (200 if allowed else 403)
     assert network.call_count == int(allowed)
+
+
+def test_identity_export_requires_explicit_admin_key_and_only_returns_identification(federation, settings):
+    from django.contrib.auth import get_user_model
+
+    f = federation
+    path = "/api/v1/federation/user-identities/"
+    assert f["bearer"].get(path).status_code == 403
+    assert f["client"].get(path).status_code == 403
+    other = get_user_model().objects.create_user(
+        "remote-person", password="Secret-Password-2026!", first_name="Pessoa", email="p@example.org"
+    )
+    Membership.objects.create(user=other, unit=f["unit"], role="viewer", permissions={"messages": "read"})
+    inactive = get_user_model().objects.create_user("inactive", is_active=False)
+    Membership.objects.create(user=inactive, unit=f["unit"])
+    issued = f["client"].post(
+        KEYS, {"name": "Sincronização", "role": "admin", "export_user_identities": True},
+        format="json", HTTP_IDEMPOTENCY_KEY="identity-export-key-001",
+    )
+    assert issued.status_code == 201 and issued.json()["export_user_identities"] is True
+    scoped = APIClient()
+    scoped.credentials(HTTP_AUTHORIZATION="Bearer " + issued.json()["key"])
+    result = scoped.get(path)
+    assert result.status_code == 200
+    assert result["Cache-Control"] == "no-store"
+    payload = result.json()
+    assert payload["instance_id"] == str(settings.ORBITA_INSTANCE_ID)
+    assert payload["unit"] == f["unit"].slug
+    person = next(row for row in payload["users"] if row["id"] == other.pk)
+    assert person == {"id": other.pk, "username": "remote-person", "first_name": "Pessoa", "email": "p@example.org"}
+    assert not any(row["id"] == inactive.pk for row in payload["users"])
+    assert "password" not in result.content.decode() and "permissions" not in result.content.decode()
+    assert scoped.get(path, HTTP_X_ORBITA_ROLE_LIMIT="viewer").status_code == 403

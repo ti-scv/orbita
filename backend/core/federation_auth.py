@@ -106,7 +106,7 @@ class InstanceKeyAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Chave de instância revogada ou expirada.")
         path = request.path_info.removeprefix("/api/v1/")
         if not request.path_info.startswith("/api/v1/") or not (
-            allowed_resource(path) or path == "federation/manifest/"
+            allowed_resource(path) or path in {"federation/manifest/", "federation/user-identities/"}
         ):
             raise PermissionDenied(
                 "Este recurso não está disponível para chaves de instância."

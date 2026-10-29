@@ -186,6 +186,7 @@ export interface Audit {
   actor_name: string;
   action: string;
   object_id: string;
+  details?: Record<string, any>;
   created_at: string;
 }
 export interface Control {
