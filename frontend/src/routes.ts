@@ -34,7 +34,7 @@ export function routePath(page: PageName, groupId?: string | null) {
   if (page === "groups" && groupId) return `/grupos/${groupId}`;
   return (
     Object.entries(pages).find(
-      ([path, value]) => value === page && path !== "/responses",
+      ([path, value]) => value === page && path !== "/responses" && path !== "/",
     )?.[0] || "/"
   );
 }
