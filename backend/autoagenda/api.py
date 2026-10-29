@@ -138,7 +138,13 @@ class ConversationView(APIView):
     def get(self,request,pk):
         unit=unit_for(request);c=Conversation.objects.filter(unit=unit,pk=pk).select_related('configuration','attended_by').first()
         if not c:raise NotFound()
-        return Response({**conversation_data(c),'view':c.view,'booking':Booking.objects.filter(conversation=c).values('state','slot_id','specialty','professional','scheduled_for','error_code').first(),'events':list(c.events.order_by('id').values('id','actor','text','step','created_at')[:500])})
+        booking = Booking.objects.filter(conversation=c, unit=unit).first()
+        booking_data = None
+        if booking:
+            from checkin.api import source_label
+            booking_data = {k: getattr(booking, k) for k in ('state','slot_id','specialty','professional','scheduled_for','error_code')}
+            booking_data['checkin'] = source_label(booking, request)
+        return Response({**conversation_data(c),'view':c.view,'booking':booking_data,'events':list(c.events.order_by('id').values('id','actor','text','step','created_at')[:500])})
     def post(self,request,pk):
         unit=unit_for(request)
         if request.data.get('action')=='reconcile':
