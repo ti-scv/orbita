@@ -385,7 +385,7 @@ class ManifestView(APIView):
                 "sending_enabled": False,
                 "permissions": intersect_permissions(
                     local_permissions(request.user, get_unit(request)),
-                    role_permissions(request.auth.effective_role),
+                    role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"}),
                 ),
             },
             headers={"Cache-Control": "no-store"},

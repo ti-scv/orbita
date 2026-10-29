@@ -124,3 +124,12 @@ class OracleConfiguration(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     checked_at = models.DateTimeField(null=True)
     validation_state = models.CharField(max_length=24, default="not_checked")
+
+
+class PermissionMigration35Backup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    migrated_value = models.CharField(max_length=5)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["model_name", "object_id"], name="permission35_backup_unique")]

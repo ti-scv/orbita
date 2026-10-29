@@ -14,6 +14,7 @@ SECTIONS = {
     "issues": "Pendências",
     "campaigns": "Importa CROSS",
     "reports": "Relatórios",
+    "reportWhatsApp": "WhatsApp dos relatórios",
     "operationsAdmin": "Administração",
     "settings": "Configurações",
     "users": "Usuários",
@@ -45,7 +46,7 @@ RESOURCES = {
     "report-executions": ["reports"],
     "report-snapshots": ["reports"],
     "report-snapshot-runs": ["reports"],
-    "report-whatsapp": ["reports"],
+    "report-whatsapp": ["reportWhatsApp"],
     "report-schedules": ["reports", "operationsAdmin"],
     "preparations": ["operationsAdmin"],
     "layouts": ["operationsAdmin", "campaigns"],
@@ -95,6 +96,8 @@ def role_permissions(role, overrides=None):
     value.update(
         {k: v for k, v in (overrides or {}).items() if k in SECTIONS and v in LEVELS}
     )
+    if not overrides or "reportWhatsApp" not in overrides:
+        value["reportWhatsApp"] = "none"
     for key in value:
         if role == "viewer" and value[key] == "write":
             value[key] = "read"
@@ -112,7 +115,7 @@ def intersect_permissions(*policies):
 
 def local_permissions(user, unit):
     if user.is_superuser:
-        return role_permissions("admin")
+        return role_permissions("admin", {"reportWhatsApp": "write"})
     member = Membership.objects.filter(user=user, unit=unit).first()
     return (
         role_permissions(member.role, member.permissions)
@@ -131,7 +134,7 @@ def remote_access(user, connection):
     if grant:
         role, policy = grant.role, role_permissions(grant.role, grant.permissions)
     elif user.is_superuser:
-        role, policy = "admin", role_permissions("admin")
+        role, policy = "admin", role_permissions("admin", {"reportWhatsApp": "write"})
     elif not explicit:
         member = Membership.objects.filter(
             user=user, unit=connection.local_unit
@@ -144,7 +147,7 @@ def remote_access(user, connection):
     role = limited_role(role, connection.remote_role)
     policy = intersect_permissions(
         policy,
-        role_permissions(role),
+        role_permissions(role, {"reportWhatsApp": "write"}),
         role_permissions(connection.remote_role, connection.remote_permissions),
     )
     policy["users"] = (
@@ -206,7 +209,7 @@ class SectionPermission(IsAuthenticated):
         policy = local_permissions(request.user, unit)
         if getattr(request.auth, "effective_role", None):
             policy = intersect_permissions(
-                policy, role_permissions(request.auth.effective_role)
+                policy, role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"})
             )
         check_resource(policy, path, request.method, request.query_params)
         return True

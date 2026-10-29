@@ -23,3 +23,14 @@ Os níveis são `none`, `read` e `write`. `RESOURCES` pode aceitar qualquer uma 
 A migração deve preservar os níveis efetivos individuais, inclusive vínculos remotos e limites de instância: agrupar quatro seções diferentes sem guardar o estado anterior pode ampliar ou retirar acesso. Para WhatsApp, o acesso anterior depende tanto do nível de `reports` quanto do perfil `admin`; novos acessos a relatórios não devem receber essa subpermissão automaticamente. O retorno da migração precisa restaurar os valores anteriores sem apagar edições posteriores inadvertidamente. A solução precisa tratar também URLs diretas, mudanças de unidade, controles específicos das views, callbacks e federação.
 
 Ainda faltam implementação, migração reversível, testes positivos e negativos de frontend e backend, tabela permissão → aba → endpoint → teste, suítes completas, prints dos dois temas e staging isolado na porta 8096 com banco descartável.
+
+## Implementação parcial: WhatsApp dos relatórios
+
+A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, seu padrão é `none`. O superusuário possui edição. Em vínculos locais, remotos e limites das conexões existentes, a migração `core.0008_report_whatsapp_permission` grava o nível efetivo anterior de `reports` apenas para o perfil administrador; nos demais perfis grava `none`. Valores explícitos já presentes são preservados. A interseção federada continua exigida. O estado precisa de `read`; conectar e desconectar precisam de `write`. A ação de configuração continua exigindo também perfil administrador. A sessão já publica as permissões efetivas por unidade.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reportWhatsApp` | WhatsApp dos relatórios | `GET /api/v1/report-whatsapp/` | `test_whatsapp_status_is_independent_of_reports` |
+| `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` | `test_whatsapp_connection_requires_write` |
+
+A migração guarda os valores inseridos em `PermissionMigration35Backup`. Ao reverter para `core 0007`, remove apenas valores ainda iguais aos gravados pela migração; valores editados depois são mantidos. Essa operação deve ser ensaiada exclusivamente em banco descartável; a versão anterior não aplica a nova seção, mesmo quando uma edição posterior fica preservada no JSON. `test_migration_preserves_existing_access_and_later_edits` exercita a ida e a volta. As demais partes da tarefa 35a continuam pendentes.
