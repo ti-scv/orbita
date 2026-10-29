@@ -18,8 +18,14 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
-  const [roles, setRoles] = useState<PermissionRole[]>([]);
-  useEffect(() => { let alive = true; if (editable) loadPermissionRoles(unit).then(r => {if (alive) setRoles(r);}).catch(e => {if (alive) setError(e.message);}); return () => {alive = false;}; }, [unit, editable, revision]);
+  const [roles, setRoles] = useState<Record<string, PermissionRole[]>>({});
+  useEffect(() => {
+    let alive = true;
+    if (editable) Promise.all(options.units.filter(o => o.editable && !o.remote).map(async o => [o.slug, await loadPermissionRoles(o.slug)] as const))
+      .then(entries => {if (alive) setRoles(Object.fromEntries(entries));})
+      .catch(e => {if (alive) setError(e.message);});
+    return () => {alive = false;};
+  }, [options, editable, revision]);
   useEffect(() => {
     let active = true;
     async function load() {
@@ -41,16 +47,16 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
       setRevision(v=>v+1); await onChanged?.();
     } catch(e) {setError((e as Error).message);throw e;} finally {setBusy(false);}
   }
-  return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} unit={unit} busy={busy} error={error} revision={revision} save={save}/> }>
+  return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} unit={unit} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
+      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
     </tbody></table></div>{!rows.length&&<p className="directory-empty">Nenhum usuário encontrado.</p>}
   </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit} onChanged={() => setRevision(v => v + 1)}/>}</>;
 }
 
-function UserForm({row, options, roles, unit, busy, error, revision, save}:{row?:UserRow;options:Options;roles:PermissionRole[];unit:string;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
+function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserRow;options:Options;roles:Record<string, PermissionRole[]>;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
   const [username,setUsername]=useState(row?.username||""),[name,setName]=useState(row?.full_name||""),[password,setPassword]=useState("");
   const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(row?.grants||[]);
   const global = !row || row.global_editable;
@@ -76,7 +82,7 @@ function UserForm({row, options, roles, unit, busy, error, revision, save}:{row?
         return <fieldset key={option.slug} className="access-grant" disabled={!option.editable}>
           <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none()}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
           {grant&&<><label className="op-field">Perfil<Select value={grant.role} onChange={e=>setRole(option.slug,e.target.value)}>{Object.entries(profiles).filter(([key])=>option.max_role==="admin"||key!=="admin"&&(option.max_role!=="viewer"||key==="viewer")).map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
-            {!option.remote && option.slug === unit && <label className="op-field">Tipo de usuário<Select value={grant.permission_role || ""} onChange={e=>update(option.slug,{permission_role:e.target.value ? Number(e.target.value) : undefined})}><option value="">Permissões individuais</option>{roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
+            {!option.remote && <label className="op-field">Tipo de usuário<Select value={grant.permission_role || ""} onChange={e=>update(option.slug,{permission_role:e.target.value ? Number(e.target.value) : undefined})}><option value="">Permissões individuais</option>{(roles[option.slug] || []).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
             {!grant.permission_role && <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
                const label = ({settings:"Configurações · Integrações e envios",operationsAdmin:"Configurações · Cadastros",users:"Configurações · Usuários"} as Record<string,string>)[key] || originalLabel;
               const max=option.permissions[key]||"none";
