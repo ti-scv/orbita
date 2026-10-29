@@ -134,3 +134,29 @@ def test_authorized_test_recipients_edit_and_empty_list_revokes(setup, settings)
     )
     unit.refresh_from_db()
     assert authorized_recipients(unit) == ()
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("role", ["operator", "admin"])
+def test_template_with_remote_ceiling_and_descriptive_error(setup, role):
+    from core.models import PermissionRole, RemoteInstance
+    remote = RemoteInstance.objects.create(
+        local_unit=setup["unit"], name="Conexão QA", base_url="https://example.org",
+        key_ciphertext="test", remote_instance_id=uuid4(), remote_unit_slug="remote",
+        remote_unit={"name": "Unidade QA"}, remote_role="operator",
+        remote_permissions={"reports": "read", "reportWhatsApp": "none"},
+    )
+    template = PermissionRole.objects.create(unit=setup["unit"], name="QA",
+        permissions={"messages":"read", "settings":"none", "reports":"write", "reportWhatsApp":"read"})
+    body = {"version":0, "username":"qa35e" + role, "password":"Different-test-password-2026!",
+        "grants":[{"unit":"ame", "role":role, "permissions":{}, "permission_role":template.pk},
+                  {"unit":"remote:"+str(remote.pk), "role":"operator", "permissions":{"reports":"read", "reportWhatsApp":"none"}}]}
+    result = post(setup, "users", body)
+    assert result.status_code == 200, result.data
+    grants = {g["unit"]: g for g in result.data["grants"]}
+    assert grants["ame"]["permissions"]["reports"] == "write"
+    assert grants["remote:"+str(remote.pk)]["permissions"]["reports"] == "read"
+    body["username"] += "x"
+    body["grants"][1]["permissions"]["reportWhatsApp"] = "read"
+    result = post(setup, "users", body)
+    assert result.status_code == 400
+    assert "Unidade QA" in str(result.data) and "WhatsApp" in str(result.data)
