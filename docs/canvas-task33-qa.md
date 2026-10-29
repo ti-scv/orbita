@@ -41,3 +41,5 @@ O teste de navegador `scripts/canvas-task33f-shortcut-qa.cjs`, usando sessão ad
 O staging `orbita-canvas-stage-fila` foi reconstruído na porta 8095 e retornou HTTP 200. Os testes `tests/test_report_canvas.py` e `tests/test_report_catalog.py` passaram (87 testes), em PostgreSQL descartável `orbita-task33f-db`. Uma tentativa anterior com credenciais incorretas do banco isolado teve 70 erros de conexão; a execução acima usou um banco dedicado. A execução inicial do frontend no Node 18 do host falhou por incompatibilidade com jsdom; a verificação suportada via `scripts/canvas-check.sh` foi executada separadamente.
 
 Continuam pendentes: correção e provas de ausência de cortes com conteúdo denso em ambas as orientações, editor, visualização e PDF/impressão; capturas correspondentes em ambos os temas e níveis de zoom; busca e resolução segura de componentes de outras unidades com teste de permissões. Nenhuma dessas funcionalidades foi implementada nesta continuação.
+
+Frontend: `scripts/canvas-check.sh` passou com Node 24 (641 testes em 71 arquivos, ESLint de hooks, TypeScript e build). O build apresentou apenas o aviso de tamanho de chunks.
