@@ -196,6 +196,10 @@ def check_resource(policy, resource, method, params):
         if any(v != "none" for v in policy.values()):
             return
     required = 1 if method in {"GET", "HEAD", "OPTIONS"} else 2
+    if root in {"contacts", "movements"} and params.get("group"):
+        if LEVELS[policy.get("groups", "none")] >= required:
+            return
+        raise PermissionDenied("Sem permissão para a subárea de Grupos.")
     if resource.strip("/") == "cases/health":
         # The unit-wide aggregate includes messages, issues, imports and reports.
         if all(LEVELS[policy.get(s, "none")] >= required for s in ("messages", "issues", "reports")) and any(

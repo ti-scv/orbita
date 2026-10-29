@@ -47,7 +47,12 @@ class ScopedRead(viewsets.ReadOnlyModelViewSet):
                 unit,
                 request.user,
                 request.headers.get("Idempotency-Key"),
-                {"path": request.path, "data": request.data},
+                {
+                    "path": request.path,
+                    "data": request.data,
+                    **({"group": request.query_params.get("group", "")}
+                       if isinstance(self, (ContactViewSet, MovementViewSet)) else {}),
+                },
                 execute,
             )
         )
@@ -543,20 +548,36 @@ class ConfigViewSet(ScopedRead, viewsets.GenericViewSet):
         return self.once(request, execute)
 
 
+def group_appointment_scope(request, qs, appointment_path):
+    group_value = request.query_params.get("group")
+    if not group_value:
+        return qs
+    from rest_framework import serializers
+    from messaging.models import AppointmentGroup
+
+    group_id = serializers.UUIDField().run_validation(group_value)
+    group = get_object_or_404(AppointmentGroup, pk=group_id, unit=get_unit(request))
+    return qs.filter(**{
+        f"{appointment_path}__messages__group": group,
+        f"{appointment_path}__messages__appointment_revision": F(f"{appointment_path}__revision"),
+    }).distinct()
+
+
 class ContactViewSet(ScopedRead):
     queryset = m.Contact.objects.select_related("event").order_by("id")
     serializer_class = s.ContactSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        from core.access import local_permissions
+        from core.access import LEVELS, effective_permissions
 
-        if all(
-            local_permissions(self.request.user, get_unit(self.request))[section]
-            == "none"
-            for section in ["campaigns", "appointments"]
+        policy = effective_permissions(self.request, get_unit(self.request))
+        level = 1 if self.request.method in {"GET", "HEAD", "OPTIONS"} else 2
+        if not self.request.query_params.get("group") and all(
+            LEVELS[policy[section]] < level for section in ["campaigns", "appointments"]
         ):
             qs = qs.filter(event__appointment__isnull=False)
+        qs = group_appointment_scope(self.request, qs, "event__appointment")
         return (
             qs.filter(event_id=self.request.query_params["event"])
             if self.request.query_params.get("event")
@@ -566,6 +587,10 @@ class ContactViewSet(ScopedRead):
     @extend_schema(request=None)
     @action(detail=True, methods=["post"])
     def review(self, request, pk=None):
+        if request.query_params.get("group"):
+            from core.access import check_resource, effective_permissions
+            check_resource(effective_permissions(request, get_unit(request)), "contacts/review", "POST", {})
+
         def execute():
             obj = self.get_object()
             status = request.data.get("status")
@@ -616,6 +641,7 @@ class MovementViewSet(ScopedRead):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = group_appointment_scope(self.request, qs, "case__event__appointment")
         return (
             qs.filter(case_id=self.request.query_params["case"])
             if self.request.query_params.get("case")
@@ -628,6 +654,12 @@ class MovementViewSet(ScopedRead):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             case = serializer.validated_data["case"]
+            scoped_cases = group_appointment_scope(
+                request, m.Case.objects.filter(unit=unit), "event__appointment"
+            )
+            if not scoped_cases.filter(pk=case.pk).exists():
+                from rest_framework.exceptions import NotFound
+                raise NotFound()
             lock_case(case, request.data.get("case_version"))
             if not case.event.appointment_id:
                 raise ValidationError("Movimentação exige um agendamento vinculado.")

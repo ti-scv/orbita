@@ -77,3 +77,22 @@ de grupo em cases, e a matriz genérica de mensagens/agendamentos/pendências
 para finalidades básicas permanece a ser confirmada. A correção de Grupos
 exige limitar os objetos e acompanhar as chamadas de detalhe da interface.
 O problema análogo em contacts permanece fora deste escopo.
+
+## Continuação 35h4 — contacts e movements (parcial)
+
+Contatos usam o teto efetivo e o nível do método para limitar eventos sem
+agendamento, inclusive na origem federada. O proxy exige que o manifesto
+declare suporte ao teto para contacts e movements e envia a política efetiva;
+origens anteriores são recusadas. Quando informado, o contexto de grupo exige
+a permissão de Grupos no nível do método e limita contatos e movimentações a
+agendamentos com mensagem do grupo na revisão atual. A criação de movimentação
+também verifica o caso informado; a chave de idempotência incorpora o grupo.
+A interface transmite esse contexto nas consultas e ações desses dois recursos.
+
+A revisão de contato em grupo exige também escrita genérica em contatos, pois
+altera o telefone do paciente e outros contatos fora do grupo. O detalhe de
+Grupos ainda depende de cases, que não recebe nem impõe esse contexto; usuários
+que só têm Grupos não conseguem completar esse fluxo. A matriz genérica de
+Mensagens, Agendamentos e Pendências ainda não foi certificada para cada
+finalidade e efeito de movements. Portanto esta etapa não certifica o fluxo
+inteiro nem encerra a auditoria.
