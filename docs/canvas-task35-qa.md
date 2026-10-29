@@ -62,3 +62,15 @@ A sessão `GET /api/v1/auth/session/` acrescenta `permission_types`, sem remover
 ```
 
 As quatro chaves são estáveis e seus níveis são `none`, `read` e `write`. `reportWhatsApp` é independente de `reports`. Uma unidade ausente não está disponível na sessão. A política exposta não elimina as restrições adicionais de perfil ainda existentes nas views, que continuam pendentes de revisão nesta tarefa; não usar este resultado como certificação de que todas as operações já estão disponíveis. Teste: `test_session_exposes_four_types_by_unit_and_superuser`.
+
+| Permissão | Aba | Endpoint principal | Teste |
+| --- | --- | --- | --- |
+| `messages` | Visão geral | `GET /api/v1/indicators/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Mensagens | `GET /api/v1/messages/`, `/api/v1/replies/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Grupos | `GET /api/v1/appointment-groups/` | `test_message_tabs_require_messages_permission` |
+| `messages` | Pendências | `GET /api/v1/issues/` | `test_message_tabs_require_messages_permission` |
+| `reports` | Relatórios | `GET /api/v1/reports/`, `/api/v1/report-access/`, `/api/v1/report-schedules/` | `test_report_resources_require_reports_permission` |
+| `reports` | Canvas | `GET /api/v1/reports/{id}/canvas/` | `test_canvas_read_uses_reports_permission_for_operator` |
+| `reportWhatsApp` | WhatsApp dos relatórios | `GET/POST /api/v1/report-whatsapp/` | `test_whatsapp_status_is_independent_of_reports`, `test_whatsapp_connection_requires_write` |
+
+Esta tabela cobre apenas os casos exercitados; faltam testes de escrita e dos demais endpoints, inclusive Configurações e recursos compartilhados.
