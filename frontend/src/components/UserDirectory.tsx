@@ -21,7 +21,7 @@ export function limitRemoteGrant(grant: Grant, option: Option): Grant {
   const role = rank[grant.role] > rank[option.max_role] ? option.max_role : grant.role;
   const permissions = Object.fromEntries(Object.entries(grant.permissions).map(([key, value]) => {
     const connectionMax = option.permissions[key] || "none";
-    const roleMax = key === "costs" && role !== "admin" || key === "users" && role !== "admin" ? "none" : role === "viewer" || role !== "admin" && ["settings", "operationsAdmin", "users"].includes(key) ? "read" : "write";
+    const roleMax = key === "costs" || key === "users" && role !== "admin" ? "none" : role === "viewer" || role !== "admin" && ["settings", "operationsAdmin", "users"].includes(key) ? "read" : "write";
     const max = levels[connectionMax] < levels[roleMax] ? connectionMax : roleMax;
     return [key, levels[value] > levels[max] ? max : value];
   })) as SectionPermissions;
