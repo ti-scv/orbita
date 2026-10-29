@@ -5,8 +5,8 @@ import {
   groupInputToIso,
 } from "./components/AppointmentGroups";
 describe("group navigation and schedule", () => {
-  it("opens appointments by default and preserves the overview route", () => {
-    expect(readRoute("/").page).toBe("appointments");
+  it("opens the overview by default and preserves the overview route", () => {
+    expect(readRoute("/").page).toBe("overview");
     expect(readRoute("/unknown").page).toBe("appointments");
     expect(routePath("appointments")).toBe("/agendamentos");
     expect(routePath("overview")).toBe("/visao-geral");
