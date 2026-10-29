@@ -13,3 +13,9 @@ Por decisão de Danilo, `compose.yaml` define `REPORT_REMOVAL_ENABLED=0` no ambi
 Validação direcionada em contêineres isolados, sem rede: backend com SQLite e flag desligada, 11 aprovados e 5 ignorados (os testes de remoção habilitada); com flag ligada apenas no processo de teste, 5 aprovados; frontend em Node 24, 7 aprovados em `ReportRemoval.test.tsx`. Sem suítes completas. Os testes backend emitiram avisos de diretório staticfiles ausente e de cache pytest sem permissão.
 
 Pendência: o frontend não esconde os botões de remoção quando a flag está desligada. O diálogo consulta a disponibilidade, apresenta o aviso de desativação e bloqueia a confirmação; “Relatórios removidos” também apresenta o aviso. Portanto, a exigência de ocultar as ações não está satisfeita pela alteração de configuração. Nenhum serviço de staging foi recriado e nenhuma alteração foi aplicada à produção.
+
+## Tarefa 36l — remoção de relatórios ligada
+
+A decisão final de Danilo em 29/10 às 14:31 substitui a decisão da 36k: `compose.yaml` volta a definir `REPORT_REMOVAL_ENABLED=1` no ambiente compartilhado do backend. O padrão em `config/settings.py` permanece desligado e os testes da 36k foram preservados. Não é necessário ocultar os botões; a pendência de ocultação registrada acima deixa de se aplicar.
+
+Validação direcionada em contêineres isolados, sem rede e com a chave ligada: backend com SQLite em memória, 17 testes aprovados e 1 ignorado, com avisos sobre o diretório staticfiles ausente; frontend em Node 24, 13 testes aprovados. Nenhum serviço de staging foi recriado, nenhuma migração foi aplicada a serviços e nenhuma alteração foi aplicada à produção.
