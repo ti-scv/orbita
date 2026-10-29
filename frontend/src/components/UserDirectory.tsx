@@ -51,6 +51,7 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [stateFilter, setStateFilter] = useState("");
   const [roles, setRoles] = useState<Record<string, PermissionRole[]>>({});
   useEffect(() => {
     let alive = true;
@@ -97,16 +98,22 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
     {error && <p role="alert" className="inline-error">{error}</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     {notice && <div role="alert" className="directory-remote-warning"><AlertTriangle size={20} /><span>Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</span></div>}
-    {editable && synced.filter(item => item.state !== "released" || item.removed_at_origin).map(item => {
-      const row = rows.find(user => user.id === item.user_id);
-      return <div key={item.id} className="directory-detail">
-        {item.name || item.login} · {item.unit} · {item.removed_at_origin ? "Removido na origem" : item.state === "conflict" ? "Conflito de login" : "Pendente de liberação"}
-        {!item.removed_at_origin && item.state === "pending" && row && <UserForm row={row} identity={item} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save} />}
-        {!item.removed_at_origin && item.state === "conflict" && <FormAction title="Resolver conflito de login" label="Resolver conflito" busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void resolve(item, String(form.get("username") || "")).catch(() => {}); }}><label className="op-field">Novo login<input name="username" minLength={3} maxLength={150} required /></label><button className="button primary" disabled={busy}>Criar conta separada</button></form></FormAction>}
-      </div>;
-    })}
-    <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable&&!synced.some(item => item.user_id === row.id && (item.state !== "released" || item.removed_at_origin))?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
+    <label className="op-field">Situação<Select value={stateFilter} onChange={e => setStateFilter(e.target.value)}><option value="">Todas</option><option>Pendente de liberação</option><option>Conflito de login</option><option>Removido na origem</option><option>Liberado</option><option>Ativo</option><option>Desativado</option></Select></label>
+    <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Origem</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+      {rows.flatMap(row => {
+        const identities = synced.filter(item => item.user_id === row.id);
+        return (identities.length ? identities : [undefined]).map(item => ({row: row as UserRow | undefined, item}));
+      }).concat(synced.filter(item => !item.user_id && `${item.name} ${item.login}`.toLowerCase().includes(search.toLowerCase())).map(item => ({row: undefined, item}))).filter(({row, item}) => {
+        const state = item ? item.removed_at_origin ? "Removido na origem" : item.state === "conflict" ? "Conflito de login" : item.state === "pending" ? "Pendente de liberação" : "Liberado" : row?.active ? "Ativo" : "Desativado";
+        return !stateFilter || state === stateFilter;
+      }).map(({row, item}) => {
+        const state = item ? item.removed_at_origin ? "Removido na origem" : item.state === "conflict" ? "Conflito de login" : item.state === "pending" ? "Pendente de liberação" : "Liberado" : row?.active ? "Ativo" : "Desativado";
+        return <tr key={item ? `sync:${item.id}` : `user:${row!.id}`}><td><strong>{item?.name || row?.full_name || item?.login || row?.username}</strong><small className="directory-detail">{item?.login || row?.username}</small></td><td>{row?.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row?.grants.length && "Sem acesso"}</td><td>{item?.unit || "Local"}</td><td><span className="status-badge">{state}</span></td><td>
+          {editable && item && !item.removed_at_origin && item.state === "pending" && row && <UserForm row={row} identity={item} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save} />}
+          {editable && item && !item.removed_at_origin && item.state === "conflict" && <FormAction title="Resolver conflito de login" label="Resolver conflito" busy={busy} error={error} version={revision}><form className="op-form" onSubmit={e => { e.preventDefault(); const form = new FormData(e.currentTarget); void resolve(item, String(form.get("username") || "")).catch(() => {}); }}><label className="op-field">Novo login<input name="username" minLength={3} maxLength={150} required /></label><button className="button primary" disabled={busy}>Criar conta separada</button></form></FormAction>}
+          {editable && row?.editable && (!item || item.state === "released" && !item.removed_at_origin) && <UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>}
+        </td></tr>;
+      })}
     </tbody></table></div>{loading ? <p role="status">Carregando usuários…</p> : !error && !rows.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
   </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit} onChanged={() => setRevision(v => v + 1)}/>}</>;
 }

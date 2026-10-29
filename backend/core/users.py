@@ -230,7 +230,7 @@ class UserViewSet(viewsets.GenericViewSet):
         anchor = get_unit(request, ["admin"])
         identities = SyncedUserIdentity.objects.filter(connection__local_unit=anchor).select_related("connection").order_by("login", "id")
         return Response([{"id": item.pk, "connection": str(item.connection_id),
-                          "unit": item.connection.name, "remote_user_id": item.remote_user_id,
+                          "unit": item.connection.remote_unit.get("name") or item.connection.name, "remote_user_id": item.remote_user_id,
                           "login": item.login, "name": item.name, "email": item.email,
                           "state": item.state, "removed_at_origin": item.removed_at_origin,
                           "user_id": item.user_id, "last_synced_at": item.last_synced_at}
