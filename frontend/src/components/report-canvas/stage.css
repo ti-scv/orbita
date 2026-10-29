@@ -950,7 +950,7 @@
 .cv-block-context-menu button:hover, .cv-block-context-menu button:focus-visible { background: var(--cv-surface-3); outline: 2px solid var(--cv-focus); }
 
 /* Keep content reachable after a page orientation change reduces a block. */
-.cv-root .cv-block-text > .cv-block-inner { overflow: auto; pointer-events: auto; }
+.cv-root .cv-block-text > .cv-block-inner { height: 100%; overflow: auto; pointer-events: auto; }
 .cv-root .cv-block-title { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .cv-root .cv-block-kpi .cv-block-inner { overflow: auto; pointer-events: auto; }
 .cv-root .cv-kpi-value { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
