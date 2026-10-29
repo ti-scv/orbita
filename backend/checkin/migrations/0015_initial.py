@@ -13,7 +13,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('autoagenda', '0002_booking_autoagenda_unique_active_slot'),
-        ('core', '0012_membership_permission_role'),
+        ('core', '0014_instanceaccesskey_export_user_identities'),
+        ('operations', '0014_sheetimport_controls'),
         ('scheduling', '0013_oracleagenda_date_format_oracleagenda_days_after_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
