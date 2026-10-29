@@ -26,3 +26,40 @@ Parcial. A investigação anterior partiu de `f253842`; a release `7354299` foi 
 | Suítes completas e staging isolado na porta 8110 | Pendente | Pendente |
 
 Nenhuma suíte ou staging foi executado: não há implementação a validar. A regra específica desta etapa determina a porta 8110 e proíbe a porta 8091. Nenhuma migração foi aplicada.
+
+## Execução 36c — parcial
+
+Backend e interface foram alterados na branch local. A sincronização periódica usa
+`USER_SYNC_INTERVAL_SECONDS`, com padrão zero (desligada). Uma origem deve emitir
+uma chave administrativa com a opção de exportar identidades. O login de uma
+identidade em conflito só pode ser resolvido criando uma conta separada.
+
+| Requisito | Evidência | Print |
+| --- | --- | --- |
+| Exportação restrita à identificação | `test_identity_export_requires_explicit_admin_key_and_only_returns_identification` | Pendente |
+| Pendência, colisão, liberação, repetição, remoção e falha de rede | `test_user_sync_release_conflict_removal_and_network`; resposta remota simulada | Pendente |
+| Duas instalações com bancos independentes, cadastro com falha de rede, periodicidade e interface | Pendente | Pendente |
+| Migração reversível | Migrações anteriores 0013 e 0014; validação reversa pendente | Pendente |
+
+Em contêiner descartável sem rede, com SQLite: os testes direcionados de
+federação e sincronização passaram (64). A suíte completa executada antes do
+último ajuste no teste de federação teve 1246 aprovados, 9 falhas, 17 erros e
+17 ignorados. O teste de federação foi corrigido e passou na execução
+direcionada. Falhas também observadas na suíte completa do commit 7354299:
+`test_preview_exception_does_not_disclose_connection_or_data`,
+`test_cross_body_parameters_are_in_meta_request`,
+`test_all_sections_share_readonly_session_and_dates`,
+`test_two_workers_queue_and_collect_only_one_daily_snapshot`,
+`test_two_operators_cannot_overwrite_activation` e
+`test_concurrent_duplicate_inbound_creates_one_execution`. Os 17 erros
+em `test_oracle_send_regression.py` também ocorreram na base: os testes
+exigem PostgreSQL. `test_concurrent_scheduler_once_per_day` de
+`test_report_catalog.py` falhou em execução separada da base com bloqueio
+de tabela SQLite. `test_concurrent_workers_capture_one_lives_snapshot`
+falhou na execução atual e não falhou na suíte da base; comparação adicional
+é necessária. As falhas concorrentes podem variar entre execuções SQLite.
+
+A suíte completa não foi repetida no último commit. Faltam os testes com duas
+instalações e bancos independentes, testes de interface específicos e prints;
+não foi feito rebuild de staging. Nenhum banco real ou contêiner de produção
+foi alterado.
