@@ -89,7 +89,7 @@ def test_remote_grants_reject_role_and_report_individual(setup):
     client = setup["client"]
     assert client.post("/api/v1/users/", payload, format="json").status_code == 400
     grant["permission_role"] = None
-    response = client.post("/api/v1/users/", payload, format="json")
+    response = client.post("/api/v1/users/", payload, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid4()))
     assert response.status_code == 200, response.data
     assert response.data["grants"][0]["permission_role"] is None
     assert response.data["grants"][0]["permission_role_outdated"] is False
