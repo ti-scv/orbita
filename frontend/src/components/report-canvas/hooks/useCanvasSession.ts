@@ -78,6 +78,7 @@ export function useCanvasSession({
   const [monthlyGoals, setMonthlyGoals] = useState<
     Array<{ year: number; month: number; value: number }>
   >(Array.isArray(report.monthly_goals) ? report.monthly_goals : []);
+  const [sourceEstablishment, setSourceEstablishment] = useState("");
   const [availableSources, setAvailableSources] = useState<CatalogSqlSource[]>([]);
   const [assets, setAssets] = useState<CanvasAssetMeta[]>([]);
   const [banner, setBanner] = useState<BannerMessage | null>(null);
@@ -117,6 +118,7 @@ export function useCanvasSession({
         setOutputFormat(nextFormat);
         setSavedMeta({ enabled: nextEnabled, outputFormat: nextFormat });
         if (Array.isArray(data.monthly_goals)) setMonthlyGoals(data.monthly_goals);
+        setSourceEstablishment(data.source_establishment || "");
         setAvailableSources(Array.isArray(data.sources) ? data.sources : []);
         const incomingAssets = Array.isArray(data.assets) ? data.assets : [];
         setAssets(incomingAssets);
@@ -346,7 +348,7 @@ export function useCanvasSession({
     parameterDeclarations, parameterEdits, setParameterEdits,
     metaDirty: parameterEdits.length > 0 || enabled !== savedMeta.enabled || outputFormat !== savedMeta.outputFormat,
     monthlyGoals,
-    availableSources,
+    availableSources, sourceEstablishment,
     assets,
     assetUrls: assetState.assetUrls,
     banner,

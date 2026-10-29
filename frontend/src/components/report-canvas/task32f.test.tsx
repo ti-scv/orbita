@@ -16,16 +16,16 @@ function mount() {
 }
 it("identifica relatório e troca nome ao mudar de origem; metas vazias bloqueiam teste", () => {
  mount(); Element.prototype.scrollIntoView = vi.fn(); fireEvent.click(screen.getByRole("combobox"));
- fireEvent.click(screen.getByRole("option", {name: /Agenda · agenda · #1/}));
+ fireEvent.click(screen.getByRole("option", {name: /Agenda · Unidade atual · ID 1/}));
  expect(screen.getByText(/4 colunas: Data de atualização, Referência, Dias reconstruídos e mais 1/)).toBeTruthy();
  fireEvent.click(screen.getByRole("tab", {name: "Metas mensais"}));
  expect((screen.getByLabelText("Nome da fonte") as HTMLInputElement).value).toBe("Metas mensais");
- const test = screen.getByRole("button", {name: "Testar e carregar prévia"}) as HTMLButtonElement;
+ const test = screen.getByRole("button", {name: "Recarregar"}) as HTMLButtonElement;
  expect(test.disabled).toBe(true); expect(test.title).toContain("Cadastre metas");
 });
 it("gaveta identifica coluna vazia e permite expandir e recolher", () => {
  render(<DataDrawer source={{id:"s",type:"inline",columns:["Responsável"],rows:[[""]]}} preview={{columns:[{name:"Responsável",type:"unknown"}],rows:[[""]],total_rows:1,truncated:false}} onClose={vi.fn()} />);
- expect(screen.getByLabelText("Sem valores").getAttribute("title")).toBe("Sem valores");
+ expect(screen.getByText("Sem valores neste período")).toBeTruthy();
  fireEvent.click(screen.getByRole("button", {name:"Expandir"})); expect(screen.getByRole("button", {name:"Recolher"}).getAttribute("aria-expanded")).toBe("true");
  fireEvent.click(screen.getByRole("button", {name:"Recolher"})); expect(screen.getByRole("button", {name:"Expandir"})).toBeTruthy();
 });
@@ -43,7 +43,7 @@ it("mostra parâmetro obrigatório e impede envio sem valor", async () => {
  try {
   mount(); Element.prototype.scrollIntoView = vi.fn();
   fireEvent.click(screen.getByRole("combobox"));
-  fireEvent.click(screen.getByRole("option", {name: /Agenda · agenda · #1/}));
+  fireEvent.click(screen.getByRole("option", {name: /Agenda · Unidade atual · ID 1/}));
   expect(await screen.findByText("Paciente * (obrigatório)")).toBeTruthy();
   fireEvent.submit(screen.getByRole("dialog").querySelector("form")!);
   expect(screen.getByRole("alert").textContent).toContain("Informe paciente");

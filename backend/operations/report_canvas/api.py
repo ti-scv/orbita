@@ -103,6 +103,23 @@ def context_report(view, request):
         raise Http404("Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista.")
 
 
+def source_establishment(report):
+    """Identify the establishment from legacy evidence, falling back to the owning unit."""
+    import unicodedata
+    legacy = report.legacy or {}
+    location = (legacy.get("source_location") or {}).get("name", "")
+    text = unicodedata.normalize("NFKD", f"{report.name} {location} {getattr(report, 'code', '')}").encode("ascii", "ignore").decode().upper().replace("-", " ").replace("_", " ")
+    if "AME JALES" in text: return "AME Jales"
+    if "AME SANTA FE" in text: return "AME Santa Fé"
+    if "AME VOTUPORANGA" in text or "AME VOTU" in text or "ROB8 MENSAGENS CONFIRMACAO" in text: return "AME Votuporanga"
+    if "CECAP" in text: return "CECAP"
+    if "UBS" in text: return "UBS"
+    if "SANTA CASA VOTUPORANGA" in text: return "Santa Casa Votuporanga"
+    if location and "ROB8" in location.upper():
+        return location.replace("ROB8", "").strip(" -").title() or report.unit.name
+    return report.unit.name
+
+
 def response(report):
     from .native import catalog_datasets
     labels = {
@@ -140,6 +157,9 @@ def response(report):
         if child.pk in existing:continue
         pending=catalog_contract(child)
         if pending:sources.append(pending)
+    establishments = {child.pk: source_establishment(child) for child in ReportDefinition.objects.filter(pk__in=[item["id"] for item in sources]).select_related("unit")}
+    for item in sources:
+        item["establishment"] = establishments[item["id"]]
     notice = ""
     if report.handler == "external_pdf_v1" and not report.canvas_layout:
         notice = "PDF recebido pronto. A edição dos elementos depende do arquivo de origem."
@@ -158,6 +178,7 @@ def response(report):
         "enabled": report.canvas_enabled,
         "output_format": report.canvas_layout.get("export_format", report.output_format),
         "sources": sources,
+        "source_establishment": source_establishment(report),
         "assets": [{"id": str(a.pk), "filename": a.filename, "width": a.width, "height": a.height} for a in report.canvas_assets.only("id", "filename", "width", "height")],
     }
 

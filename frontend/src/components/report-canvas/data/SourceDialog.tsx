@@ -1,4 +1,4 @@
-import { friendlyParameterName, friendlyParameterValue, collectTestParameters, unitOptionLabel } from "../parameters";
+import { friendlyColumnName, friendlyParameterName, friendlyParameterValue, collectTestParameters, unitOptionLabel } from "../parameters";
 import { previewParameters } from "../hooks/useStagePreviews";
 import { query, request } from "../../../api";
 import { friendlySourceError, friendlySourceName } from "./sourceName";
@@ -39,6 +39,7 @@ export interface SourceDialogProps {
   sourceModal: SourceDialogState | null;
   availableSources: CatalogSqlSource[];
   reportId?: number;
+  sourceEstablishment?: string;
   unit?: string;
   currentReportParameters?: Record<string, any>;
   monthlyGoals?: Array<{ year: number; month: number; value: number }>;
@@ -60,6 +61,7 @@ export default function SourceDialog({
   sourceModal,
   availableSources,
   reportId = 1,
+  sourceEstablishment = "",
   unit = "",
   currentReportParameters = {},
   monthlyGoals = [],
@@ -70,15 +72,21 @@ export default function SourceDialog({
 }: SourceDialogProps) {
   const sourceFormId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentModal = useRef(sourceModal);
+  currentModal.current = sourceModal;
 
   const [schema, setSchema] = useState<Record<string, unknown>>({});
+  const [schemaReportId, setSchemaReportId] = useState("");
+  const [showOtherUnits, setShowOtherUnits] = useState(false);
+  useEffect(() => { if (!sourceModal) setShowOtherUnits(false); }, [sourceModal === null]);
+  const previewAction = useRef<() => void>(() => {});
   const [schemaStatus, setSchemaStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
     if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId) return;
     const controller = new AbortController();
     setSchemaStatus("loading");
     request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${sourceModal.reportId}`, {unit}), "GET", undefined, controller.signal)
-      .then(data => { setSchema(data.parameter_schema || {}); setSchemaStatus("ready"); })
+      .then(data => { setSchema(data.parameter_schema || {}); setSchemaReportId(String(sourceModal.reportId)); setSchemaStatus("ready"); })
       .catch(() => { if (!controller.signal.aborted) { setSchema({}); setSchemaStatus("error"); } });
     return () => controller.abort();
   }, [sourceModal?.reportId, sourceModal?.type, unit]);
@@ -112,7 +120,22 @@ export default function SourceDialog({
     return res.ok ? null : res.error;
   }, [existingSources, sourceModal?.id, sourceModal?.originalId]);
 
-  const filteredCatalog = useMemo(() => [...availableSources].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")), [availableSources]);
+  const ownerEstablishment = sourceEstablishment || availableSources.find(s => s.id === reportId)?.establishment;
+  const fallbackUnit = ({"AME Votuporanga":"ame", "AME Jales":"ame-jales", "AME Santa Fé":"ame-santa-fe"} as Record<string,string>)[ownerEstablishment || ""] || "";
+  const filteredCatalog = useMemo(() => availableSources
+    .filter(s => showOtherUnits || !ownerEstablishment || !s.establishment || s.establishment === ownerEstablishment)
+    .sort((a, b) => (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
+  useEffect(() => {
+    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
+    try {
+      const params = JSON.parse(sourceModal.parametersJson || "{}");
+      const draft = {id: sourceModal.id || "previa", type: "report" as const, report_id: Number(sourceModal.reportId), parameters: params};
+      const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), sourceModal.mode === "create", fallbackUnit);
+      collectTestParameters(fields, values);
+    } catch { return; }
+    const timer = window.setTimeout(() => previewAction.current(), 500);
+    return () => { clearTimeout(timer); testAbort.current?.abort(); };
+  }, [sourceModal?.type, sourceModal?.reportId, sourceModal?.dataset, sourceModal?.parametersJson, schemaStatus, schemaReportId, schema, unit, fallbackUnit]);
 
   const currentParamsMap = useMemo(() => {
     try {
@@ -391,7 +414,7 @@ export default function SourceDialog({
     try {
       let draft = constructDraftSource();
       if (draft.type === "report") {
-        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), isCreate);
+        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit);
         draft = {...draft, parameters: {...draft.parameters, ...collectTestParameters(fields, values)} as Extract<CanvasSource, {type: "report"}>["parameters"]};
       }
       const preview = await fetchSourcePreviewRequest(
@@ -402,11 +425,11 @@ export default function SourceDialog({
         10,
         controller.signal,
       );
-      if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testPreview: preview, testError: null });
+      if (testedSpec === latestPreviewSpec.current && currentModal.current) onChange({ ...currentModal.current, testPreview: preview, testError: null });
     } catch (err: any) {
       if (controller.signal.aborted) return;
       const msg = friendlySourceError(err?.message || "Falha ao carregar prévia.", constructDraftSource(), selectedCatalog);
-      if (testedSpec === latestPreviewSpec.current) onChange({ ...sourceModal, testError: msg, testPreview: null });
+      if (testedSpec === latestPreviewSpec.current && currentModal.current) onChange({ ...currentModal.current, testError: msg, testPreview: null });
     } finally {
       if (testAbort.current === controller) {
         performance.mark("canvas-teste-fonte-fim");
@@ -415,6 +438,8 @@ export default function SourceDialog({
       }
     }
   };
+
+  previewAction.current = () => { void handleTestPreview(); };
 
   const invalidDate = paramItems.some(param => !param.isBinding && isDateParameter(param.key, param.type) && param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)));
   const draftSource = constructDraftSource();
@@ -440,7 +465,7 @@ export default function SourceDialog({
             title={sourceModal.type === "goals" && !monthlyGoals.length ? "Cadastre metas mensais antes de testar esta fonte." : "Executar consulta e verificar dados retornados"}
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
-            {testing ? "Testando…" : "Testar e carregar prévia"}
+            {testing ? "Carregando…" : "Recarregar"}
           </button>
           <button
             type="submit"
@@ -462,7 +487,7 @@ export default function SourceDialog({
           return;
         }
         if (sourceModal.type === "report") {
-          try { const {fields, values} = previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate); collectTestParameters(fields, values); }
+          try { const {fields, values} = previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit); collectTestParameters(fields, values); }
           catch (error) { event.preventDefault(); onChange({...sourceModal, error: (error as Error).message}); event.currentTarget.querySelector<HTMLElement>('.cv-params-section input, .cv-params-section select')?.focus(); return; }
         }
         onSubmit(event);
@@ -521,11 +546,11 @@ export default function SourceDialog({
 
         {sourceModal.type === "report" && selectedCatalog && (
           <p className="cv-source-sub" title={`${selectedCatalog.name}. ${columnLabels.join(", ")}`}>
-            Origem: {selectedCatalog.name}. {columnLabels.length ? `${columnLabels.length} colunas: ${columnLabels.slice(0, 3).join(", ")}${columnLabels.length > 3 ? ` e mais ${columnLabels.length - 3}` : ""}` : "Use Testar e carregar prévia para consultar as colunas."}
+            Origem: {selectedCatalog.name}. {columnLabels.length ? `${columnLabels.length} colunas: ${columnLabels.slice(0, 3).join(", ")}${columnLabels.length > 3 ? ` e mais ${columnLabels.length - 3}` : ""}` : "A prévia será carregada ao preencher os parâmetros."}
           </p>
         )}
 
-        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">{selectedCatalog.unavailable_reason}</p>}
+        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">{friendlySourceError(selectedCatalog.unavailable_reason || "", constructDraftSource(), selectedCatalog)}</p>}
         <h3>2. Escolha os dados</h3>
         {/* Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (
@@ -540,11 +565,12 @@ export default function SourceDialog({
                     parametersJson: "{}", testPreview: null, testError: null});
                 }}>
                   <option value="">Escolha um relatório</option>
-                  {filteredCatalog.map(s => <option key={s.id} value={s.id}>{s.name} · {s.code || `#${s.id}`} · #{s.id}{s.available === false ? " · Pendente" : ""}</option>)}
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment || "Unidade atual"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Pendente de aceite" : ""}</option>)}
                 </Select>
               </label>
 
-              {!!selectedCatalog?.datasets?.length && (
+              <label className="op-field"><span><input type="checkbox" checked={showOtherUnits} onChange={e => setShowOtherUnits(e.target.checked)} /> Mostrar de outras unidades</span></label>
+            {!!selectedCatalog?.datasets?.length && (
                 <label className="op-field">
                   <span>Conjunto de dados</span>
                   <Select
@@ -566,11 +592,12 @@ export default function SourceDialog({
             {sourceModal.reportId && schemaStatus === "loading" && <p role="status">Carregando opções do relatório…</p>}
             {sourceModal.reportId && schemaStatus === "error" && <p role="alert">Não foi possível carregar as opções do relatório. Feche a janela e tente novamente.</p>}
             {sourceModal.reportId && schemaStatus === "ready" && (() => {
-              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit, new Date(), isCreate);
+              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit);
               return fields.length ? <div className="cv-params-section"><strong>Valores para a prévia</strong>
                 {fields.map(field => <label className="op-field" key={field.name}>
                   <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
                   {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
+                  {/^(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && <small>A unidade deste relatório não está nas opções desta fonte; foi usada uma opção permitida. Confira a seleção.</small>}
                   {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
                     <option value="">Selecione</option>{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
                   </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
@@ -890,9 +917,9 @@ export default function SourceDialog({
               </span> : <span role="status">A consulta funcionou, mas não trouxe nenhuma linha para esses filtros. Confira unidade e período.</span>}
             </div>
 
-            {sourceModal.testPreview.effective_parameters != null && <div>
+            {sourceModal.testPreview.effective_parameters != null && <div className="cv-applied-parameters">
               <strong>Parâmetros aplicados:</strong>{" "}
-              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label ? unitOptionLabel(p.name, String(p.value), previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || "") : friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label ? unitOptionLabel(p.name, String(p.value), previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || "") : friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
             </div>}
             {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 
@@ -903,8 +930,8 @@ export default function SourceDialog({
                     {sourceModal.testPreview.columns.map((col, idx) => (
                       <th key={idx}>
                         <div className="cv-table-th-content">
-                          <ColumnBadge type={col.type} looksLike={col.looks_like} />
-                          <span>{col.name}</span>
+                          <ColumnBadge type={col.type} looksLike={col.looks_like} estimated={col.estimated} />
+                          <span>{friendlyColumnName(col.name)}</span>
                         </div>
                       </th>
                     ))}

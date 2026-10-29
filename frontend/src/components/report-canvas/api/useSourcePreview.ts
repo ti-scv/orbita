@@ -141,6 +141,7 @@ export async function fetchSourcePreviewRequest(
         name: String(c.name || ""),
         type: c.type || "unknown",
         looks_like: c.looks_like,
+        estimated: Boolean(c.estimated),
         nullable: Boolean(c.nullable),
         null_count: typeof c.null_count === "number" ? c.null_count : 0,
         sample: Array.isArray(c.sample) ? c.sample.map(String) : [],

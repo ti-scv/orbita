@@ -25,6 +25,7 @@ MEDICAL = {
  "opinions_days": lambda ref: medical_headers(ref)["opinions_days"],
 }
 LOCAL_COLUMNS=["Paciente","Telefone","Finalidade","Data","Resposta","Resultado","Atendimento","Responsável"]
+LOCAL_COLUMN_TYPES={name: ("date" if name == "Data" else "text") for name in LOCAL_COLUMNS}
 
 def datasets(report):
  if report.handler=="app_operational_v1":

@@ -62,6 +62,7 @@ export interface ColumnInfo {
   name: string;
   type: ColumnDataType;
   looks_like?: "date" | "number";
+  estimated?: boolean;
   nullable?: boolean;
   null_count?: number;
   sample?: string[];
@@ -121,6 +122,7 @@ export interface CanvasLayout {
 
 export interface CatalogSqlSource {
   available?: boolean;
+  establishment?: string;
   unavailable_reason?: string;
   datasets?: Array<{id:string;name:string;columns:string[]}>;
 
@@ -143,6 +145,7 @@ export interface ParameterDeclaration { name: string; status: string; uses: stri
 export interface ParameterEdit { name: string; rename?: string }
 
 export interface CanvasGetResponse {
+  source_establishment?: string;
   parameter_editor?: ParameterDeclaration[];
   default_data_mode?: "sample" | "preview";
   port_notice?: string;

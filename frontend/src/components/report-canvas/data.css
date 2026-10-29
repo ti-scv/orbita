@@ -920,3 +920,5 @@
 .cv-data-drawer.is-expanded { height: 75vh; max-height: 75vh; }
 .cv-drawer-body { min-height: 0; overflow: scroll; }
 .cv-drawer-scroll-hint { margin: 0; padding: 0 16px; font-size: 11px; color: var(--cv-text-2); }
+
+.cv-root .cv-applied-parameters { font-size: var(--cv-fs-xs); color: var(--cv-text-2); }

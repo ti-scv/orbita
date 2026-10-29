@@ -127,7 +127,8 @@ export function isDraftDifferent(
 ): boolean {
   if (draft.enabled !== current.enabled) return true;
   if (draft.outputFormat !== current.outputFormat) return true;
-  const draftSanitized = JSON.stringify(sanitizeLayoutForApi(draft.layout));
-  const currentSanitized = JSON.stringify(sanitizeLayoutForApi(current.layout));
+  const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical) : value && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonical(item)])) : value;
+  const draftSanitized = JSON.stringify(canonical(sanitizeLayoutForApi(draft.layout)));
+  const currentSanitized = JSON.stringify(canonical(sanitizeLayoutForApi(current.layout)));
   return draftSanitized !== currentSanitized;
 }

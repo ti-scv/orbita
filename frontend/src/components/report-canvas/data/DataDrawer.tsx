@@ -1,3 +1,4 @@
+import { friendlyColumnName } from "../parameters";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, Check, RefreshCw, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { CanvasSource, SourcePreview } from "../model";
@@ -31,6 +32,17 @@ export default function DataDrawer({
   onRefresh,
 }: DataDrawerProps) {
   const { reportId, unit } = useContext(OriginContext);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector('[role="dialog"][aria-modal="true"]') || document.querySelector('[data-select-popup]')) return;
+      event.preventDefault(); closeRef.current();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("keydown", handleKey); if (previous?.isConnected) previous.focus(); };
+  }, []);
   const [pagePreview, setPagePreview] = useState<SourcePreview | null>(null);
   const [offset, setOffset] = useState(0);
   const [pageSize, setPageSize] = useState(50);
@@ -150,7 +162,7 @@ export default function DataDrawer({
   return (
     <div className={`cv-data-drawer cv-root ${expanded ? "is-expanded" : ""}`} role="dialog" aria-label={`Dados da fonte ${sourceName || friendlySourceName(source)}`}>
       <details className="cv-column-origins"><summary>Origem das colunas e exemplos</summary>
-        <table className="cv-column-metadata"><thead><tr><th scope="col">Coluna</th><th scope="col">Exemplo</th><th scope="col">Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{col.name}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
+        <table className="cv-column-metadata"><thead><tr><th scope="col">Coluna</th><th scope="col">Exemplo</th><th scope="col">Origem</th></tr></thead><tbody>{columns.map((col, index) => <tr key={col.name}><td>{friendlyColumnName(col.name)}</td><td>{formatCellValue(rawRows.find(row => row[index] != null && String(row[index]).trim() !== "")?.[index], col.type)}</td><td><ColumnOrigin source={source} sourceName={sourceName} datasetName={datasetName} column={col.name} type={col.type} loadedAt={loadedAt} /></td></tr>)}</tbody></table>
       </details>
       <div className="cv-drawer-head">
         <div className="cv-drawer-title-group">
@@ -227,10 +239,10 @@ export default function DataDrawer({
               <tr>
                 <th scope="col" style={{ width: 36, textAlign: "center" }}>#</th>
                 {columns.map((col, idx) => (
-                  <th scope="col" role="columnheader" key={col.name || idx} tabIndex={0} aria-sort={sortCol === idx ? (sortDir === "asc" ? "ascending" : "descending") : "none"} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSort(idx); } }} onClick={() => toggleSort(idx)} title={`Ordenar por ${col.name}`}>
+                  <th scope="col" role="columnheader" key={col.name || idx} tabIndex={0} aria-sort={sortCol === idx ? (sortDir === "asc" ? "ascending" : "descending") : "none"} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSort(idx); } }} onClick={() => toggleSort(idx)} title={`Ordenar por ${friendlyColumnName(col.name)}`}>
                     <div className="cv-table-th-content">
-                      {currentPreview && rawRows.length > 0 && rawRows.every(row => row[idx] == null || String(row[idx]).trim() === "") ? <span title="Sem valores" aria-label="Sem valores">Sem valores</span> : <ColumnBadge type={col.type} looksLike={col.looks_like} />}
-                      <span>{col.name}</span>
+                      <ColumnBadge type={col.type} looksLike={col.looks_like} estimated={col.estimated} />{currentPreview && rawRows.every(row => row[idx] == null || String(row[idx]).trim() === "") && <span>Sem valores neste período</span>}
+                      <span>{friendlyColumnName(col.name)}</span>
                       {(
 
                         <span className="cv-table-null-count" title={`${rawRows.filter(row => row[idx] == null || String(row[idx]).trim() === "").length} valores vazios`}>

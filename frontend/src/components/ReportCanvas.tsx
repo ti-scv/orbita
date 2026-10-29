@@ -743,6 +743,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
       <SourceDialog
         sourceModal={session.sourceModal}
         availableSources={session.availableSources}
+        sourceEstablishment={session.sourceEstablishment}
         reportId={report.id}
         unit={unit}
         currentReportParameters={report.parameter_schema}

@@ -131,6 +131,15 @@ def source_preview(view, request):
         for col_idx, col_name in enumerate(dataset.columns)
     ]
 
+    # The local adapter declares these types even when the requested period has no values.
+    from .native import LOCAL_COLUMN_TYPES
+    from operations.reports import HANDLERS
+    if child and child.source == "local" and child.handler in HANDLERS:
+        for column in columns:
+            if column["type"] == "unknown" and column["name"] in LOCAL_COLUMN_TYPES:
+                column["type"] = LOCAL_COLUMN_TYPES[column["name"]]
+                column["estimated"] = True
+
     preview_rows = [
         [serialize_cell(cell) for cell in row]
         for row in dataset.rows[:limit]

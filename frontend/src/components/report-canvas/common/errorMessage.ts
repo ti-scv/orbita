@@ -15,7 +15,7 @@ export function canvasErrorMessage(value: unknown, requestBody?: unknown, status
   if (payload?.json) { try { payload = {...payload, layout: JSON.parse(payload.json)}; } catch { /* Invalid local JSON is handled before requesting validation. */ } }
   const layoutSources = payload?.layout?.sources;
   const sourceList = payload?.source ? [payload.source] : Array.isArray(layoutSources) ? layoutSources : [];
-  let text = flatten(value).join(" ").replace(/\s*[›»]\s*Dados\b/gi, "");
+  let text = flatten(value).join(" ").replace(/Fonte indisponível nesta unidade\./gi, "Esta fonte não está disponível para esta unidade.").replace(/Validar resultado e filtro ENVIAR = N da consulta original; esse critério não comprova confirmação\/recusa WhatsApp\./gi, "É preciso validar o resultado e o filtro que seleciona registros ainda não enviados. Isso não comprova confirmação ou recusa pelo WhatsApp.").replace(/\s*[›»]\s*Dados\b/gi, "");
   for (const source of sourceList) {
     if (!source || typeof source.id !== "string" || !source.id) continue;
     const escaped = source.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -30,5 +30,6 @@ export function canvasErrorMessage(value: unknown, requestBody?: unknown, status
   const protectedText = missingToken ? text.replace(missingToken, "\u0000") : text;
   const translated = protectedText.replace(/\b(contacts|not-sent|confirmed|ame|appointment|start|end|unidade|tipo_envio)\b/gi, token => names[token.toLowerCase()])
     .replace(/(["'])dados\1/gi, '"Tabela principal"').replace(/\bfonte\s+dados\b/gi, 'fonte Tabela principal');
-  return missingToken ? translated.replace("\u0000", missingToken) : translated;
+  const result = translated.replace(/Esta fonte não está disponível para esta Unidade\./g, "Esta fonte não está disponível para esta unidade.");
+  return missingToken ? result.replace("\u0000", missingToken) : result;
 }

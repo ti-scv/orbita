@@ -14,7 +14,7 @@ export interface StagePreviewState extends SourcePreviewState {
   changedParameters?: string[];
 }
 
-export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date(), preferUnit = false) {
+export function previewParameters(source: CanvasSource, schema: Record<string, unknown>, ownerSchema: Record<string, any> = {}, unit = "", now = new Date(), preferUnit = false, fallbackUnit = "") {
   const fields = testParameters(schema);
   const values: Record<string,string> = {};
   if (source.type !== "report") return {fields, values};
@@ -31,6 +31,7 @@ export function previewParameters(source: CanvasSource, schema: Record<string, u
     value = (value === "" ? undefined : value) ?? field.default ?? ownerSchema[field.name]?.default;
     const key = field.name.toLowerCase().replace(/^wpa_/, "");
     if (preferUnit && configured == null && /^(unit|unit_slug|unidade)$/.test(key) && unit && (!field.options || field.options.some(option => option.value === unit))) value = unit;
+    if (preferUnit && configured == null && /^(unit|unit_slug|unidade)$/.test(key) && unit && field.options && !field.options.some(option => option.value === unit) && fallbackUnit && field.options.some(option => option.value === fallbackUnit)) value = fallbackUnit;
     if ((value == null || value === "") && /^(unit|unit_slug|unidade)$/.test(key) && unit && (!field.options || field.options.some(option => option.value === unit))) value = unit;
     if (field.options && value != null && value !== "" && !field.options.some(option => option.value === String(value))) {
       value = field.options.some(option => option.value === String(field.default)) ? field.default : undefined;

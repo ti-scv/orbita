@@ -3,7 +3,7 @@ export interface TestParameter {
   default?: unknown; minimum?: number; maximum?: number; not_before?: string;
   order?: number; options?: Array<{value: string; label: string}>;
 }
-const labels: Record<string,string> = {start:"Data inicial",start_date:"Data inicial",data_inicial:"Data inicial",end:"Data final",end_date:"Data final",data_final:"Data final",reference_date:"Data de referência",as_of:"Data de referência",date:"Data",year:"Ano",month:"Mês",patient_name:"Nome do paciente",unidade:"Unidade",unit:"Unidade",tipo_envio:"Tipo de envio",data_atualizacao:"Data de atualização",referencia:"Referência",dias_reconstruidos:"Dias reconstruídos"};
+const labels: Record<string,string> = {start:"Data inicial",start_date:"Data inicial",data_inicial:"Data inicial",end:"Data final",end_date:"Data final",data_final:"Data final",reference_date:"Data de referência",as_of:"Data de referência",date:"Data",year:"Ano",month:"Mês",patient_name:"Nome do paciente",unidade:"Unidade",unit:"Unidade",tipo_envio:"Tipo de envio",cd_paciente:"Código do paciente",cd_agenda:"Código da agenda",dta_agenda:"Data da agenda",data_atualizacao:"Data de atualização",referencia:"Referência",dias_reconstruidos:"Dias reconstruídos"};
 export function testParameters(schema: Record<string,unknown> = {}): TestParameter[] {
   return Object.entries(schema).map(([name,raw]) => {
     const spec = (typeof raw === "string" ? {type:raw} : raw || {}) as Record<string,any>;
@@ -52,6 +52,9 @@ export function collectTestParameters(fields: TestParameter[], values: Record<st
 
 export function friendlyParameterName(name: string): string {
   return testParameters({[name]: {}})[0].label;
+}
+export function friendlyColumnName(name: string): string {
+  return /^(cd_paciente|cd_agenda|dta_agenda)$/i.test(name) ? friendlyParameterName(name) : name;
 }
 export function unitOptionLabel(name: string, value: string, fallback: string): string {
   if (!/^(unidade|unit)$/i.test(name)) return fallback;
