@@ -287,7 +287,7 @@ class LogViewSet(viewsets.GenericViewSet):
             if d.get("unit"): parts.append("Unidade de origem: " + str(d["unit"]))
             if audit.action == "user_sync.completed":
                 if "new" in d:
-                    parts.append(", ".join(f"{d.get(k, 0)} {label}" for k, label in (("new", "novos"), ("updated", "atualizados"), ("removed", "removidos"), ("conflicts", "conflitos"))))
+                    parts.append(", ".join(f"{d[k]} {singular if d[k] == 1 else plural}" for k, singular, plural in (("new", "novo", "novos"), ("updated", "atualizado", "atualizados"), ("removed", "removido", "removidos"), ("conflicts", "conflito", "conflitos")) if k in d))
                 elif "count" in d:
                     parts.append(f'Total recebido: {d["count"]}')
             roles = {"admin": "Administrativo", "operator": "Operador", "viewer": "Consulta"}
