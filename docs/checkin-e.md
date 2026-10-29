@@ -17,4 +17,4 @@ O comando `configure_checkin_report` cria uma definição e layout tabular Repor
 
 ## Testes
 
-Teste dedicado `backend/tests/test_checkin_report.py`: vazio, limite de período no fuso, confirmação e falta, desconhecidos, denominador zero, outra unidade e exportação PDF. Suítes completas e comparação com `cd495d5` iniciadas em ambientes isolados SQLite e frontend; resultados devem ser verificados nos logs de execução antes de integrar. SQLite não valida concorrência PostgreSQL.
+Teste dedicado `backend/tests/test_checkin_report.py` passou (1 teste, SQLite isolado): vazio, limite de período no fuso, confirmação e falta, desconhecidos, denominador zero, outra unidade e exportação PDF. Suítes completas e comparação com `cd495d5` iniciadas em ambientes isolados SQLite e frontend; resultados devem ser verificados nos logs de execução antes de integrar. SQLite não valida concorrência PostgreSQL.
