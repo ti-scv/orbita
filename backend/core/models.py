@@ -25,6 +25,7 @@ class Membership(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
     role = models.CharField(max_length=12, choices=Role.choices, default=Role.VIEWER)
     permissions = models.JSONField(default=dict)
+    permission_role = models.ForeignKey("PermissionRole", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "unit"], name="membership_unique")]
