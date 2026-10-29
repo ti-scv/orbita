@@ -55,7 +55,7 @@ export default function CheckInWorkspace({unit, write}:{unit:string; write:boole
     const holidays=holidayText.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
     if (!edit.weekdays.length || !Number.isInteger(edit.lead_value) || edit.lead_value < 1 || edit.business_start >= edit.business_end || holidays.some(s=>!/^\d{4}-\d{2}-\d{2}$/.test(s))) {setModalError("Confira antecedência, dias, horários e datas dos feriados (AAAA-MM-DD).");return}
     setBusy(true);setModalError("");
-    try {const result=await request<Config>(query("checkin-configuration",{unit}),"PATCH",{...edit,holidays});setConfig(result);setEdit(null)}
+    try {const {enabled,booking_enabled,appointment_enabled,oracle_enabled,channel,timezone,weekdays,business_start,business_end,lead_value,lead_unit}=edit; const result=await request<Config>(query("checkin-configuration",{unit}),"PATCH",{enabled,booking_enabled,appointment_enabled,oracle_enabled,channel,timezone,weekdays,business_start,business_end,lead_value,lead_unit,holidays});setConfig(result);setEdit(null)}
     catch(e){setModalError(errorText(e))}finally{setBusy(false)}
   }
   if(unit !== "sansaude") return <p role="alert">Check-in disponível somente na unidade Sansaúde.</p>;
