@@ -5,8 +5,10 @@ import { query, request } from "../api";
 import type { Paginated, SectionPermissions } from "../types";
 import FormAction from "./FormAction";
 import { Panel } from "./ui";
+import PermissionRoles, { loadPermissionRoles } from "./PermissionRoles";
+import type { PermissionRole } from "./PermissionRoles";
 
-type Grant = { unit: string; role: string; permissions: SectionPermissions };
+type Grant = { unit: string; role: string; permissions: SectionPermissions; permission_role?: number };
 type UserRow = { id: number; username: string; full_name: string; active: boolean; version: number; grants: Grant[]; editable: boolean; global_editable: boolean };
 type Option = { slug: string; name: string; remote: boolean; instance_name?: string; editable: boolean; max_role: string; permissions: SectionPermissions };
 type Options = { units: Option[]; sections: Record<string, string> };
@@ -16,6 +18,8 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
+  const [roles, setRoles] = useState<PermissionRole[]>([]);
+  useEffect(() => { let alive = true; if (editable) loadPermissionRoles(unit).then(r => {if (alive) setRoles(r);}).catch(e => {if (alive) setError(e.message);}); return () => {alive = false;}; }, [unit, editable, revision]);
   useEffect(() => {
     let active = true;
     async function load() {
@@ -37,16 +41,16 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
       setRevision(v=>v+1); await onChanged?.();
     } catch(e) {setError((e as Error).message);throw e;} finally {setBusy(false);}
   }
-  return <Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} busy={busy} error={error} revision={revision} save={save}/> }>
+  return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} unit={unit} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
+      {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} unit={unit} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
     </tbody></table></div>{!rows.length&&<p className="directory-empty">Nenhum usuário encontrado.</p>}
-  </Panel>;
+  </Panel>{editable && !unit.startsWith("remote:") && <PermissionRoles unit={unit}/>}</>;
 }
 
-function UserForm({row, options, busy, error, revision, save}:{row?:UserRow;options:Options;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
+function UserForm({row, options, roles, unit, busy, error, revision, save}:{row?:UserRow;options:Options;roles:PermissionRole[];unit:string;busy:boolean;error:string;revision:number;save:(row:UserRow|undefined,body:unknown)=>Promise<void>}) {
   const [username,setUsername]=useState(row?.username||""),[name,setName]=useState(row?.full_name||""),[password,setPassword]=useState("");
   const [active,setActive]=useState(row?.active??true),[grants,setGrants]=useState<Grant[]>(row?.grants||[]);
   const global = !row || row.global_editable;
@@ -72,13 +76,14 @@ function UserForm({row, options, busy, error, revision, save}:{row?:UserRow;opti
         return <fieldset key={option.slug} className="access-grant" disabled={!option.editable}>
           <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none()}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
           {grant&&<><label className="op-field">Perfil<Select value={grant.role} onChange={e=>setRole(option.slug,e.target.value)}>{Object.entries(profiles).filter(([key])=>option.max_role==="admin"||key!=="admin"&&(option.max_role!=="viewer"||key==="viewer")).map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
-            <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
+            {!option.remote && option.slug === unit && <label className="op-field">Tipo de usuário<Select value={grant.permission_role || ""} onChange={e=>update(option.slug,{permission_role:e.target.value ? Number(e.target.value) : undefined})}><option value="">Permissões individuais</option>{roles.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</Select></label>}
+            {!grant.permission_role && <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
                const label = ({settings:"Configurações · Integrações e envios",operationsAdmin:"Configurações · Cadastros",users:"Configurações · Usuários"} as Record<string,string>)[key] || originalLabel;
               const max=option.permissions[key]||"none";
               return <tr key={key}><td>{label}</td><td><Select aria-label={`${option.name} — ${label}`} value={grant.permissions[key]||"none"} onChange={e=>update(option.slug,{permissions:{...grant.permissions,[key]:e.target.value as "none"|"read"|"write"}})}>
                 <option value="none">Oculto</option>{max!=="none"&&<option value="read">Somente leitura</option>}{max==="write"&&grant.role!=="viewer"&&(grant.role==="admin"||!["settings","operationsAdmin","users"].includes(key))&&<option value="write">Ver e editar</option>}
               </Select></td></tr>;
-            })}</tbody></table></div></>}
+            })}</tbody></table></div>}</>}
         </fieldset>;
       })}
       <button type="submit" className="button primary" disabled={busy}>Salvar usuário</button>
