@@ -398,7 +398,7 @@ def test_readonly_sqlite_transaction_prevents_mutation(report_env):
             c.execute("INSERT INTO totals VALUES ('C',30)")
 
 
-def test_readonly_role_cannot_edit_and_operator_cannot_list_connections(report_env):
+def test_readonly_permission_cannot_edit_but_can_list_connections(report_env):
     e = report_env
     operator = get_user_model().objects.create_user("reader", password="x")
     Membership.objects.create(
@@ -406,7 +406,7 @@ def test_readonly_role_cannot_edit_and_operator_cannot_list_connections(report_e
     )
     e["client"].force_authenticate(operator)
     assert post(e["client"], "reports", {"code": "x", "name": "x"}).status_code == 403
-    assert e["client"].get("/api/v1/report-connections/?unit=ame").status_code == 403
+    assert e["client"].get("/api/v1/report-connections/?unit=ame").status_code == 200
 
 
 def test_recipient_users_endpoint_scoped(report_env):
