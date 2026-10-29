@@ -1,4 +1,5 @@
-from datetime import time
+from datetime import date, time
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -30,6 +31,19 @@ class Configuration(models.Model):
             raise ValidationError("Check-in disponível apenas para Sansaúde.")
         if self.business_start >= self.business_end:
             raise ValidationError("Horário comercial inválido.")
+        try:
+            ZoneInfo(self.timezone)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValidationError({"timezone": "Fuso horário inválido."})
+        if not isinstance(self.weekdays, list) or not self.weekdays or any(type(day) is not int or day not in range(7) for day in self.weekdays) or len(set(self.weekdays)) != len(self.weekdays):
+            raise ValidationError({"weekdays": "Informe dias distintos entre 0 e 6."})
+        try:
+            if not isinstance(self.holidays, list) or any(not isinstance(day, str) or date.fromisoformat(day).isoformat() != day for day in self.holidays):
+                raise ValueError
+        except ValueError:
+            raise ValidationError({"holidays": "Informe datas ISO válidas."})
+        if not self.lead_value:
+            raise ValidationError({"lead_value": "A antecedência deve ser positiva."})
 
     def save(self, *args, **kwargs):
         self.full_clean()
