@@ -274,6 +274,7 @@ function Workspace({
     setError("");
     try {
       const filters = { unit, kind, start, end };
+      const settingsOnly = page === "settings";
       const empty = {count:0,next:null,previous:null,results:[]};
       const read = <T,>(section: string, url:string, fallback:unknown): Promise<T> =>
         session.permissions?.[unit]?.[section] && session.permissions[unit][section] !== "none" ? request<T>(url) : Promise.resolve(fallback as T);
@@ -289,8 +290,8 @@ function Workspace({
         audit,
         control,
       ] = await Promise.all([
-        read<Indicators>("overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
-        read<Paginated<Appointment>>("appointments",
+        read<Indicators>(settingsOnly ? "" : "overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
+        read<Paginated<Appointment>>(settingsOnly ? "" : "appointments",
           query("appointments", {
             ...filters,
             page: String(page === "appointments" ? listPage : 1),
@@ -298,7 +299,7 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Message>>("messages",
+        read<Paginated<Message>>(settingsOnly ? "" : "messages",
           query("messages", {
             ...filters,
             page: String(page === "messages" ? listPage : 1),
@@ -308,14 +309,14 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Reply>>("messages",
+        read<Paginated<Reply>>(settingsOnly ? "" : "messages",
           query("replies", {
             ...filters,
             page: String(page === "responses" ? listPage : 1),
           }),
           empty,
         ),
-        read<Paginated<Issue>>("issues",
+        read<Paginated<Issue>>(settingsOnly ? "" : "issues",
           query("issues", {
             ...filters,
             page: String(page === "issues" ? listPage : 1),
