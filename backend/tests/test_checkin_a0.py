@@ -62,7 +62,7 @@ def test_permissions():
 def test_concurrent_idempotent_transition():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
-    from django.db import close_old_connections, connection
+    from django.db import close_old_connections, connection, connections
     if connection.vendor != "postgresql":
         pytest.skip("Bloqueio de linha exige PostgreSQL")
     unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
@@ -75,7 +75,7 @@ def test_concurrent_idempotent_transition():
         try:
             return transition(unit=unit, checkin_id=record.pk, version=1, idempotency_key="same", origin="automatic", response="sent")[1].pk
         finally:
-            close_old_connections()
+            connections.close_all()
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda _: call(), range(2)))
     assert results[0] == results[1]
