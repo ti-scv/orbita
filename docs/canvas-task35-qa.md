@@ -34,3 +34,5 @@ A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, s
 | `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` | `test_whatsapp_connection_requires_write` |
 
 A migração guarda os valores inseridos em `PermissionMigration35Backup`. Ao reverter para `core 0007`, remove apenas valores ainda iguais aos gravados pela migração; valores editados depois são mantidos. Essa operação deve ser ensaiada exclusivamente em banco descartável; a versão anterior não aplica a nova seção, mesmo quando uma edição posterior fica preservada no JSON. `test_migration_preserves_existing_access_and_later_edits` exercita a ida e a volta. As demais partes da tarefa 35a continuam pendentes.
+
+Em um ambiente descartável com as variáveis de conexão apontando para esse banco, o comando de reversão é `python manage.py migrate core 0007_unit_logo`; para reaplicar, `python manage.py migrate core 0008_report_whatsapp_permission`. Não execute esses comandos no banco real ou de produção.

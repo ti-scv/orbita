@@ -49,6 +49,14 @@ def test_migration_preserves_existing_access_and_later_edits():
     user = old.get_model("auth", "User").objects.create(username="migracao")
     unit = old.get_model("core", "Unit").objects.create(slug="migracao", name="Migração")
     member = old.get_model("core", "Membership").objects.create(user_id=user.pk, unit_id=unit.pk, role="admin", permissions={"reports": "read"})
+    remote = old.get_model("core", "RemoteInstance").objects.create(
+        local_unit_id=unit.pk, name="Remota", base_url="https://example.com",
+        key_ciphertext="teste", remote_instance_id="00000000-0000-0000-0000-000000000001",
+        remote_unit_slug="remota", remote_role="admin", remote_permissions={"reports": "read"},
+    )
+    remote_member = old.get_model("core", "RemoteMembership").objects.create(
+        user_id=user.pk, connection_id=remote.pk, role="admin", permissions={"reports": "write"},
+    )
     unchanged_user = old.get_model("auth", "User").objects.create(username="migracao_inalterada")
     unchanged = old.get_model("core", "Membership").objects.create(user_id=unchanged_user.pk, unit_id=unit.pk, role="operator", permissions={"reports": "write"})
     executor = MigrationExecutor(connection)
@@ -58,6 +66,10 @@ def test_migration_preserves_existing_access_and_later_edits():
         assert member.permissions == {"reports": "read", "reportWhatsApp": "read"}
         unchanged.refresh_from_db()
         assert unchanged.permissions["reportWhatsApp"] == "none"
+        remote.refresh_from_db()
+        remote_member.refresh_from_db()
+        assert remote.remote_permissions["reportWhatsApp"] == "read"
+        assert remote_member.permissions["reportWhatsApp"] == "write"
         member.permissions["reportWhatsApp"] = "write"
         member.save(update_fields=["permissions"])
         MigrationExecutor(connection).migrate([("core", "0007_unit_logo")])
@@ -65,5 +77,9 @@ def test_migration_preserves_existing_access_and_later_edits():
         assert member.permissions == {"reports": "read", "reportWhatsApp": "write"}
         unchanged.refresh_from_db()
         assert unchanged.permissions == {"reports": "write"}
+        remote.refresh_from_db()
+        remote_member.refresh_from_db()
+        assert remote.remote_permissions == {"reports": "read"}
+        assert remote_member.permissions == {"reports": "write"}
     finally:
         MigrationExecutor(connection).migrate([("core", "0008_report_whatsapp_permission")])
