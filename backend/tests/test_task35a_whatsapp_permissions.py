@@ -82,4 +82,4 @@ def test_migration_preserves_existing_access_and_later_edits():
         assert remote.remote_permissions == {"reports": "read"}
         assert remote_member.permissions == {"reports": "write"}
     finally:
-        MigrationExecutor(connection).migrate([("core", "0008_report_whatsapp_permission")])
+        MigrationExecutor(connection).migrate(MigrationExecutor(connection).loader.graph.leaf_nodes())
