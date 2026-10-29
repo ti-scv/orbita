@@ -207,8 +207,10 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             group_id = serializers.UUIDField().run_validation(params["group"])
             group = get_object_or_404(AppointmentGroup, pk=group_id, unit=unit)
             qs = qs.filter(
+                event__appointment__isnull=False,
                 messages__group=group,
-                messages__appointment_revision=F("event__revision"),
+                messages__appointment=F("event__appointment"),
+                messages__appointment_revision=F("event__appointment__revision"),
             )
         kind = params.get("kind", "")
         if kind:
@@ -361,14 +363,19 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], pagination_class=None)
     def types(self, request):
         unit = get_unit(request)
+        scoped = bool(request.query_params.get("group")) or (
+            request.query_params.get("operational_pending") == "true"
+        )
+        cases = (
+            self.get_queryset()
+            if scoped
+            else Case.objects.filter(unit=unit, event__unit=unit)
+        )
         registered = set(
-            Campaign.objects.filter(unit=unit).values_list("purpose", flat=True)
+            cases.filter(event__appointment__isnull=True).values_list("purpose", flat=True)
         )
-        registered.update(
-            Case.objects.filter(
-                unit=unit, event__unit=unit, event__appointment__isnull=True
-            ).values_list("purpose", flat=True)
-        )
+        if not scoped:
+            registered.update(Campaign.objects.filter(unit=unit).values_list("purpose", flat=True))
         result = [
             {"value": value, "label": label, "group": "Agendamentos"}
             for value, label in Appointment.Kind.choices
@@ -379,9 +386,7 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             if purpose in registered and purpose in PATIENT_PURPOSES
         )
         oracle_types = set(
-            Case.objects.filter(
-                unit=unit,
-                event__unit=unit,
+            cases.filter(
                 purpose="absence",
                 event__data__source_origin="oracle_absences",
             ).values_list("event__data__tp_item", flat=True)
@@ -459,7 +464,7 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             .order_by("-created_at", "pk")
         )
         if request.query_params.get("group"):
-            messages = messages.filter(group_id=request.query_params["group"])
+            messages = messages.filter(group_id=request.query_params["group"], appointment_revision=F("appointment__revision"))
         page = self.paginate_queryset(messages)
         response = self.get_paginated_response(MessageSerializer(page, many=True).data)
         response.data["manual_responses"] = InteractionSerializer(

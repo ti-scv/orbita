@@ -15,6 +15,7 @@ from core.federation import (
 from core.logs import LogViewSet
 from core.oracle_config import OracleConfigurationViewSet
 from core.users import UserViewSet
+from core.permission_roles import PermissionRoleViewSet
 from messaging.costs import MetaCostView
 from messaging.groups import AppointmentGroupViewSet
 from messaging.meta_config import MetaConfigurationViewSet
@@ -34,6 +35,7 @@ for prefix, view in [
     ("oracle-agendas", OracleAgendaViewSet),
     ("oracle-configuration", OracleConfigurationViewSet),
     ("users", UserViewSet),
+    ("permission-roles", PermissionRoleViewSet),
     ("instance-keys", InstanceKeyViewSet),
     ("remote-instances", RemoteInstanceViewSet),
     ("meta-configuration", MetaConfigurationViewSet),

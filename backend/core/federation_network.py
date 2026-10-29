@@ -119,6 +119,7 @@ def remote_http(
     role="viewer",
     idempotency="",
     content_type="application/json",
+    section_limit=None,
 ):
     parts = urlsplit(normalized_url(base_url))
     address, port = resolve_address(parts)
@@ -133,6 +134,8 @@ def remote_http(
         "Content-Type": content_type,
         "Connection": "close",
     }
+    if section_limit is not None:
+        headers["X-Orbita-Section-Limit"] = json.dumps(section_limit, separators=(",", ":"))
     if idempotency:
         headers["Idempotency-Key"] = idempotency
     try:

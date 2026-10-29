@@ -93,8 +93,8 @@ export async function request<T>(
   }
   return data as T;
 }
-export async function initCsrf() {
-  csrfToken = (await request<{ csrfToken: string }>("/api/v1/auth/csrf/"))
+export async function initCsrf(signal?: AbortSignal) {
+  csrfToken = (await request<{ csrfToken: string }>("/api/v1/auth/csrf/", "GET", undefined, signal))
     .csrfToken;
 }
 export async function signIn(username: string, password: string) {

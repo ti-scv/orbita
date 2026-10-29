@@ -66,7 +66,7 @@ def test_editor_can_show_own_disabled_reviewed_sql_columns(setup):
     result=response(report)
     assert next(s for s in result['sources'] if s['id']==report.pk)['columns']==['Total']
     other=ReportDefinition.objects.create(unit=unit,code='outro-draft',name='Outro rascunho',source='sql',connection=connection,query_sql='SELECT 1 AS "Total"',reviewed=True,enabled=False)
-    assert not any(s['id']==other.pk for s in response(report)['sources'])
+    assert next(s for s in response(report)['sources'] if s['id']==other.pk)['available'] is False
 
 
 def test_oracle_source_accepts_sql_with_a_trailing_delimiter(setup):

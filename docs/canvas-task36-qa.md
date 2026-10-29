@@ -2,7 +2,7 @@
 
 ## Estado
 
-Parcial. O ponto de partida confirmado é `f253842` na branch `feature/canvas-fila36`. Na investigação, `feature/canvas-fila35` também apontava para `f253842`: a tarefa 35 ainda não estava integrada. O pedido exige partir do HEAD posterior à integração e usar seus tipos de permissão. Nenhuma sincronização, migração ou liberação foi implementada neste estado.
+Parcial. A investigação anterior partiu de `f253842`; a release `7354299` foi incorporada preservando esse registro. Veja `docs/canvas-task36.md` para o mapeamento atualizado. Nenhuma sincronização, migração ou liberação foi implementada neste estado.
 
 ## Como funciona hoje
 
@@ -23,6 +23,6 @@ Parcial. O ponto de partida confirmado é `f253842` na branch `feature/canvas-fi
 | Falha de rede preserva cadastro e permite repetição | Pendente | Pendente |
 | Só administrador vê e libera; auditoria | Pendente | Pendente |
 | Migração reversível em banco descartável | Pendente | Pendente |
-| Suítes completas e staging isolado na porta 8099 | Pendente | Pendente |
+| Suítes completas e staging isolado na porta 8110 | Pendente | Pendente |
 
-Nenhuma suíte ou staging foi executado: não há implementação a validar. A regra específica da tarefa determina a porta 8099, apesar da referência à porta 8091 no brief. Nenhuma migração foi aplicada.
+Nenhuma suíte ou staging foi executado: não há implementação a validar. A regra específica desta etapa determina a porta 8110 e proíbe a porta 8091. Nenhuma migração foi aplicada.

@@ -39,8 +39,7 @@ import ProblemsPanel from "./report-canvas/problems/ProblemsPanel";
 import {
   clearDraftFromStorage,
   formatDraftTime,
-  isDraftDifferent,
-  loadDraftFromStorage,
+  recoverDifferentDraft,
   saveDraftToStorage,
 } from "./report-canvas/state/draftRecovery";
 import {
@@ -187,15 +186,12 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: L
     if (draftCheckedRef.current) return;
     draftCheckedRef.current = true;
     requestAnimationFrame(() => performance.mark("canvas-primeira-renderizacao"));
-    const draft = loadDraftFromStorage(unit, report.id, displayVersion);
-    if (
-      draft &&
-      isDraftDifferent(draft, {
-        layout,
-        enabled: session.enabled,
-        outputFormat: session.outputFormat,
-      })
-    ) {
+    const draft = recoverDifferentDraft(unit, report.id, displayVersion, {
+      layout,
+      enabled: session.enabled,
+      outputFormat: session.outputFormat,
+    });
+    if (draft) {
       setDraftBanner({
         text: `Há alterações não salvas deste navegador (${formatDraftTime(draft.timestamp)}).`,
         onRestore: () => {

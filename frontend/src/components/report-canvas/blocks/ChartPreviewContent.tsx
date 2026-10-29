@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -186,8 +185,16 @@ export default function ChartPreview({
     return item;
   });
 
-  const chartW = Math.max(90, Math.floor(block.width - 24));
-  const chartH = Math.max(54, Math.floor(block.height - (block.title ? 44 : 20)));
+  // Reserve room for every category label; the block can scroll when needed.
+  const labelWidth = Math.max(50, ...chartData.map((row) => String(row.__x).length * 6 + 12));
+  const chartW = Math.max(180, Math.floor(block.width - 24), block.type === "pie" ? 0 : labelWidth * chartData.length + 150);
+  const chartH = Math.max(150, Math.floor(block.height - (block.title ? 44 : 20)));
+  const legendItems = block.type === "pie"
+    ? chartData.filter((row) => typeof row[yCols[0]] === "number" && Number(row[yCols[0]]) >= 0).map((row) => String(row.__x))
+    : yCols.length > 1 ? yCols : [];
+  const axisWidth = Math.max(80, ...chartData.flatMap((row) =>
+    yCols.map((column) => typeof row[column] === "number" ? Number(row[column]).toLocaleString("pt-BR").length * 7 + 12 : 0),
+  ));
   const palette = resolveSeriesPalette(opt.color, opt.series_colors, block.type);
 
   const precision =
@@ -220,13 +227,14 @@ export default function ChartPreview({
   return (
     <div className="cv-block-inner" title={`Fonte: ${sourceLabel}`}>
       {block.title && <div className="cv-block-title">{block.title}</div>}
-      <div style={{ width: chartW, height: chartH, overflow: "hidden" }}>
+      <div style={{ overflow: "auto", maxWidth: "100%", maxHeight: "100%", pointerEvents: "auto" }}>
+      <div style={{ width: chartW, height: chartH }}>
         {block.type === "bar" && (
           <BarChart
             width={chartW}
             height={chartH}
             data={chartData}
-            margin={{ top: 6, right: 8, bottom: 2, left: -12 }}
+            margin={{ top: 6, right: 16, bottom: 2, left: 4 }}
           >
             <CartesianGrid stroke={gridColor} strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -234,12 +242,13 @@ export default function ChartPreview({
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
+              interval={0}
             />
             <YAxis
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={44}
+              width={axisWidth}
               tickFormatter={(v: any) =>
                 typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
               }
@@ -250,12 +259,7 @@ export default function ChartPreview({
               contentStyle={tooltipContentStyle}
               itemStyle={tooltipItemStyle}
             />
-            {yCols.length > 1 && (
-              <Legend
-                wrapperStyle={{ fontSize: 10, color: axisColor }}
-                formatter={(val: any) => <span style={{ color: axisColor }}>{val}</span>}
-              />
-            )}
+
             {yCols.map((yc, i) => (
               <Bar
                 key={yc}
@@ -273,7 +277,7 @@ export default function ChartPreview({
             width={chartW}
             height={chartH}
             data={chartData}
-            margin={{ top: 6, right: 8, bottom: 2, left: -12 }}
+            margin={{ top: 6, right: 16, bottom: 2, left: 4 }}
           >
             <CartesianGrid stroke={gridColor} strokeDasharray="3 3" vertical={false} />
             <XAxis
@@ -281,12 +285,13 @@ export default function ChartPreview({
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
+              interval={0}
             />
             <YAxis
               tick={{ fill: axisColor, fontSize: 10 }}
               axisLine={false}
               tickLine={false}
-              width={44}
+              width={axisWidth}
               tickFormatter={(v: any) =>
                 typeof v === "number" ? v.toLocaleString("pt-BR") : String(v ?? "")
               }
@@ -297,12 +302,7 @@ export default function ChartPreview({
               contentStyle={tooltipContentStyle}
               itemStyle={tooltipItemStyle}
             />
-            {yCols.length > 1 && (
-              <Legend
-                wrapperStyle={{ fontSize: 10, color: axisColor }}
-                formatter={(val: any) => <span style={{ color: axisColor }}>{val}</span>}
-              />
-            )}
+
             {yCols.map((yc, i) => (
               <Line
                 key={yc}
@@ -358,15 +358,20 @@ export default function ChartPreview({
                   contentStyle={tooltipContentStyle}
                   itemStyle={tooltipItemStyle}
                 />
-                <Legend
-                  wrapperStyle={{ fontSize: 10, color: axisColor }}
-                  formatter={(val: any) => (
-                    <span style={{ color: axisColor }}>{displayCanvasValue(val)}</span>
-                  )}
-                />
+
               </PieChart>
             );
           })()}
+      </div>
+      {legendItems.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", color: axisColor, fontSize: 10 }}>
+          {legendItems.map((label, i) => (
+            <span key={i} style={{ overflowWrap: "anywhere" }}>
+              <span aria-hidden="true" style={{ color: palette[i % palette.length] }}>● </span>{label}
+            </span>
+          ))}
+        </div>
+      )}
       </div>
     </div>
   );

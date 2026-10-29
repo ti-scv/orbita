@@ -8,7 +8,7 @@ import EmptyState from "../common/EmptyState";
 import ColumnBadge from "./ColumnBadge";
 import { friendlySourceName } from "./sourceName";
 import { formatRowCount } from "./rowCount";
-import { formatCellValue } from "./columnTypes";
+import { formatCellValue, inferColumnType } from "./columnTypes";
 
 export interface DataDrawerProps {
   source: CanvasSource | null;
@@ -80,6 +80,10 @@ export default function DataDrawer({
         }))
       : []);
   const rawRows = currentPreview?.rows || (source?.type === "inline" ? source.rows : []);
+  const displayColumns = columns.map((col, idx) => {
+    const inferred = inferColumnType(rawRows.map(row => row[idx]));
+    return col.type === "text" && (inferred === "date" || inferred === "datetime") ? {...col, type: inferred} : col;
+  });
   const columnNames = columns.map(column => column.name).join("\0");
   useEffect(() => {
     if (!source || !columnNames || !reportId || !unit) return;
@@ -238,11 +242,11 @@ export default function DataDrawer({
             <thead>
               <tr>
                 <th scope="col" style={{ width: 36, textAlign: "center" }}>#</th>
-                {columns.map((col, idx) => (
+                {displayColumns.map((col, idx) => (
                   <th scope="col" role="columnheader" key={col.name || idx} tabIndex={0} aria-sort={sortCol === idx ? (sortDir === "asc" ? "ascending" : "descending") : "none"} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSort(idx); } }} onClick={() => toggleSort(idx)} title={`Ordenar por ${friendlyColumnName(col.name)}`}>
                     <div className="cv-table-th-content">
                       <ColumnBadge type={col.type} looksLike={col.looks_like} estimated={col.estimated} />{currentPreview && rawRows.every(row => row[idx] == null || String(row[idx]).trim() === "") && <span>Sem valores neste período</span>}
-                      <span>{friendlyColumnName(col.name)}</span>
+                      <span>{friendlyColumnName(col.name)}{col.estimated && <small> · tipo estimado</small>}</span>
                       {(
 
                         <span className="cv-table-null-count" title={`${rawRows.filter(row => row[idx] == null || String(row[idx]).trim() === "").length} valores vazios`}>

@@ -1,7 +1,7 @@
 import type { PageName } from "./types";
 
 const pages: Record<string, PageName> = {
-  "/": "appointments",
+  "/": "overview",
   "/visao-geral": "overview",
   "/custos-meta": "costs",
   "/agendamentos": "appointments",
@@ -23,6 +23,7 @@ export function readRoute(path = window.location.pathname) {
   const canvas = normalized.match(/^\/relatorios\/([0-9]+)\/(?:canvas|previa)$/);
   return {
     ...(canvas ? {canvasId: Number(canvas[1])} : {}),
+    notFound: !canvas && !match && !pages[normalized],
     page: canvas ? ("reports" as PageName) : match ? ("groups" as PageName) : pages[normalized] || "appointments",
     groupId: match?.[1] || null,
   };
@@ -34,7 +35,7 @@ export function routePath(page: PageName, groupId?: string | null) {
   if (page === "groups" && groupId) return `/grupos/${groupId}`;
   return (
     Object.entries(pages).find(
-      ([path, value]) => value === page && path !== "/responses",
+      ([path, value]) => value === page && path !== "/responses" && path !== "/",
     )?.[0] || "/"
   );
 }

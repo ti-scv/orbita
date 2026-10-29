@@ -475,9 +475,9 @@ describe("TAREFA 06: Palco, Seleção, Guias, Atalhos, Agrupamento e Recuperaç�
       ).toBe(false);
     });
 
-    it("formata horário do rascunho em HH:mm", () => {
+    it("formata data e horário do rascunho", () => {
       const timeStr = formatDraftTime(Date.now());
-      expect(timeStr).toMatch(/^\d{2}:\d{2}$/);
+      expect(timeStr).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
     });
   });
 });

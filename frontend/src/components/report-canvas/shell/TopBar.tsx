@@ -367,7 +367,7 @@ export default function TopBar({
                 <Plus size={14} aria-hidden="true" />
               </button>
 
-              <button type="button" className="cv-btn-compact" title="Ajustar o zoom à largura disponível" disabled={loading} onClick={() => onFitToWidth()}>Ajustar</button>
+              <button type="button" className="cv-btn-compact" title="Ajustar o zoom à página inteira" disabled={loading} onClick={() => (onFitToPage ?? onFitToWidth)()}>Ajustar</button>
 
               {openPopover === "zoom" && (
                 <ZoomMenu

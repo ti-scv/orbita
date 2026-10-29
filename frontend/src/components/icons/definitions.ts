@@ -10,7 +10,7 @@ export const iconDefinitions: Record<string, IconDefinition> = {
         }
       ]
     ],
-    "fill": []
+    "fill": [["circle", {"cx": "12", "cy": "12", "r": "10"}]]
   },
   "AlertCircle": {
     "stroke": [

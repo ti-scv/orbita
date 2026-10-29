@@ -128,8 +128,10 @@ def test_preview_permissions_and_deactivated_source(canvas_env):
     assert env["client"].post(url.replace(str(report.pk), str(child.pk), 1), payload, format="json").status_code == 404
     child.unit = env["unit"]; child.enabled = False; child.save()
     assert env["client"].post(url, payload, format="json").status_code == 400
-    Membership.objects.filter(user=env["user"]).update(role="operator")
+    Membership.objects.filter(user=env["user"]).update(role="operator", permissions={"reports": "read"})
     assert env["client"].post(url, {"source": {"id": "s", "type": "goals"}}, format="json").status_code == 403
+    Membership.objects.filter(user=env["user"]).update(permissions={"reports": "write"})
+    assert env["client"].post(url, {"source": {"id": "s", "type": "goals"}}, format="json").status_code == 200
 
 
 def test_preview_exception_does_not_disclose_connection_or_data(canvas_env, caplog):

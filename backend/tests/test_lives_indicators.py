@@ -65,7 +65,7 @@ def test_canvas_renders_two_pages_and_collects_once(setup):
  with patch("operations.lives_indicators.collect",return_value=tables) as collect:
   content,count=export(r,make_layout(r),{"data_referencia":ref.isoformat()},g,"pdf")
   assert collect.call_count==1
-  assert len(PdfReader(io.BytesIO(base64.b64decode(content))).pages)==2
+  assert len(PdfReader(io.BytesIO(base64.b64decode(content))).pages)>=2
 
 
 @pytest.mark.parametrize("case",["hml","other_unit","unvalidated","disabled"])

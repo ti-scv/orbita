@@ -1,3 +1,4 @@
+import { Activity, Lightbulb } from "./components/icons";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -5,7 +6,7 @@ import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
 import FormAction from "./components/FormAction";
 import { Badge, Empty, Panel, SearchField } from "./components/ui";
-import OperationalAppointments from "./components/OperationalAppointments";
+
 import AppointmentGroups from "./components/AppointmentGroups";
 import ExecutionLogs from "./components/ExecutionLogs";
 import MetaConfiguration from "./components/MetaConfiguration";
@@ -13,20 +14,20 @@ import OracleConfiguration from "./components/OracleConfiguration";
 import OracleAgendaConfiguration from "./components/OracleAgendaConfiguration";
 import UnitDirectory from "./components/UnitDirectory";
 import UserDirectory from "./components/UserDirectory";
-import { canAccess, permissionsFor, reconcileSession } from "./permissions";
+import { canAccess, canUseReportWhatsApp, permissionsFor, reconcileSession } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
+import ReportAppConnections from "./components/ReportAppConnections";
 import UnitSelector from "./components/UnitSelector";
 import { readRoute, routePath } from "./routes";
 import ModalContent from "./components/ModalContent";
-import OperationsWorkspace from "./components/OperationsWorkspace";
+
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import Login from "./components/Login";
 import type { Modal } from "./types";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity,
   ArrowRight,
   Bell,
   CalendarDays,
@@ -37,7 +38,6 @@ import {
   ClipboardList,
   Clock3,
   Cloud,
-  Wallet,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -49,7 +49,6 @@ import {
   Play,
   Plus,
   RefreshCw,
-  Send,
   Settings2,
   TriangleAlert,
   User,
@@ -73,19 +72,18 @@ import type {
   Template,
 } from "./types";
 
+const OperationalAppointments = lazy(() => import("./components/OperationalAppointments"));
+const OperationsWorkspace = lazy(() => import("./components/OperationsWorkspace"));
 const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
 const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
 
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
-  { id: "appointments", label: "Agendamentos", icon: CalendarDays },
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   { id: "issues", label: "Pendências", icon: ClipboardList },
-  { id: "campaigns", label: "Importa CROSS", icon: Send },
-  { id: "reports", label: "Relatórios", icon: Activity },
-  { id: "costs", label: "Custos Meta", icon: Wallet },
+  { id: "reports", label: "Relatórios", icon: Lightbulb },
   { id: "settings", label: "Configurações", icon: Settings2 },
 ];
 type Data = {
@@ -111,17 +109,49 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
-    [checking, setChecking] = useState(true);
+    [justLoggedIn, setJustLoggedIn] = useState(false),
+    [checking, setChecking] = useState(true),
+    [bootError, setBootError] = useState(""),
+    [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
-    initCsrf()
-      .then(() => request<Session>("/api/v1/auth/session/"))
-      .then(setSession)
-      .catch(() => {})
-      .finally(() => setChecking(false));
-  }, []);
+    let active = true;
+    let controller: AbortController | undefined;
+    setChecking(true);
+    setBootError("");
+    async function load() {
+      for (let attempt = 0; attempt < 2 && active; attempt++) {
+        controller = new AbortController();
+        const timer = window.setTimeout(() => controller?.abort(), 20000);
+        try {
+          const [, incoming] = await Promise.all([
+            initCsrf(controller.signal),
+            request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal),
+          ]);
+          if (active) setSession(incoming);
+          return;
+        } catch (error) {
+          if (!active) return;
+          if ((error as {status?: number}).status === 401) {
+            setSession(null);
+            return;
+          }
+          if (attempt === 1) {
+            setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente.");
+            return;
+          }
+        } finally {
+          window.clearTimeout(timer);
+          controller.abort();
+        }
+        await new Promise(resolve => window.setTimeout(resolve, 500));
+      }
+    }
+    void load().finally(() => { if (active) setChecking(false); });
+    return () => { active = false; controller?.abort(); };
+  }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
-    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
+    const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(error => { if (error.status === 401) setSession(null); }); };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
@@ -133,11 +163,13 @@ function AppRoot() {
         <span>Carregando painel…</span>
       </div>
     );
-  if (!session) return <Login onLogin={setSession} />;
+  if (bootError) return <div className="boot"><p role="alert">{bootError}</p><button className="button" onClick={() => setBootAttempt(v => v + 1)}>Tentar novamente</button></div>;
+  if (!session) return <Login onLogin={incoming => { setJustLoggedIn(true); setSession(incoming); }} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (
     <Workspace
       session={session}
+      justLoggedIn={justLoggedIn}
       onLogout={() => setSession(null)}
       onSessionRefresh={async () =>
         setSession(await request<Session>("/api/v1/auth/session/"))
@@ -150,8 +182,10 @@ function Workspace({
   session,
   onLogout,
   onSessionRefresh,
+  justLoggedIn,
 }: {
   session: Session;
+  justLoggedIn: boolean;
   onLogout: () => void;
   onSessionRefresh: () => Promise<void>;
 }) {
@@ -164,6 +198,7 @@ function Workspace({
     [toast, setToast] = useState(""),
     [modal, setModal] = useState<Modal>(null),
     [mobile, setMobile] = useState(false);
+  const [notFound, setNotFound] = useState(() => readRoute().notFound);
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
   const [canvasId, setCanvasId] = useState<number | null>(() => readRoute().canvasId ?? null);
   const [groupId, setGroupId] = useState<string | null>(
@@ -173,6 +208,7 @@ function Workspace({
     const sync = () => {
       const next = readRoute();
       setPage(next.page);
+      setNotFound(next.notFound);
       setCanvasId(next.canvasId ?? null);
       setSettingsTab(null);
       setGroupId(next.groupId);
@@ -230,12 +266,20 @@ function Workspace({
   const canOperate = policy[page] === "write" && (actualRole === "admin" || actualRole === "operator");
   useEffect(() => {
     if (!session.units.some(u=>u.slug===unit)) { const next = session.units[0]?.slug; if(next) changeUnit(next); return; }
-    if (!visibleNavigation.some(item=>item.id===page) && visibleNavigation[0]) navigate(visibleNavigation[0].id);
+
   }, [session, unit, page]);
   const selectedUnit = session.units.find((item) => item.slug === unit);
   const isRemote = unit.startsWith("remote:");
   useEffect(() => { setSettingsTab(null); }, [unit]);
   useEffect(() => { if (page !== "settings") setSettingsTab(null); }, [page]);
+  useEffect(() => {
+    if (page !== "reports" || new URLSearchParams(window.location.search).get("reportTab") !== "appSources") return;
+    if (!configurationEntries.some(item => item.id === "appSources")) return;
+    window.history.replaceState({}, "", `${routePath("settings")}?unit=${encodeURIComponent(unit)}`);
+    setPage("settings");
+    setSettingsTab("appSources");
+  }, [page, unit, policy.settings, policy.reports, actualRole]);
+
   function changeUnit(slug: string) {
     setCanvasId(null);
     setData(null);
@@ -257,7 +301,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (canvasId || page === "reports") {
+    if (!canAccess(session, unit, page) || canvasId || page === "reports") {
       setBusy(false);
       return;
     }
@@ -265,6 +309,7 @@ function Workspace({
     setError("");
     try {
       const filters = { unit, kind, start, end };
+      const settingsOnly = page === "settings";
       const empty = {count:0,next:null,previous:null,results:[]};
       const read = <T,>(section: string, url:string, fallback:unknown): Promise<T> =>
         session.permissions?.[unit]?.[section] && session.permissions[unit][section] !== "none" ? request<T>(url) : Promise.resolve(fallback as T);
@@ -280,8 +325,8 @@ function Workspace({
         audit,
         control,
       ] = await Promise.all([
-        read<Indicators>("overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
-        read<Paginated<Appointment>>("appointments",
+        read<Indicators>(settingsOnly ? "" : "overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
+        read<Paginated<Appointment>>(settingsOnly ? "" : "appointments",
           query("appointments", {
             ...filters,
             page: String(page === "appointments" ? listPage : 1),
@@ -289,7 +334,7 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Message>>("messages",
+        read<Paginated<Message>>(settingsOnly ? "" : "messages",
           query("messages", {
             ...filters,
             page: String(page === "messages" ? listPage : 1),
@@ -299,14 +344,14 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Reply>>("messages",
+        read<Paginated<Reply>>(settingsOnly ? "" : "messages",
           query("replies", {
             ...filters,
             page: String(page === "responses" ? listPage : 1),
           }),
           empty,
         ),
-        read<Paginated<Issue>>("issues",
+        read<Paginated<Issue>>(settingsOnly ? "" : "issues",
           query("issues", {
             ...filters,
             page: String(page === "issues" ? listPage : 1),
@@ -400,6 +445,7 @@ function Workspace({
   ) {
     selectAppointment(appointmentId);
     setPage(next);
+    setNotFound(false);
     setCanvasId(null);
     setGroupId(null);
     window.history.pushState(
@@ -417,7 +463,15 @@ function Workspace({
     navigate(next, response ? "" : filter);
     if (response) setResponseState(filter);
   }
-  const currentTitle = navigation.find((item) => item.id === page)?.label;
+  useEffect(() => {
+    if (justLoggedIn && !notFound && !canAccess(session, unit, page) && visibleNavigation.length) {
+      navigate(visibleNavigation[0].id);
+    }
+    // This redirect only applies to the route present immediately after login.
+  }, []);
+
+  const denied = !canAccess(session, unit, page) || !!(canvasId && (!policy.reports || policy.reports === "none"));
+  const currentTitle = notFound ? "Página não encontrada" : denied ? "Sem permissão" : navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
   const periodFilter = (
     <div className="date-range">
@@ -471,7 +525,7 @@ function Workspace({
         : page === "messages"
           ? data?.messages
           : null;
-  if (canvasId) return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
+  if (canvasId && policy.reports && policy.reports !== "none") return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
@@ -560,9 +614,9 @@ function Workspace({
             <div>
               <strong>{session.username}</strong>
               <small>
-                {role === "admin"
-                  ? "Administrador"
-                  : role === "operator"
+                {actualRole === "admin"
+                  ? "Administrativo"
+                  : actualRole === "operator"
                     ? "Operador"
                     : "Consulta"}
               </small>
@@ -596,7 +650,7 @@ function Workspace({
             </button>
             <span className="breadcrumb">
               <span className="breadcrumb-root">Workspace</span>
-              {page !== "overview" && page !== "appointments" && (
+              {(notFound || denied || (page !== "overview" && page !== "appointments")) && (
                 <>
                   <ChevronRight className="breadcrumb-root" size={14} />{" "}
                   <strong>{currentTitle}</strong>
@@ -656,6 +710,7 @@ function Workspace({
           className={`content ${page === "appointments" || page === "issues" ? "appointments-page" : ""}`}
         >
 
+          {notFound || denied ? <section className="route-message" role="alert"><h1>{notFound ? "Página não encontrada" : "Sem permissão"}</h1><p>{notFound ? "Esta página não existe ou mudou de endereço." : "Você não tem acesso a esta área. Se precisar, peça acesso ao administrador."}</p><button type="button" className="button primary" onClick={() => navigate(visibleNavigation[0]?.id || "overview")}>Voltar ao início</button></section> : <>
           {error && (
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />
@@ -672,8 +727,8 @@ function Workspace({
             </div>
           )}
           {["care", "campaigns", "reports"].includes(page) && (
-            <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} />
+            <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
+              username={session.username} userAccess={false} reportAdmin={actualRole === "admin"} reportAccess={policy.reports !== "none" && !!policy.reports} whatsappRead={canUseReportWhatsApp(session, unit)} whatsappWrite={canUseReportWhatsApp(session, unit, true)} /></Suspense>
           )}
           {page === "messages" && (
             <div className="filters">
@@ -729,7 +784,7 @@ function Workspace({
                 </Suspense>
               )}
               {page === "appointments" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={unit}
                   unit={unit}
                   periodFilter={periodFilter}
@@ -739,7 +794,7 @@ function Workspace({
                   refreshKey={loadSequence.current}
                   start={start}
                   end={end}
-                />
+                /></Suspense>
               )}
               {page === "messages" && (
                 <Panel
@@ -893,7 +948,7 @@ function Workspace({
                 />
               )}
               {page === "issues" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={`${unit}-issues`}
                   unit={unit}
                   role={role}
@@ -903,7 +958,7 @@ function Workspace({
                   start={start}
                   end={end}
                   issuesOnly
-                />
+                /></Suspense>
               )}
               {page === "settings" && (
                 <div className="settings-workspace">
@@ -921,15 +976,16 @@ function Workspace({
                   </div>
                   {activeConfiguration && <InlineDialog title={activeConfiguration.label} legacy={activeConfiguration.legacy} subtitle="" className="configuration-dialog"
                     onClose={() => setSettingsTab(null)} footer={<button className="button" onClick={() => setSettingsTab(null)}>Fechar</button>}>
-                    {activeConfiguration.section === "operationsAdmin" && <OperationsWorkspace
+                    {activeConfiguration.section === "operationsAdmin" && <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace
                       key={`${unit}:${settingsTab}`} page="operationsAdmin" unit={unit} role={role}
-                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} />}
+                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} /></Suspense>}
                     {settingsTab === "users" && <UserDirectory unit={unit} editable={policy.users === "write" && actualRole === "admin"} onChanged={onSessionRefresh} />}
                   {settingsTab === "logs" && <ExecutionLogs key={unit} unit={unit} />}
                   {settingsTab === "units" && actualRole === "admin" && !isRemote && (
                     <UnitDirectory unit={unit} editable={role === "admin"} onChanged={onSessionRefresh} />
                   )}
 
+                  {settingsTab === "appSources" && role === "admin" && !isRemote && <ReportAppConnections key={unit} unit={unit} />}
                   {settingsTab === "instances" &&
                     role === "admin" &&
                     !isRemote && (
@@ -1417,6 +1473,7 @@ function Workspace({
               )}
             </>
           )}
+          </>}
           <footer className="page-footer">
             <span>
               <BrandLogo small />

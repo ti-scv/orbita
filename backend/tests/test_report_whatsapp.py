@@ -28,6 +28,9 @@ def channel(setup, settings):
     settings.REPORT_BAILEYS_TOKEN = "test-token-not-used-on-network"
     settings.ASYNC_TASKS = True
     unit = setup["unit"]
+    membership = Membership.objects.get(user=setup["user"], unit=unit)
+    membership.permissions = {"reportWhatsApp": "write"}
+    membership.save(update_fields=["permissions"])
     config = ReportWhatsAppConfiguration.objects.create(
         unit=unit, sends_enabled=True, manual_enabled=True, automatic_enabled=True
     )
@@ -283,7 +286,7 @@ def test_scheduler_does_not_create_work_when_channel_paused(channel, settings):
     assert not ReportExecution.objects.exists()
 
 
-def test_channel_api_is_scoped_admin_only_and_versioned(channel, settings):
+def test_channel_api_is_scoped_permission_and_versioned(channel, settings):
     e = channel
     client = e["client"]
     with patch(
@@ -293,9 +296,11 @@ def test_channel_api_is_scoped_admin_only_and_versioned(channel, settings):
         assert client.get("/api/v1/report-whatsapp/?unit=ame").status_code == 200
         membership = Membership.objects.get(user=e["user"], unit=e["unit"])
         membership.role = "operator"
+        membership.permissions = {"reportWhatsApp": "none"}
         membership.save()
         assert client.get("/api/v1/report-whatsapp/?unit=ame").status_code == 403
         membership.role = "admin"
+        membership.permissions = {"reportWhatsApp": "write"}
         membership.save()
         Unit.objects.create(slug="no-access", name="Other")
         assert client.get("/api/v1/report-whatsapp/?unit=no-access").status_code == 403

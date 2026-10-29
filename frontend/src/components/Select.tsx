@@ -13,13 +13,13 @@ function choices(nodes:ReactNode,group="",disabled=false):Choice[]{return Childr
  if(n.type === "option")return [{value:String(p.value ?? text(p.children)),label:p.label ?? text(p.children),disabled:disabled || !!p.disabled,group:p["data-group"] || group}];
  return choices(p.children,n.type === "optgroup" ? p.label || "" : group,disabled || !!p.disabled);
 });}
-export default function Select({children,label,...props}:SelectHTMLAttributes<HTMLSelectElement>&{label?:string}){
+export default function Select({children,label,searchable: forceSearch,...props}:SelectHTMLAttributes<HTMLSelectElement>&{label?:string; searchable?:boolean}){
  const auto=useId(),id=props.id || auto;
  const native=useRef<HTMLSelectElement>(null),trigger=useRef<HTMLButtonElement>(null),popup=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null);
  const [open,setOpen]=useState(false),[search,setSearch]=useState(""),[active,setActive]=useState(0),[uncontrolled,setUncontrolled]=useState(String(props.defaultValue ?? "")),[accessibleLabel,setAccessibleLabel]=useState(label || props["aria-label"] || "Selecionar");
  const [position,setPosition]=useState({left:0,top:0,width:240,maxHeight:300,transform:"none"});
  const options=choices(children),value=props.value == null ? uncontrolled : String(props.value),selected=options.find(o=>o.value===value) || (props.value==null ? options[0] : undefined);
- const shown=options.filter(o=>normalize(o.label+" "+o.group).includes(normalize(search))),searchable=options.length>8;
+ const shown=options.filter(o=>normalize(o.label+" "+o.group).includes(normalize(search))),searchable=forceSearch || options.length>8;
  useLayoutEffect(()=>{
   const parent=trigger.current?.closest("label");
   const labelled=props["aria-labelledby"]?.split(" ").map(id=>document.getElementById(id)?.textContent || "").join(" ");

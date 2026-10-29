@@ -136,6 +136,7 @@ def session(request):
             "units": list(UnitSerializer(units, many=True).data) + remotes,
             "roles": roles,
             "permissions": permissions,
+            "permission_types": {slug: {key: policy[key] for key in ("messages", "settings", "reports", "reportWhatsApp")} for slug, policy in permissions.items()},
             "mode": settings.SEND_MODE,
         }
     )
@@ -275,7 +276,7 @@ class AppointmentViewSet(ScopedReadViewSet):
             .order_by("-created_at")
         )
         if request.query_params.get("group"):
-            messages = messages.filter(group_id=request.query_params["group"])
+            messages = messages.filter(group_id=request.query_params["group"], appointment_revision=F("appointment__revision"))
         page = self.paginate_queryset(messages)
         response = self.get_paginated_response(MessageSerializer(page, many=True).data)
         event = getattr(appointment, "sourceevent", None)

@@ -25,6 +25,7 @@ class Membership(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
     role = models.CharField(max_length=12, choices=Role.choices, default=Role.VIEWER)
     permissions = models.JSONField(default=dict)
+    permission_role = models.ForeignKey("PermissionRole", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "unit"], name="membership_unique")]
@@ -124,3 +125,36 @@ class OracleConfiguration(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     checked_at = models.DateTimeField(null=True)
     validation_state = models.CharField(max_length=24, default="not_checked")
+
+
+class PermissionMigration35Backup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    migrated_value = models.CharField(max_length=5)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["model_name", "object_id"], name="permission35_backup_unique")]
+
+
+class PermissionMigration35TypesBackup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    previous = models.JSONField()
+    migrated = models.JSONField()
+
+
+class PermissionMigration35SettingsBackup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    previous = models.JSONField()
+    migrated = models.JSONField()
+
+
+class PermissionRole(models.Model):
+    """Modelo reutilizável; os acessos efetivos continuam no vínculo."""
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=120)
+    permissions = models.JSONField(default=dict)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["unit", "name"], name="permission_role_unit_name")]
