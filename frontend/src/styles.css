@@ -5931,3 +5931,15 @@ body:has([role="dialog"][aria-modal="true"]) {
   color: var(--warning-text);
 }
 .directory-remote-warning svg { flex: none; }
+
+/* A marca acompanha a cor do texto da barra no tema escuro. */
+[data-theme="dark"] .sidebar-heading .brand { position: relative; }
+[data-theme="dark"] .sidebar-heading .brand:has(.brand-image-wordmark)::after {
+  content: "";
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  background: var(--text-primary);
+  mask: url("/brand-wordmark.webp") center / contain no-repeat;
+}
+[data-theme="dark"] .sidebar-heading .brand-image-wordmark { opacity: 0; }
