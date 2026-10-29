@@ -269,11 +269,27 @@ class LogViewSet(viewsets.GenericViewSet):
             entry["title"] = titles[audit.action]
             d = audit.details or {}
             parts = []
+            if not d.get("login") and audit.action in ("user.access_configured", "user_sync.released", "user_sync.conflict_resolved"):
+                from django.contrib.auth import get_user_model
+                user_id = audit.object_id if audit.action == "user.access_configured" else d.get("user_id")
+                login = get_user_model().objects.filter(pk=user_id).values_list("username", flat=True).first() if user_id else None
+                if login: parts.append("Usuário: " + login)
+            if not d.get("unit") and audit.action.startswith("user_sync."):
+                from core.models import RemoteInstance, SyncedUserIdentity
+                if audit.action in ("user_sync.completed", "user_sync.failed"):
+                    connection = RemoteInstance.objects.filter(pk=audit.object_id, local_unit=unit).first()
+                else:
+                    identity = SyncedUserIdentity.objects.filter(pk=audit.object_id, connection__local_unit=unit).select_related("connection").first()
+                    connection = identity.connection if identity else None
+                if connection: parts.append("Unidade de origem: " + (connection.remote_unit.get("name") or connection.name))
             if d.get("login"): parts.append("Usuário: " + str(d["login"]))
             if d.get("new_login"): parts.append("Novo login: " + str(d["new_login"]))
             if d.get("unit"): parts.append("Unidade de origem: " + str(d["unit"]))
             if audit.action == "user_sync.completed":
-                parts.append(", ".join(f"{d.get(k, 0)} {label}" for k, label in (("new", "novos"), ("updated", "atualizados"), ("removed", "removidos"), ("conflicts", "conflitos"))))
+                if "new" in d:
+                    parts.append(", ".join(f"{d.get(k, 0)} {label}" for k, label in (("new", "novos"), ("updated", "atualizados"), ("removed", "removidos"), ("conflicts", "conflitos"))))
+                elif "count" in d:
+                    parts.append(f'Total recebido: {d["count"]}')
             roles = {"admin": "Administrativo", "operator": "Operador", "viewer": "Consulta"}
             for access in d.get("access", []):
                 parts.append(f'{access.get("unit", "")}: {roles.get(access.get("role"), access.get("role", ""))} · {access.get("type", "")}')
