@@ -106,14 +106,28 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
-    [checking, setChecking] = useState(true);
+    [checking, setChecking] = useState(true),
+    [bootError, setBootError] = useState(""),
+    [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
-    initCsrf()
-      .then(() => request<Session>("/api/v1/auth/session/"))
-      .then(setSession)
-      .catch(() => {})
-      .finally(() => setChecking(false));
-  }, []);
+    const controller = new AbortController();
+    let active = true;
+    const timer = window.setTimeout(() => {
+      controller.abort();
+      if (active) { setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente."); setChecking(false); }
+    }, 8000);
+    setChecking(true);
+    setBootError("");
+    Promise.all([initCsrf(controller.signal), request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal)])
+      .then(([, incoming]) => { if (active) setSession(incoming); })
+      .catch(error => {
+        if (!active || controller.signal.aborted) return;
+        if (error.status === 401) setSession(null);
+        else setBootError("Não foi possível carregar o painel. Confira a conexão e tente novamente.");
+      })
+      .finally(() => { window.clearTimeout(timer); if (active && !controller.signal.aborted) setChecking(false); });
+    return () => { active = false; window.clearTimeout(timer); controller.abort(); };
+  }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
     const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
@@ -128,6 +142,7 @@ function AppRoot() {
         <span>Carregando painel…</span>
       </div>
     );
+  if (bootError) return <div className="boot"><p role="alert">{bootError}</p><button className="button" onClick={() => setBootAttempt(v => v + 1)}>Tentar novamente</button></div>;
   if (!session) return <Login onLogin={setSession} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (
