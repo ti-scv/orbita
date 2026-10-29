@@ -55,11 +55,13 @@ direcionada. Falhas também observadas na suíte completa do commit 7354299:
 em `test_oracle_send_regression.py` também ocorreram na base: os testes
 exigem PostgreSQL. `test_concurrent_scheduler_once_per_day` de
 `test_report_catalog.py` falhou em execução separada da base com bloqueio
-de tabela SQLite. `test_concurrent_workers_capture_one_lives_snapshot`
-falhou na execução atual e não falhou na suíte da base; comparação adicional
-é necessária. As falhas concorrentes podem variar entre execuções SQLite.
+de tabela SQLite. `test_concurrent_workers_capture_one_lives_snapshot` falhou também em execução
+isolada no commit-base. As falhas concorrentes podem variar entre execuções SQLite.
 
 A suíte completa não foi repetida no último commit. Faltam os testes com duas
 instalações e bancos independentes, testes de interface específicos e prints;
 não foi feito rebuild de staging. Nenhum banco real ou contêiner de produção
 foi alterado.
+
+O build do frontend passou, assim como a suíte completa (75 arquivos, 665 testes).
+Após o ajuste de colisão concorrente, o teste direcionado de sincronização passou.
