@@ -1234,6 +1234,7 @@ function Administration({
                   </tr>
                 </thead>
                 <tbody>
+                  {!reportDefinitions.length && <tr><td colSpan={4} className="directory-empty">Nenhum relatório encontrado.</td></tr>}
                   {reportDefinitions.map((record) => (
                     <tr key={record.id}>
                       <td>{record.name}</td>
@@ -1290,6 +1291,7 @@ function Administration({
                   </tr>
                 </thead>
                 <tbody>
+                  {!policies.length && <tr><td colSpan={3} className="directory-empty">Nenhum prazo de resposta encontrado.</td></tr>}
                   {policies.map((record) => (
                     <tr key={record.id}>
                       <td>{purposes[record.purpose || ""]}</td>

@@ -592,7 +592,7 @@ export default function OperationalAppointments({
           <div className="op-heading">
             <div className="appointment-heading-info">
               <span className="appointment-result-count">
-                <strong>{items.count}</strong>{" "}
+                {items.count}{" "}
                 {issuesOnly
                   ? items.count === 1
                     ? "pendência"

@@ -1,3 +1,4 @@
+import PtBrDateInput from "./PtBrDateInput";
 import Select from "./Select";
 import { useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
@@ -296,7 +297,7 @@ export default function AppointmentGroups({
           </button>
         ) : (
           <span className="appointment-result-count">
-            <strong>{list.count}</strong> grupos
+            {list.count} grupos
           </span>
         )}
       </div>
@@ -318,18 +319,16 @@ export default function AppointmentGroups({
           </label>
           <label className="op-field">
             <span>Atendimentos a partir de</span>
-            <input
-              type="date"
+            <PtBrDateInput
               value={filters.start}
-              onChange={(e) => filter("start", e.target.value)}
+              onChange={(value) => filter("start", value)}
             />
           </label>
           <label className="op-field">
             <span>Atendimentos até</span>
-            <input
-              type="date"
+            <PtBrDateInput
               value={filters.end}
-              onChange={(e) => filter("end", e.target.value)}
+              onChange={(value) => filter("end", value)}
             />
           </label>
         </div>

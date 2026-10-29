@@ -1,3 +1,4 @@
+import PtBrDateInput from "./PtBrDateInput";
 import Select from "./Select";
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
@@ -123,18 +124,16 @@ export default function ExecutionLogs({ unit }: { unit: string }) {
         </label>
         <label>
           De
-          <input
-            type="date"
+          <PtBrDateInput
             value={start}
-            onChange={(e) => change(setStart, e.target.value)}
+            onChange={(value) => change(setStart, value)}
           />
         </label>
         <label>
           Até
-          <input
-            type="date"
+          <PtBrDateInput
             value={end}
-            onChange={(e) => change(setEnd, e.target.value)}
+            onChange={(value) => change(setEnd, value)}
           />
         </label>
         <label className="execution-log-search">
