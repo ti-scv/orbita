@@ -159,6 +159,7 @@ function Workspace({
     [toast, setToast] = useState(""),
     [modal, setModal] = useState<Modal>(null),
     [mobile, setMobile] = useState(false);
+  const [notFound, setNotFound] = useState(() => readRoute().notFound);
   const [settingsTab, setSettingsTab] = useState<string | null>(null);
   const [canvasId, setCanvasId] = useState<number | null>(() => readRoute().canvasId ?? null);
   const [groupId, setGroupId] = useState<string | null>(
@@ -168,6 +169,7 @@ function Workspace({
     const sync = () => {
       const next = readRoute();
       setPage(next.page);
+      setNotFound(next.notFound);
       setCanvasId(next.canvasId ?? null);
       setSettingsTab(null);
       setGroupId(next.groupId);
@@ -395,6 +397,7 @@ function Workspace({
   ) {
     selectAppointment(appointmentId);
     setPage(next);
+    setNotFound(false);
     setCanvasId(null);
     setGroupId(null);
     window.history.pushState(
@@ -412,7 +415,8 @@ function Workspace({
     navigate(next, response ? "" : filter);
     if (response) setResponseState(filter);
   }
-  const currentTitle = navigation.find((item) => item.id === page)?.label;
+  const denied = !canAccess(session, unit, page) || !!(canvasId && (!policy.reports || policy.reports === "none"));
+  const currentTitle = notFound ? "Página não encontrada" : denied ? "Sem permissão" : navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
   const periodFilter = (
     <div className="date-range">
@@ -591,7 +595,7 @@ function Workspace({
             </button>
             <span className="breadcrumb">
               <span className="breadcrumb-root">Workspace</span>
-              {page !== "overview" && page !== "appointments" && (
+              {(notFound || denied || (page !== "overview" && page !== "appointments")) && (
                 <>
                   <ChevronRight className="breadcrumb-root" size={14} />{" "}
                   <strong>{currentTitle}</strong>
@@ -651,7 +655,7 @@ function Workspace({
           className={`content ${page === "appointments" || page === "issues" ? "appointments-page" : ""}`}
         >
 
-          {!canAccess(session, unit, page) || (canvasId && (!policy.reports || policy.reports === "none")) ? <p role="alert">Você não tem permissão para acessar esta área</p> : <>
+          {notFound || denied ? <section className="route-message" role="alert"><h1>{notFound ? "Página não encontrada" : "Sem permissão"}</h1><p>{notFound ? "Esta página não existe ou mudou de endereço." : "Você não tem acesso a esta área. Se precisar, peça acesso ao administrador."}</p><button type="button" className="button primary" onClick={() => navigate(visibleNavigation[0]?.id || "overview")}>Voltar ao início</button></section> : <>
           {error && (
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />

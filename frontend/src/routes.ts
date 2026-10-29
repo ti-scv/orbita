@@ -23,6 +23,7 @@ export function readRoute(path = window.location.pathname) {
   const canvas = normalized.match(/^\/relatorios\/([0-9]+)\/(?:canvas|previa)$/);
   return {
     ...(canvas ? {canvasId: Number(canvas[1])} : {}),
+    notFound: !canvas && !match && !pages[normalized],
     page: canvas ? ("reports" as PageName) : match ? ("groups" as PageName) : pages[normalized] || "appointments",
     groupId: match?.[1] || null,
   };
