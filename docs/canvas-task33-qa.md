@@ -43,3 +43,11 @@ O staging `orbita-canvas-stage-fila` foi reconstruído na porta 8095 e retornou 
 Continuam pendentes: correção e provas de ausência de cortes com conteúdo denso em ambas as orientações, editor, visualização e PDF/impressão; capturas correspondentes em ambos os temas e níveis de zoom; busca e resolução segura de componentes de outras unidades com teste de permissões. Nenhuma dessas funcionalidades foi implementada nesta continuação.
 
 Frontend: `scripts/canvas-check.sh` passou com Node 24 (641 testes em 71 arquivos, ESLint de hooks, TypeScript e build). O build apresentou apenas o aviso de tamanho de chunks.
+
+## Continuação 33g — parcial
+
+Os commits 5afc7e5 e 59cdb19 preservam texto longo e linhas longas de tabelas no PDF por continuação e permitem rolagem de texto e KPI no editor. A continuação divide também tabelas largas em grupos de colunas no PDF. Os dois testes de `backend/tests/test_canvas_dense_pdf.py` passaram em container, com as duas dimensões de página: verificam palavras, células e colunas nos textos extraídos do PDF. Eles não comprovam a apresentação visual nem a troca de orientação pela interface.
+
+O frontend passou em `scripts/canvas-check.sh` nesta retomada: 641 testes em 71 arquivos, ESLint de hooks, TypeScript e build; houve aviso de tamanho de chunks. O frontend isolado de 8095 foi reconstruído, e a API isolada foi atualizada e reiniciada com o PDF deste checkout; a imagem `orbita-api-fila:task33g` também foi reconstruída. O frontend respondeu HTTP 200. A atualização da API no container em execução foi feita por cópia do arquivo, portanto ao recriar o container é necessário usar a imagem reconstruída.
+
+Ainda falta validar no navegador, em ambas as direções, editor, visualização e PDF/impressão com dados densos, e capturar novas evidências em 100% e 150% nos temas claro e escuro. Os prints já existentes são de verificações anteriores e não demonstram esse cenário. Os gráficos ainda podem cortar rótulos ou legendas, e a correção não garante ausência de cortes para todos os tamanhos e conteúdos; especialmente tabelas com larguras de coluna muito desiguais e títulos longos precisam de validação. Por isso o item 4 permanece parcial.
