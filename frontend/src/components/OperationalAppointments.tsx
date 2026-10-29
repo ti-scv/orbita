@@ -417,7 +417,7 @@ export default function OperationalAppointments({
   useEffect(() => {
     if (!initialId) return;
     let active = true;
-    request<Appointment>(query(`agenda-items/${initialId}`, { unit }))
+    request<Appointment>(query(`agenda-items/${initialId}`, { unit, group: groupId || "" }))
       .then((item) => {
         if (active) select(item.tracking?.id || null);
       })
@@ -425,14 +425,14 @@ export default function OperationalAppointments({
     return () => {
       active = false;
     };
-  }, [initialId, unit]);
+  }, [initialId, unit, groupId]);
   const act = useCallback(
     async (path: string, data: unknown) => {
       setBusy(true);
       setError("");
       try {
         const result = await request(
-          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}${groupId && /^(contacts|movements)(\/|$)/.test(path) ? `&group=${encodeURIComponent(groupId)}` : ""}`,
+          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}${groupId && /^(cases|contacts|movements)(\/|$)/.test(path) ? `&group=${encodeURIComponent(groupId)}` : ""}`,
           "POST",
           data,
         );

@@ -334,10 +334,10 @@ export function AppointmentDetail({
   const [item, setItem] = useState<CareCase | null>(null);
   useEffect(() => {
     setItem(null);
-    request<CareCase>(query(`cases/${id}`, { unit: props.unit }))
+    request<CareCase>(query(`cases/${id}`, { unit: props.unit, group: props.groupId || "" }))
       .then(setItem)
       .catch((e) => props.onError(e.message));
-  }, [id, props.unit, props.onError]);
+  }, [id, props.unit, props.groupId, props.onError]);
   return item ? (
     <CaseDetail item={item} {...props} />
   ) : (
@@ -403,14 +403,15 @@ function CaseDetail({
   useEffect(() => {
     let active = true;
     Promise.all([
-      request<CareCase>(query(`cases/${item.id}`, { unit })),
+      request<CareCase>(query(`cases/${item.id}`, { unit, group: groupId || "" })),
       request<Paginated<Interaction>>(
         query(`cases/${item.id}/timeline`, {
           unit,
           page: String(timelinePage),
+          group: groupId || "",
         }),
       ),
-      request<typeof comms>(query(`cases/${item.id}/communications`, { unit })),
+      request<typeof comms>(query(`cases/${item.id}/communications`, { unit, group: groupId || "" })),
       request<Paginated<Row>>(query("movements", { unit, case: item.id, group: groupId || "" })),
       request<Paginated<(typeof contacts)[number]>>(
         query("contacts", { unit, event: String(item.event.id), group: groupId || "" }),
