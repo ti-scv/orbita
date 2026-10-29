@@ -65,3 +65,16 @@ foi alterado.
 
 O build do frontend passou, assim como a suíte completa (75 arquivos, 665 testes).
 Após o ajuste de colisão concorrente, o teste direcionado de sincronização passou.
+
+## Execução 36d — staging real
+
+| Requisito | Teste e resultado | Print |
+| --- | --- | --- |
+| Cadastro e sincronização entre instalações isoladas | HTTP federado real; cinco identidades, cadastro 200 | [Usuários](evidencias-task36d/usuarios.png) |
+| Pendente sem acesso e conflito sem vínculo | Conta inativa, senha inutilizável, sem associação; três rotas 403; conflito pendente | [Usuários](evidencias-task36d/usuarios.png) |
+| Liberação com tipo da 35 | `type-test.py`, 200 e associação ao tipo conferida | [Usuários](evidencias-task36d/usuarios.png) |
+| Ressincronização e desativação | Sem duplicados; acesso mantido; conta liberada bloqueada ao desativar origem | [Usuários](evidencias-task36d/usuarios.png) |
+| Falha de rede durante cadastro e nova tentativa | Proxy fecha conexão após manifesto; cadastro 200 com erro e repetição 200 | Resultado em `/tmp/orbita-36d/failure-create.log` |
+| Migração reversível e suítes | Ver comandos e resultados em `docs/canvas-task36.md`; downgrade perde dados de identidade e campo da chave | Não se aplica |
+
+A imagem mostra os dados fictícios na instalação mãe. A verificação direta de rotas foi representativa, não uma enumeração exaustiva; os logs e scripts descartáveis estão em `/tmp/orbita-36d/` no scv59.

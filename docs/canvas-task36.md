@@ -40,4 +40,10 @@ Duas instalações Django/Gunicorn independentes usam PostgreSQL e redes Docker 
 - `npm test` em contêiner Node: primeira execução concorrente às duas suítes backend teve 9 timeouts; repetição integral `npm test -- --maxWorkers=2` passou: 75 arquivos, 665 testes. Build do frontend passou.
 - `git merge-tree --write-tree c6d6d45 8a22253` retornou árvore `492a5c3d339b5d61e12527ee12958dba72ac9080` sem conflitos; sem alterar branch ou fazer merge. A branch `feature/canvas-release-merge` avançou para `ff4fa24`; `git merge-tree --write-tree ff4fa24 8a22253` também foi limpo, árvore `2944d4cbf6ce925cd55cf97c6db22ea8f530ba2f`.
 
-Limites: não foram produzidos prints de navegador; três rotas foram verificadas diretamente para a conta pendente, além da inatividade e senha inutilizável. A queda de rede foi exercitada na sincronização sob demanda após o cadastro, não na janela entre manifesto e sincronização automática durante o cadastro. A suíte completa PostgreSQL foi executada com chave ausente; os sete erros foram repetidos com a chave, mas a suíte inteira não foi repetida com ela. O resultado da tarefa permanece parcial por essas verificações pendentes.
+Limites: três rotas representativas foram verificadas diretamente para a conta pendente, além da inatividade e senha inutilizável; não foi feita uma enumeração exaustiva de todas as rotas.
+
+### Complemento da validação 36d
+
+- Com proxy HTTP descartável que responde ao manifesto e fecha a conexão na exportação, `docker exec -i orbita-36d-mae-api python manage.py shell < /tmp/orbita-36d/failure-create.py`: cadastro 200, `user_sync.ok=false` e `connection_failed`; a conexão persistiu e nova tentativa retornou 200. A unidade temporária criada para este ensaio foi removida.
+- `/tmp/orbita-36d/type-test.py` liberou `tipo36` com `permission_role` de um tipo válido da tarefa 35: 200, associação com o tipo confirmada no banco; depois a origem foi desativada para preservar somente um liberado ativo na revisão. Uma primeira tentativa com tipo incompleto inserido diretamente no banco produziu 500; esse dado não representava um tipo válido criado pela API.
+- Navegador Chromium/Playwright em `orbita-t31b-qa`, acesso por 8110, login e Configurações → Usuários e acessos: pendências, conflito, liberação e desativação exibidos. Evidência: [usuarios.png](evidencias-task36d/usuarios.png).
