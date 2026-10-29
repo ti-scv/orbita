@@ -56,12 +56,15 @@ def test_checkin_report_access_direct_composed_and_revocation():
     user = get_user_model().objects.create_user("checkin-report")
     membership = Membership.objects.create(user=user, unit=unit, role="operator", permissions={"reports":"write"})
     wrapper = ReportDefinition.objects.create(unit=unit, code="wrapper", name="Outro", source="local", canvas_enabled=True, canvas_layout={"sources":[{"type":"report", "report_id":report.pk}]})
+    composite = ReportDefinition.objects.create(unit=unit, code="composite", name="Composto", source="composite", components=[{"report_id":report.pk, "code":report.code}])
     with pytest.raises(PermissionDenied): check_report(report, user=user)
     with pytest.raises(PermissionDenied): check_report(wrapper, user=user)
+    with pytest.raises(PermissionDenied): check_report(composite, user=user)
     membership.permissions = {"reports":"write", "checkin":"read"}
     membership.save()
     check_report(report, user=user)
     check_report(wrapper, user=user)
+    check_report(composite, user=user)
     request = SimpleNamespace(user=user, auth=SimpleNamespace(effective_role="operator", section_limit={"reports":"write", "checkin":"none"}))
     with pytest.raises(PermissionDenied): check_report(wrapper, request=request)
     membership.permissions["checkin"] = "none"
