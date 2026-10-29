@@ -1,5 +1,5 @@
 import { AuditTimeline } from "./components/AuditTimeline";
-import { Activity, Lightbulb } from "./components/icons";
+import { Activity, CheckCircle2, FileText } from "./components/icons";
 import CheckInWorkspace from "./components/CheckInWorkspace";
 import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
@@ -86,9 +86,9 @@ const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   {id:"autoagenda",label:"Autoagendamento",icon:CalendarDays},
-  { id: "checkin", label: "Check-in", icon: Lightbulb },
+  { id: "checkin", label: "Check-in", icon: CheckCircle2 },
   { id: "issues", label: "Pendências", icon: ClipboardList },
-  { id: "reports", label: "Relatórios", icon: Lightbulb },
+  { id: "reports", label: "Relatórios", icon: FileText },
   { id: "settings", label: "Configurações", icon: Settings2 },
 ];
 type Data = {

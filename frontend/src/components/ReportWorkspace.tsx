@@ -1,3 +1,4 @@
+import PtBrDateInput from "./PtBrDateInput";
 import { friendlyDatabaseName } from "../reportLabels";
 import ReportDataPreview from "./ReportDataPreview";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
@@ -726,7 +727,7 @@ export default function ReportWorkspace({
         <option value="">Selecione</option>
         {(modal?.kind === "preview" ? [modal.row] : catalog).map((r) => (
           <option key={r.id} value={r.id}>
-            {r.name} · {r.code}
+            {r.name}
           </option>
         ))}
       </Select>
@@ -1222,7 +1223,7 @@ export default function ReportWorkspace({
               {error}
             </div>
           )}
-          <form id="report-editor" className="report-editor" onSubmit={save}>
+          <form id="report-editor" className="report-editor" onInvalid={e => { const el = e.target as HTMLInputElement; if (el.validity.valueMissing) el.setCustomValidity("Preencha este campo."); }} onInput={e => { const el = e.target as HTMLInputElement; if (el.validationMessage === "Preencha este campo.") el.setCustomValidity(""); }} onSubmit={save}>
             {modal.kind === "run" || modal.kind === "preview" ? (
               <>
                 <div
@@ -1261,10 +1262,10 @@ export default function ReportWorkspace({
                 )}
                 {Object.keys(selected?.parameter_schema || {}).length > 0 && (
                   <div className="report-form-grid">
-                    {Object.entries(selected?.parameter_schema || {}).sort(([,a],[,b]) => ((a as Row).order ?? 1000) - ((b as Row).order ?? 1000)).map(
+                    {Object.entries(selected?.parameter_schema || {}).sort(([ka,a],[kb,b]) => ((a as Row).order ?? (/^(start|start_date|data_inicial)$/i.test(ka) ? 1 : /^(end|end_date|data_final)$/i.test(ka) ? 2 : 1000)) - ((b as Row).order ?? (/^(start|start_date|data_inicial)$/i.test(kb) ? 1 : /^(end|end_date|data_final)$/i.test(kb) ? 2 : 1000))).map(
                       ([key, spec]) => (
                         <Field label={(spec as Row).label || ({start:"Data inicial", start_date:"Data inicial", end:"Data final", end_date:"Data final", data_inicial:"Data inicial", data_final:"Data final", unidade:"Unidade", tipo_envio:"Tipo de envio"} as Record<string,string>)[key.toLowerCase()] || key.replaceAll("_", " ")} key={key}>
-                          {Array.isArray((spec as Row).choices) ? <Select value={form.parameters?.[key] ?? (spec as Row).default ?? ""} onChange={e => update("parameters", {...form.parameters, [key]: e.target.value})}>{(spec as Row).choices.map((choice: Row) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Select> : <input
+                          {Array.isArray((spec as Row).choices) ? <Select value={form.parameters?.[key] ?? (spec as Row).default ?? ""} onChange={e => update("parameters", {...form.parameters, [key]: e.target.value})}>{(spec as Row).choices.map((choice: Row) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Select> : (spec as Row).type === "date" ? <PtBrDateInput required={(spec as Row).required !== false} value={form.parameters?.[key] ?? (spec as Row).default ?? ""} onChange={value => update("parameters", {...form.parameters, [key]: value})} /> : <input
                             required={(spec as Row).required !== false}
                             type={
                               (spec as Row).type === "date"

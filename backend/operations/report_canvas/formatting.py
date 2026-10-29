@@ -32,6 +32,8 @@ STATUS_LABELS = {
 
 def display_cell(value, column):
     """Format known semantic columns without changing arbitrary identifiers."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and re.search(r"percentual", str(column), re.I):
+        return str(value).replace(".", ",")
     if value is not None and re.search(r"telefone|whatsapp|celular|phone", str(column), re.I):
         digits = re.sub(r"\D", "", str(value))
         local = digits[2:] if digits.startswith("55") and len(digits) in (12, 13) else digits

@@ -46,3 +46,22 @@ A chave Meta fictícia é gerada dentro do teste de payload, sem variável de am
 ### Verificação 38J
 
 Suíte completa do backend em PostgreSQL e rede descartáveis, sob `flock /tmp/orbita-suite.lock`, `pytest -n 2`, envio simulado, sem `META_CREDENTIALS_KEY` no ambiente: **1.344 passaram, 1 ignorado** (`/tmp/checkin-38j-back-final.log`). A primeira execução teve 1.343 aprovações, 1 teste ignorado e uma falha em indicador médico por não montar `/report_files`; a repetição completa acima montou os arquivos em leitura. O teste direcionado anterior também revelou um erro na montagem do mock de contexto Oracle, corrigido antes da suíte completa.
+
+## Correções 38K
+
+Base: 38J `50ece45`. Filtros e parâmetros de data de geração usam `PtBrDateInput`; feriados são apresentados e validados em dd/mm/aaaa e convertidos para ISO na API. Horários comerciais usam entrada explícita HH:MM em 24 horas, com validação. Os formulários de check-in mostram erros em português; no formulário de geração, os campos obrigatórios usam mensagem personalizada em português. A configuração informa o limite à Sansaúde. Check-in, Relatórios e tema usam ícones distintos do conjunto do projeto; o tema usa a cor corrente.
+
+A seleção do relatório mostra apenas o nome, os parâmetros inicial e final aparecem nessa ordem e o PDF formata a coluna Percentual com vírgula; a exportação de planilha mantém o valor numérico. Os dados do staging foram preservados. Foi gerada uma execução adicional de relatório para conferir o fluxo.
+
+Capturas headless em `docs/checkin-38k/`: 01 filtros e ícones, 02 configuração e horários, 03 validação, 04 lista de relatórios, 05 geração e ordem de datas, 06 execução gerada, 07 validação de data obrigatória e 08 tema alternativo. A validação headless confirmou `Preencha este campo.`; o teste de formatação verifica 12,5 no PDF e 12.5 como número na planilha. A captura da execução não mostra o conteúdo interno do PDF.
+
+### Medição de desempenho
+
+Navegador Chromium headless na rede Docker do staging, antes da troca do painel: HTML em 243 ms; login POST em 1.541 ms; do clique até o menu em 2.690 ms. As chamadas iniciais observadas para regras, mensagens, pendências, respostas, agendamentos, modelos, importações, auditoria, controle e indicadores levaram individualmente 396–820 ms. A medição é interna, com cache frio e sem representar a rede do usuário. Não reproduziu os 15–20 s, e não permite determinar a causa dessa demora. Não houve chamada de check-in ou Oracle nas requisições iniciais observadas; não foi identificado gargalo do código novo de check-in. O frontend usa build Vite de produção servido pelo nginx com cache de assets, enquanto a API do staging usa Django `DEBUG=1` e `runserver --noreload`; essa configuração pode influenciar tempos, mas não prova a causa relatada. Recomenda-se medir a mesma navegação no cliente afetado, incluindo rede e tempos de cada requisição.
+
+### Verificação 38K
+
+- Frontend direcionado com Node 24: 11 passaram. A primeira tentativa no Node do host falhou ao iniciar jsdom por incompatibilidade ESM; repetição em Node 24 passou.
+- Backend direcionado: 5 passaram. Primeira tentativa com a imagem de staging não tinha pytest-xdist; repetição serial passou.
+- Suítes completas sob `flock /tmp/orbita-suite.lock`: backend em PostgreSQL isolado, `pytest -n 2`, 1.345 passaram e 1 ignorado; frontend Node 24, Vitest `--maxWorkers=2`, 78 arquivos e 678 testes passaram. Logs: `/tmp/checkin-38k-back-full.log` e `/tmp/checkin-38k-front-full.log`.
+- Build do frontend em Docker passou; imagem `checkin-38k-panel` servida na porta 8117. API reiniciada para carregar a formatação do PDF; banco e configuração anteriores preservados. O painel anterior foi mantido parado como `checkin-38i-panel-previous`.

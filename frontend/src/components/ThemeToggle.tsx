@@ -1,4 +1,4 @@
-import { Lightbulb } from "lucide-react";
+import { Lightbulb } from "./icons";
 import { useTheme } from "../ThemeContext";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {

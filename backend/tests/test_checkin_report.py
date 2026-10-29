@@ -119,3 +119,9 @@ def test_async_report_access_rechecked_after_revocation():
     membership.save()
     with pytest.raises(PermissionDenied): execution_access(job)
     with pytest.raises(PermissionDenied): execution_access(job, for_download=True)
+
+
+def test_percentual_canvas_uses_brazilian_decimal_and_preserves_spreadsheet_number():
+    from operations.report_canvas.formatting import display_cell, export_cell
+    assert display_cell(12.5, "Percentual") == "12,5"
+    assert export_cell(12.5, "Percentual") == 12.5

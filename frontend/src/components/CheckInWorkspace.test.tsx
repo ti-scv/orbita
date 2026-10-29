@@ -41,6 +41,16 @@ describe("Check-in",()=>{
     await waitFor(()=>expect(vi.mocked(request).mock.calls.some(c=>c[1]==="PATCH" && (c[2] as typeof config).enabled)).toBe(true));
     await waitFor(()=>expect(screen.queryByRole("dialog")).toBeNull());
   });
+  it("converte feriados brasileiros e valida campos obrigatórios",async()=>{
+    render(<CheckInWorkspace unit="sansaude" write/>);
+    const button=await screen.findByRole("button",{name:"Configurar"}); await waitFor(()=>expect((button as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(button);
+    expect(screen.getByText(/somente para a unidade Sansaúde/)).toBeTruthy();
+    expect((screen.getByLabelText("Início") as HTMLInputElement).value).toBe("08:00");
+    fireEvent.change(screen.getByLabelText(/Feriados/),{target:{value:"25/12/2026"}});
+    fireEvent.click(screen.getByRole("button",{name:"Salvar"}));
+    await waitFor(()=>expect(vi.mocked(request).mock.calls.some(c=>c[1]==="PATCH" && (c[2] as typeof config).holidays[0]==="2026-12-25")).toBe(true));
+  });
   it("mantém modal aberto e mostra conflito",async()=>{
     vi.mocked(request).mockImplementation(async (url,method)=>{
       if(method==="POST") throw Object.assign(new Error("conflito"),{status:409});

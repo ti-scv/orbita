@@ -1,3 +1,5 @@
+import PtBrDateInput from "./PtBrDateInput";
+import {displayFixedDate, parseFixedDate} from "./report-canvas/data/fixedDate";
 import {useCallback, useEffect, useState} from "react";
 import type {FormEvent} from "react";
 import {query, request} from "../api";
@@ -42,7 +44,7 @@ export default function CheckInWorkspace({unit, write}:{unit:string; write:boole
   }
   function startAction() {setResponse("");setAttendance("");setReason("");setKey(crypto.randomUUID());setModalError("");setAction(true)}
   async function saveAction(e:FormEvent) {
-    e.preventDefault(); if(!detail || (!response && !attendance)) {setModalError("Selecione uma alteração.");return}
+    e.preventDefault(); if (!reason.trim()) {setModalError("Informe o motivo.");return} if(!detail || (!response && !attendance)) {setModalError("Selecione uma alteração.");return}
     setBusy(true);setModalError("");
     try {
       await request(query("checkins/"+detail.id+"/transition",{unit}),"POST",{version:detail.version,idempotency_key:key,...(response?{response}:{}),...(attendance?{attendance}:{}),reason:reason.trim()});
@@ -52,20 +54,21 @@ export default function CheckInWorkspace({unit, write}:{unit:string; write:boole
   function update<K extends keyof Config>(field:K, value:Config[K]) {setEdit(c=>c?{...c,[field]:value}:c)}
   async function saveConfig(e:FormEvent) {
     e.preventDefault(); if(!edit)return;
-    const holidays=holidayText.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
-    if (!edit.weekdays.length || !Number.isInteger(edit.lead_value) || edit.lead_value < 1 || edit.business_start >= edit.business_end || holidays.some(s=>!/^\d{4}-\d{2}-\d{2}$/.test(s))) {setModalError("Confira antecedência, dias, horários e datas dos feriados (AAAA-MM-DD).");return}
+    const holidayDates=holidayText.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+    const holidays=holidayDates.map(parseFixedDate);
+    if (!edit.weekdays.length || !Number.isInteger(edit.lead_value) || edit.lead_value < 1 || edit.business_start >= edit.business_end || holidays.some(s=>!s) || !edit.timezone.trim() || !/^([01]\d|2[0-3]):[0-5]\d$/.test(edit.business_start.slice(0,5)) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(edit.business_end.slice(0,5))) {setModalError("Confira antecedência, dias, horários e datas dos feriados (dd/mm/aaaa).");return}
     setBusy(true);setModalError("");
     try {const {enabled,booking_enabled,appointment_enabled,oracle_enabled,channel,timezone,weekdays,business_start,business_end,lead_value,lead_unit}=edit; const result=await request<Config>(query("checkin-configuration",{unit}),"PATCH",{enabled,booking_enabled,appointment_enabled,oracle_enabled,channel,timezone,weekdays,business_start,business_end,lead_value,lead_unit,holidays});setConfig(result);setEdit(null)}
     catch(e){setModalError(errorText(e))}finally{setBusy(false)}
   }
   if(unit !== "sansaude") return <p role="alert">Check-in disponível somente na unidade Sansaúde.</p>;
   return <div className="aa-console checkin-workspace">
-    <header className="aa-heading"><h1>Check-in</h1><div><button className="button secondary" onClick={()=>{void list();void loadConfig()}}>Atualizar</button>{write && <button className="button secondary" disabled={!config} onClick={()=>{setEdit(structuredClone(config!));setHolidayText(config!.holidays.join("\n"));setModalError("")}}>Configurar</button>}</div></header>
+    <header className="aa-heading"><h1>Check-in</h1><div><button className="button secondary" onClick={()=>{void list();void loadConfig()}}>Atualizar</button>{write && <button className="button secondary" disabled={!config} onClick={()=>{setEdit(structuredClone(config!));setHolidayText(config!.holidays.map(displayFixedDate).join("\n"));setModalError("")}}>Configurar</button>}</div></header>
     {error && <p className="aa-error" role="alert">{error}</p>}
     {config && <div className="aa-status"><span>Check-in {config.enabled?"ativo":"desativado"}</span><span>Autoagendamento {config.booking_enabled?"ativo":"desativado"}</span><span>Agendamentos {config.appointment_enabled?"ativos":"desativados"}</span><span>Oracle {config.oracle_enabled?"ativo":"desativado"}</span></div>}
     <div className="aa-filters">
-      <label>De <input type="date" value={filters.start} onChange={e=>{setFilters({...filters,start:e.target.value});setPage(1)}}/></label>
-      <label>Até <input type="date" value={filters.end} onChange={e=>{setFilters({...filters,end:e.target.value});setPage(1)}}/></label>
+      <label>De <PtBrDateInput value={filters.start} onChange={value=>{setFilters({...filters,start:value});setPage(1)}}/></label>
+      <label>Até <PtBrDateInput value={filters.end} onChange={value=>{setFilters({...filters,end:value});setPage(1)}}/></label>
       <label>Origem <select value={filters.source} onChange={e=>{setFilters({...filters,source:e.target.value});setPage(1)}}><option value="">Todas</option><option value="booking">Autoagendamento</option><option value="appointment">Agendamentos</option></select></label>
       <label>Resposta <select value={filters.response} onChange={e=>{setFilters({...filters,response:e.target.value});setPage(1)}}><option value="">Todas</option>{Object.entries(responses).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
       <label>Comparecimento <select value={filters.attendance} onChange={e=>{setFilters({...filters,attendance:e.target.value});setPage(1)}}><option value="">Todos</option>{Object.entries(attendances).map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label>
@@ -78,18 +81,18 @@ export default function CheckInWorkspace({unit, write}:{unit:string; write:boole
       <dl className="checkin-details"><dt>Agendamento</dt><dd>{dateTime(detail.scheduled_at, config?.timezone)}</dd><dt>Origem</dt><dd>{detail.booking != null?"Autoagendamento":"Agendamentos"} · {detail.booking ?? detail.appointment}</dd><dt>Revisão / ciclo</dt><dd>{detail.source_revision} / {detail.cycle}</dd><dt>Estado</dt><dd>{checkInLabel(detail)}</dd><dt>Resposta</dt><dd>{responses[detail.response]}</dd><dt>Comparecimento</dt><dd>{attendances[detail.attendance]}</dd><dt>Envio previsto</dt><dd>{dateTime(detail.planned_send_at, config?.timezone)}</dd><dt>Enviado</dt><dd>{dateTime(detail.sent_at, config?.timezone)}</dd><dt>Prazo</dt><dd>{dateTime(detail.response_deadline, config?.timezone)}</dd><dt>Resposta registrada</dt><dd>{dateTime(detail.responded_at, config?.timezone)}</dd><dt>Comparecimento apurado</dt><dd>{dateTime(detail.attendance_checked_at, config?.timezone)}</dd></dl>
     </InlineDialog>}
     {detail && action && <InlineDialog title="Registrar alteração" subtitle="" busy={busy} onClose={()=>setAction(false)} footer={<><button className="button secondary" disabled={busy} onClick={()=>setAction(false)}>Cancelar</button><button className="button" type="submit" form="checkin-action" disabled={busy}>Salvar</button></>}>
-      <form id="checkin-action" className="aa-config" onSubmit={saveAction}>{modalError&&<p className="aa-error" role="alert">{modalError}</p>}
+      <form id="checkin-action" className="aa-config" noValidate onSubmit={saveAction}>{modalError&&<p className="aa-error" role="alert">{modalError}</p>}
         <label>Resposta<select value={response} onChange={e=>{setResponse(e.target.value);setKey(crypto.randomUUID())}}><option value="">Sem alteração</option>{Object.entries(responses).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
         <label>Comparecimento<select value={attendance} onChange={e=>{setAttendance(e.target.value);setKey(crypto.randomUUID())}}><option value="">Sem alteração</option>{Object.entries(attendances).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>
         <label>Motivo<textarea required maxLength={500} value={reason} onChange={e=>{setReason(e.target.value);setKey(crypto.randomUUID())}}/></label>
       </form>
     </InlineDialog>}
     {edit && <InlineDialog title="Configurar check-in" subtitle="" busy={busy} onClose={()=>setEdit(null)} footer={<><button className="button secondary" disabled={busy} onClick={()=>setEdit(null)}>Cancelar</button><button className="button" form="checkin-config" type="submit" disabled={busy}>Salvar</button></>}>
-      <form id="checkin-config" className="aa-config" onSubmit={saveConfig}>{modalError&&<p className="aa-error" role="alert">{modalError}</p>}
-        <fieldset><legend>Ativação</legend>{([["enabled","Ativar check-in"],["booking_enabled","Autoagendamento"],["appointment_enabled","Agendamentos"],["oracle_enabled","Apuração Oracle"]] as const).map(([k,l])=><label key={k}><input type="checkbox" checked={edit[k]} onChange={e=>update(k,e.target.checked)}/>{l}</label>)}<p>Canal: WhatsApp Meta</p></fieldset>
+      <form id="checkin-config" className="aa-config" noValidate onSubmit={saveConfig}>{modalError&&<p className="aa-error" role="alert">{modalError}</p>}
+        <p>O check-in está disponível somente para a unidade Sansaúde.</p><fieldset><legend>Ativação</legend>{([["enabled","Ativar check-in"],["booking_enabled","Autoagendamento"],["appointment_enabled","Agendamentos"],["oracle_enabled","Apuração Oracle"]] as const).map(([k,l])=><label key={k}><input type="checkbox" checked={edit[k]} onChange={e=>update(k,e.target.checked)}/>{l}</label>)}<p>Canal: WhatsApp Meta</p></fieldset>
         <fieldset><legend>Mensagem</legend><label>Texto da mensagem<textarea rows={3} disabled placeholder="Disponível após integração com o envio de check-in"/></label><p>As opções de resposta serão Confirmar e Solicitar cancelamento.</p></fieldset>
         <fieldset><legend>Antecedência</legend><div className="aa-grid"><label>Valor<input type="number" min="1" step="1" required value={edit.lead_value} onChange={e=>update("lead_value",Number(e.target.value))}/></label><label>Unidade<select value={edit.lead_unit} onChange={e=>update("lead_unit",e.target.value as Config["lead_unit"])}><option value="hours">Horas</option><option value="days">Dias</option></select></label></div></fieldset>
-        <fieldset><legend>Horário comercial</legend><div className="aa-grid"><label>Fuso horário<input required value={edit.timezone} onChange={e=>update("timezone",e.target.value)}/></label><label>Início<input type="time" required value={edit.business_start.slice(0,5)} onChange={e=>update("business_start",e.target.value)}/></label><label>Fim<input type="time" required value={edit.business_end.slice(0,5)} onChange={e=>update("business_end",e.target.value)}/></label></div><div className="checkin-weekdays">{days.map((day,i)=><label key={day}><input type="checkbox" checked={edit.weekdays.includes(i)} onChange={e=>update("weekdays",e.target.checked?[...edit.weekdays,i].sort():edit.weekdays.filter(d=>d!==i))}/>{day}</label>)}</div><label>Feriados (uma data AAAA-MM-DD por linha)<textarea rows={3} value={holidayText} onChange={e=>setHolidayText(e.target.value)}/></label></fieldset>
+        <fieldset><legend>Horário comercial</legend><div className="aa-grid"><label>Fuso horário<input required value={edit.timezone} onChange={e=>update("timezone",e.target.value)}/></label><label>Início<input type="text" inputMode="numeric" placeholder="HH:MM" maxLength={5} required value={edit.business_start.slice(0,5)} onChange={e=>update("business_start",e.target.value)}/></label><label>Fim<input type="text" inputMode="numeric" placeholder="HH:MM" maxLength={5} required value={edit.business_end.slice(0,5)} onChange={e=>update("business_end",e.target.value)}/></label></div><div className="checkin-weekdays">{days.map((day,i)=><label key={day}><input type="checkbox" checked={edit.weekdays.includes(i)} onChange={e=>update("weekdays",e.target.checked?[...edit.weekdays,i].sort():edit.weekdays.filter(d=>d!==i))}/>{day}</label>)}</div><label>Feriados (uma data dd/mm/aaaa por linha)<textarea rows={3} value={holidayText} onChange={e=>setHolidayText(e.target.value)}/></label></fieldset>
       </form>
     </InlineDialog>}
   </div>;
