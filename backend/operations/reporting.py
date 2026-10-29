@@ -195,7 +195,7 @@ def execution_access(job, *, for_download=False):
         or readiness(r, check_external_file=job.state != "ready")
     ):
         raise PermissionDenied("Relatório desativado, alterado ou com pendências.")
-    if not r.canvas_enabled:
+    if not r.canvas_enabled and r.handler not in {"bed_snapshots_v1", "stock_loans_v1", "medical_indicators_v1"}:
         check_composition_access(r, job.requester)
     if r.canvas_enabled:
         from operations.report_canvas.engine import check_snapshot
