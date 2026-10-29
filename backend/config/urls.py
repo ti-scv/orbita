@@ -11,6 +11,7 @@ from core.federation import (
     ManifestView,
     RemoteInstanceViewSet,
     RemoteProxyView,
+    UserIdentitiesExportView,
 )
 from core.logs import LogViewSet
 from core.oracle_config import OracleConfigurationViewSet
@@ -86,6 +87,7 @@ urlpatterns = [
     path("api/v1/meta-costs/", MetaCostView.as_view()),
     path("api/v1/", include(router.urls)),
     path("api/v1/federation/manifest/", ManifestView.as_view()),
+    path("api/v1/federation/user-identities/", UserIdentitiesExportView.as_view()),
     path(
         "api/v1/remote/<uuid:connection_id>/<path:resource>", RemoteProxyView.as_view()
     ),

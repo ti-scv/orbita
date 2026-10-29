@@ -54,6 +54,7 @@ class InstanceAccessKey(models.Model):
     issuer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     name = models.CharField(max_length=120)
     role = models.CharField(max_length=12, choices=Membership.Role.choices)
+    export_user_identities = models.BooleanField(default=False)
     secret_hash = models.CharField(max_length=64, editable=False)
     issuance_key = models.CharField(max_length=100, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
