@@ -31,3 +31,27 @@ Este inventário é inicial: não certifica que todas as ações, suas consultas
 A autorização de `filter_options` agora exige Agendamentos, pois essa ação consulta a unidade inteira sem aplicar os filtros de grupo ou pendência. Em `types`, quando esses filtros autorizam a consulta, as finalidades CROSS e os tipos Oracle vêm dos casos filtrados; os tipos fixos de agendamento continuam disponíveis. A tela envia o filtro na consulta de tipos e no detalhe inicial. O teste local cobre leitura permitida e negada e isolamento das finalidades; o teste do proxy verifica que pedidos negados não são encaminhados.
 
 A auditoria continua incompleta: Grupos usa o detalhe de atendimento, mas `cases`, `contacts` e `movements` ainda não limitam objetos ao grupo, e as demais ações e seus efeitos precisam de cobertura local e federada. Não há certificação da separação de permissões.
+
+
+## Continuação 35h2 — achados ainda não corrigidos
+
+- `CaseViewSet.health` não usa `get_queryset`: retorna contagens de mensagens,
+  pendências, importações e relatórios da unidade inteira. A autorização genérica
+  de `cases` precisa ser revista para essa ação separadamente.
+- `CaseViewSet.get_queryset` e `ContactViewSet.get_queryset` consultam
+  `local_permissions` do usuário da origem. No proxy, `remote_access` calcula a
+  interseção de seções, mas `remote_http` encaminha apenas o limite de papel.
+  Assim, permitir uma requisição na borda não assegura que o filtro da origem
+  respeite as seções efetivas do usuário remoto. Testar a resposta real da
+  origem, além de verificar que o proxy não encaminha requisições negadas.
+- `required_sections` trata as seções como alternativas: em consultas de
+  `appointments` e `agenda-items` com `group`, Agendamentos ainda autoriza a
+  requisição mesmo sem Grupos. O queryset valida a unidade do grupo, mas o
+  requisito de acesso à subárea e o escopo dos objetos associados precisam ser
+  verificados em todas as ações e também na federação.
+- `AppointmentDetail` e `CaseDetail` consultam casos, histórico, comunicações,
+  contatos e movimentações sem informar o contexto do grupo. A correção de
+  escopo deve acompanhar essas chamadas e as ações correspondentes; simplesmente
+  autorizar `groups` no recurso genérico permitiria acesso fora do grupo.
+
+Estes achados são diagnóstico, não certificação nem correção dos passos 1–4.
