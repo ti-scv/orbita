@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "responses",
     "operations",
     "autoagenda",
+    "checkin",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

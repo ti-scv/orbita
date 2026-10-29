@@ -1,0 +1,7 @@
+{
+  "configuration": {"enabled": false, "booking_enabled": false, "appointment_enabled": false, "oracle_enabled": false, "channel": "meta", "timezone": "America/Sao_Paulo", "weekdays": [0, 1, 2, 3, 4], "business_start": "08:00:00", "business_end": "18:00:00", "holidays": [], "lead_value": 24, "lead_unit": "hours"},
+  "checkin": {"id": 1, "unit": "sansaude", "appointment": 42, "booking": null, "source_revision": 1, "cycle": 1, "scheduled_at": "2026-11-10T12:00:00Z", "response": "confirmed", "attendance": "unknown", "version": 3},
+  "transition": {"version": 3, "idempotency_key": "example-1", "response": "cancelled", "reason": "Correção solicitada"},
+  "oracle_match": {"matched": true, "cd_atendimento_present": true},
+  "send_result": {"status": "accepted", "provider_message_id": "mock-provider-id"}
+}

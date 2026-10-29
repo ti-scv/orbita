@@ -1,19 +1,19 @@
 import type { PageName, SectionPermissions, Session } from "./types";
 
 export const sectionLabels: Record<string, string> = {
-  autoagenda: "Autoagendamento",
+  autoagenda: "Autoagendamento", checkin: "Check-in",
   costs: "Custos Meta", overview: "Visão geral", appointments: "Agendamentos", groups: "Grupos", messages: "Mensagens",
   issues: "Pendências", campaigns: "Importa CROSS", reports: "Relatórios",
   operationsAdmin: "Administração", settings: "Configurações", users: "Usuários", reportWhatsApp: "WhatsApp dos relatórios",
 };
 export function defaultPermissions(role: string): SectionPermissions {
   return Object.fromEntries(Object.keys(sectionLabels).map(section => [section,
-    section === "reportWhatsApp" ? "none" : ["costs", "autoagenda"].includes(section) && role !== "admin" ? "none" : role === "admin" || (role === "operator" && !["settings", "operationsAdmin", "users"].includes(section)) ? "write" : section === "users" ? "none" : "read"]));
+    section === "reportWhatsApp" ? "none" : ["costs", "autoagenda", "checkin"].includes(section) && role !== "admin" ? "none" : role === "admin" || (role === "operator" && !["settings", "operationsAdmin", "users"].includes(section)) ? "write" : section === "users" ? "none" : "read"]));
 }
 export function permissionsFor(session: Session, unit: string): SectionPermissions {
   if (!session.units.some(u=>u.slug===unit)) return Object.fromEntries(Object.keys(sectionLabels).map(key=>[key,"none"]));
   const existing = session.permissions?.[unit];
-  return existing ? { autoagenda: "none", ...existing } : defaultPermissions(session.roles[unit] || "viewer");
+  return existing ? { autoagenda: "none", checkin: "none", ...existing } : defaultPermissions(session.roles[unit] || "viewer");
 }
 export function canUseReportWhatsApp(session: Session, unit: string, write = false): boolean {
   const level = permissionsFor(session, unit).reportWhatsApp || "none";
