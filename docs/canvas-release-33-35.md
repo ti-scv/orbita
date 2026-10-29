@@ -39,3 +39,7 @@ Backend em PostgreSQL isolado, com dados de apoio montados e chaves descartávei
 ## Compatibilidade de volta para 32c69c7
 
 Em 29/10/2026, uma cópia descartável do banco do staging 8105, já com core até 0012, foi restaurada em PostgreSQL isolado. A API e o painel das imagens `canvas-32c69c7` foram iniciados nessa cópia, sem reverter migrações. Login, opções e lista de usuários e gravação de acesso existente retornaram HTTP 200; a lista de relatórios da unidade qa33c retornou HTTP 200 com um relatório. O painel antigo abriu após login e a tela de relatórios carregou. Não houve HTTP 500 ou traceback nos logs da API durante as verificações. A gravação testada preservou os valores enviados; o teste não cobre todas as combinações de dados ou ações posteriores ao rollback.
+
+## Verificação final 37s
+
+O staging descartável 8105 foi reconstruído com a API e o painel atualizados; painel HTTP 200 e migrações sem pendências. Em Node 24, 665 testes de frontend em 75 arquivos, TypeScript, ESLint de hooks e build passaram; o build mantém o aviso de chunk acima de 500 kB. A suíte direcionada de usuários e permissões de relatórios passou: 51 testes em PostgreSQL isolado. O aviso preexistente de divergência de modelos em `operations` permanece.
