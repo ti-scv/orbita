@@ -164,7 +164,6 @@ class ReportWhatsAppView(APIView):
                 )
                 action = inp.validated_data["action"]
                 if action == "configure":
-                    get_unit(request, ["admin"])
                     data = ConfigurationInput(data=inp.validated_data)
                     data.is_valid(raise_exception=True)
                     data = data.validated_data

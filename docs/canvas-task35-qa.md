@@ -26,7 +26,7 @@ Ainda faltam implementação, migração reversível, testes positivos e negativ
 
 ## Implementação parcial: WhatsApp dos relatórios
 
-A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, seu padrão é `none`. O superusuário possui edição. Em vínculos locais, remotos e limites das conexões existentes, a migração `core.0008_report_whatsapp_permission` grava o nível efetivo anterior de `reports` apenas para o perfil administrador; nos demais perfis grava `none`. Valores explícitos já presentes são preservados. A interseção federada continua exigida. O estado precisa de `read`; conectar e desconectar precisam de `write`. A ação de configuração continua exigindo também perfil administrador. A sessão já publica as permissões efetivas por unidade.
+A seção `reportWhatsApp` é independente de `reports`: sem valor explícito, seu padrão é `none`. O superusuário possui edição. Em vínculos locais, remotos e limites das conexões existentes, a migração `core.0008_report_whatsapp_permission` grava o nível efetivo anterior de `reports` apenas para o perfil administrador; nos demais perfis grava `none`. Valores explícitos já presentes são preservados. A interseção federada continua exigida. O estado precisa de `read`; conectar e desconectar precisam de `write`. A configuração também exige edição em `reportWhatsApp`, sem exigência adicional de perfil. A sessão já publica as permissões efetivas por unidade.
 
 | Permissão | Aba | Endpoint | Teste |
 | --- | --- | --- | --- |
@@ -114,3 +114,11 @@ A listagem de conexões, concessões, automações e coletas, o inventário e as
 | --- | --- | --- | --- |
 | `reports` | Relatórios | `GET /api/v1/{report-connections,report-app-connections,report-recipients,report-grants,report-automations,report-executions,report-snapshots,report-snapshot-runs,report-requests}/` | `test_report_reads_use_reports_permission` |
 | `reports` | Relatórios | `GET /api/v1/reports/inventory/`, `report-snapshots/options/` | `test_report_reads_use_reports_permission` |
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` com ação `configure` | `test_whatsapp_configuration_uses_independent_write_permission` |
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` com ação `configure` | `test_whatsapp_configuration_uses_independent_write_permission` |
