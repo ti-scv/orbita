@@ -7,7 +7,7 @@ from core.models import PermissionRole
 from core.permissions import get_unit
 
 
-ROLE_TYPES = ("messages", "settings", "reports", "reportWhatsApp")
+ROLE_TYPES = ("overview", "messages", "groups", "issues", "settings", "reports", "reportWhatsApp")
 
 
 class PermissionRoleSerializer(serializers.ModelSerializer):
@@ -28,10 +28,12 @@ class PermissionRoleSerializer(serializers.ModelSerializer):
         return value
 
     def validate_permissions(self, value):
+        if isinstance(value, dict) and set(value) == {"messages", "settings", "reports", "reportWhatsApp"}:
+            value = {**value, **{key: value["messages"] for key in ("overview", "groups", "issues")}}
         if not isinstance(value, dict) or set(value) != set(ROLE_TYPES) or any(
             not isinstance(level, str) or level not in LEVELS for level in value.values()
         ):
-            raise serializers.ValidationError("Informe os quatro tipos com none, read ou write.")
+            raise serializers.ValidationError("Informe todas as seções com none, read ou write.")
         return value
 
 

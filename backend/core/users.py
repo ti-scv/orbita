@@ -65,8 +65,8 @@ def template_policy(role, template):
     levels = template.permissions
     overrides = {section: "none" for section in SECTIONS}
     overrides.update({
-        "overview": levels["messages"], "messages": levels["messages"],
-        "groups": levels["messages"], "issues": levels["messages"],
+        "overview": levels.get("overview", levels["messages"]), "messages": levels["messages"],
+        "groups": levels.get("groups", levels["messages"]), "issues": levels.get("issues", levels["messages"]),
         "settings": levels["settings"], "reports": levels["reports"],
         "reportWhatsApp": levels["reportWhatsApp"],
     })
@@ -256,8 +256,8 @@ class UserViewSet(viewsets.GenericViewSet):
                     raise ValidationError("Tipo de acesso não encontrado nesta unidade.")
                 levels = template.permissions
                 grant["permissions"] = {
-                    "overview": levels["messages"], "messages": levels["messages"],
-                    "groups": levels["messages"], "issues": levels["messages"],
+                    "overview": levels.get("overview", levels["messages"]), "messages": levels["messages"],
+                    "groups": levels.get("groups", levels["messages"]), "issues": levels.get("issues", levels["messages"]),
                     "settings": levels["settings"], "reports": levels["reports"],
                     "reportWhatsApp": levels["reportWhatsApp"],
                 }
