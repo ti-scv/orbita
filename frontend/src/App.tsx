@@ -16,6 +16,7 @@ import UserDirectory from "./components/UserDirectory";
 import { canAccess, permissionsFor, reconcileSession } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
+import ReportAppConnections from "./components/ReportAppConnections";
 import UnitSelector from "./components/UnitSelector";
 import { readRoute, routePath } from "./routes";
 import ModalContent from "./components/ModalContent";
@@ -236,6 +237,14 @@ function Workspace({
   const isRemote = unit.startsWith("remote:");
   useEffect(() => { setSettingsTab(null); }, [unit]);
   useEffect(() => { if (page !== "settings") setSettingsTab(null); }, [page]);
+  useEffect(() => {
+    if (page !== "reports" || new URLSearchParams(window.location.search).get("reportTab") !== "appSources") return;
+    if (!configurationEntries.some(item => item.id === "appSources")) return;
+    window.history.replaceState({}, "", `${routePath("settings")}?unit=${encodeURIComponent(unit)}`);
+    setPage("settings");
+    setSettingsTab("appSources");
+  }, [page, unit, policy.settings, policy.reports, actualRole]);
+
   function changeUnit(slug: string) {
     setCanvasId(null);
     setData(null);
@@ -930,6 +939,7 @@ function Workspace({
                     <UnitDirectory unit={unit} editable={role === "admin"} onChanged={onSessionRefresh} />
                   )}
 
+                  {settingsTab === "appSources" && role === "admin" && !isRemote && <ReportAppConnections key={unit} unit={unit} />}
                   {settingsTab === "instances" &&
                     role === "admin" &&
                     !isRemote && (

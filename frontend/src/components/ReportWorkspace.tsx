@@ -1,6 +1,5 @@
 import { friendlyDatabaseName } from "../reportLabels";
 import ReportDataPreview from "./ReportDataPreview";
-import ReportAppConnections from "./ReportAppConnections";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
 import Select from "./Select";
@@ -342,7 +341,7 @@ export default function ReportWorkspace({
   operate: boolean;
 }) {
   const initialTab = new URLSearchParams(location.search).get("reportTab");
-  const initial = (initialTab === "review" ? "components" : initialTab === "grants" ? "recipients" : initialTab === "components" && new URLSearchParams(location.search).get("componentCategory") === "collection" ? "snapshots" : initialTab) as Tab;
+  const initial = (initialTab === "appSources" ? "reports" : initialTab === "review" ? "components" : initialTab === "grants" ? "recipients" : initialTab === "components" && new URLSearchParams(location.search).get("componentCategory") === "collection" ? "snapshots" : initialTab) as Tab;
   const [tab, setTab] = useState<Tab>(initial in names ? initial : "reports"),
     [rows, setRows] = useState<Row[]>([]),
     [loadedScope, setLoadedScope] = useState(""),
@@ -763,7 +762,7 @@ export default function ReportWorkspace({
     <div className="report-workspace">
       <div className="report-tabs" role="tablist" aria-label="Relatórios" onKeyDown={navigateTabs}>
         {(Object.keys(names) as Tab[])
-          .filter((t) => t !== "grants" && t !== "snapshots" && (admin || t === "reports" || t === "executions"))
+          .filter((t) => t !== "grants" && t !== "snapshots" && t !== "appSources" && (admin || t === "reports" || t === "executions"))
           .map((t) => {
             const Icon=tabIcons[t];
             return <button
@@ -791,7 +790,7 @@ export default function ReportWorkspace({
           {error}
         </div>
       )}
-      {tab === "appSources" ? <ReportAppConnections key={unit} unit={unit}/> : tab === "whatsapp" ? <ReportWhatsApp unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
+      {tab === "whatsapp" ? <ReportWhatsApp unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
       {admin && inventory?.legacy_import?.issues?.length > 0 && (
         <details className="report-inventory">
           <summary>
@@ -1037,8 +1036,8 @@ export default function ReportWorkspace({
                             <Edit3 size={14} />
                           </button>
                         )}
-                        {admin && (tab === "reports" || tab === "connections") && (
-                          <RemovalButton unit={unit} resource={resources[tab]} active={tab === "reports" && !!r.enabled} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
+                        {admin && tab === "connections" && (
+                          <RemovalButton unit={unit} resource={resources[tab]} row={{ id: r.id, name: r.name, version: r.version }} kind="conexão" onChanged={() => setRevision(n => n + 1)} />
                         )}
                         {admin && isReports && (
                           <button
@@ -1163,6 +1162,11 @@ export default function ReportWorkspace({
                     Testar consulta salva
                   </button>
                 )}
+              {admin && modal.kind === "edit" && modal.tab === "reports" && modal.row.id && (
+                <RemovalButton unit={unit} resource="reports" active={!!modal.row.enabled}
+                  row={{ id: modal.row.id, name: modal.row.name, version: modal.row.version }}
+                  kind="relatório" showLabel onChanged={() => { setModal(null); setRevision(n => n + 1); }} />
+              )}
               <div className="report-dialog-footer-actions">
                 <button
                   type="button"

@@ -10,6 +10,7 @@ export function settingsEntries(policy: SectionPermissions, role: string, remote
     add("units", "Unidades", "Instância", section);
   }
   if (!remote && can("users")) add("users", "Usuários e acessos", "Instância", "users");
+  if (!remote && role === "admin" && (policy.settings === "write" || policy.reports === "write")) add("appSources", "Instâncias dos apps", "Integrações", policy.settings === "write" ? "settings" : "reports");
   if (can("settings")) {
     if (role === "admin" && policy.settings === "write") {
       if (!remote) { add("instances", "Instâncias remotas", "Integrações", "settings"); add("oracle", "Oracle", "Integrações", "settings"); add("oracleAgendas", "Agendas e templates Oracle", "Operação", "settings"); }
