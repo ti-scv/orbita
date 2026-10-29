@@ -133,6 +133,20 @@ def chart(c,b,w,h):
 def table_parts(b,w,h):
     cols=b["columns"];rows=b["rows"]
     if not cols:return []
+    # Split very wide tables into column groups before splitting their rows.
+    count=max(1,int(w//48))
+    if len(cols)>count:
+        parts=[]
+        for start in range(0,len(cols),count):
+            group=dict(b)
+            group["columns"]=cols[start:start+count]
+            group["rows"]=[row[start:start+count] for row in rows]
+            group["options"]=dict(b["options"])
+            if group["options"].get("column_widths"):
+                group["options"]["column_widths"]=group["options"]["column_widths"][start:start+count]
+            parts.extend(table_parts(group,w,h))
+            if len(parts)>200:fail("Tabela excede 200 páginas.")
+        return parts
     data=[[Paragraph(escape(display(v)),style(b,b["options"].get("font_size",10)*.75)) for v in row] for row in [cols,*[[display_cell(v, cols[i]) for i, v in enumerate(row)] for row in rows]]]
     weights=b["options"].get("column_widths") or [1]*len(cols)
     t=LongTable(data,colWidths=[w*v/sum(weights) for v in weights],repeatRows=1,splitInRow=1,hAlign="LEFT")
