@@ -11,7 +11,8 @@ from core.models import Membership, Unit
 def test_shared_reads_allow_messages_permission(path, level, allowed):
     unit = Unit.objects.create(slug="ame", name="AME")
     user = get_user_model().objects.create_user("pessoa")
-    Membership.objects.create(user=user, unit=unit, role="admin", permissions={"messages": level, "appointments": "none", "issues": "none", "groups": "none", "campaigns": "none"})
+    section = "groups" if "group=" in path else "issues" if "operational_pending=" in path else "messages"
+    Membership.objects.create(user=user, unit=unit, role="admin", permissions={"messages": "none", "appointments": "none", "issues": "none", "groups": "none", "campaigns": "none", section: level})
     client = APIClient()
     client.force_authenticate(user)
     response = client.get("/api/v1/" + path)

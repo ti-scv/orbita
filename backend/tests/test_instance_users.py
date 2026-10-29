@@ -159,5 +159,6 @@ def test_template_with_remote_ceiling_and_descriptive_error(setup, role):
     body["username"] += "x"
     body["grants"][1]["permissions"]["reportWhatsApp"] = "read"
     result = post(setup, "users", body)
-    assert result.status_code == 400
-    assert "Unidade QA" in str(result.data) and "WhatsApp" in str(result.data)
+    assert result.status_code == 200
+    assert result.data["limitations"] == [{"unit": "Unidade QA", "sections": ["WhatsApp dos relatórios"]}]
+    assert next(g for g in result.data["grants"] if g["unit"].startswith("remote:"))["permissions"]["reportWhatsApp"] == "none"
