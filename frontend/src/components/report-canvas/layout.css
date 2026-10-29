@@ -324,3 +324,11 @@
   justify-content: center;
   pointer-events: auto;
 }
+
+/* The sheet stays white regardless of the application theme. */
+.cv-root .cv-page-empty-wrap .cv-empty-state-title { color: #0f2438; }
+.cv-root .cv-page-empty-wrap .cv-empty-state-desc { color: #3b5266; }
+.cv-root .cv-page-empty-wrap .cv-empty-state-action {
+  color: #075b94; background: #fff; border-color: #75869a;
+}
+.cv-root .cv-page-empty-wrap .cv-empty-state-action:hover { background: #eef3f8; color: #064b7b; }

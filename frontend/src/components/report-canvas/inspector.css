@@ -1324,3 +1324,5 @@
 [data-theme="dark"] .cv-root .cv-swatch-btn {
   border-color: #a8b8cc;
 }
+
+[data-theme="dark"] .cv-root .cv-swatch-btn { box-shadow: 0 0 0 1px #d5e1ed; }
