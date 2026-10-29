@@ -88,3 +88,10 @@ A migração `core.0011_preserve_settings_access` grava em `settings` o maior n�
 | `settings` | Usuários | `GET /api/v1/users/options/` | `test_settings_controls_user_options_and_permission_role_write` |
 
 A ida e volta da migração e a preservação de edição posterior são exercitadas por `test_settings_migration_preserves_and_reverses`.
+
+A continuação incluiu `settings` para `preparations`, `layouts`, `policies`, `sources`, `flow-rules` e `flow-runs`. As permissões legadas já aceitas continuam válidas para preservar outros fluxos; `templates` já aceitava `settings`. A migração 0011 já inclui o antigo `operationsAdmin` na consolidação.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `settings` | Configurações | `GET /api/v1/{preparations,layouts,policies,sources,flow-rules,flow-runs,templates}/` | `test_configuration_resources_allow_settings_without_legacy_permissions` |
+| `settings` | Configurações | `POST /api/v1/{preparations,layouts,policies,sources,flow-rules,templates}/` | `test_configuration_writes_require_settings_write` |

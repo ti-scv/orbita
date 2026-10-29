@@ -67,3 +67,35 @@ def test_settings_controls_user_options_and_permission_role_write():
     assert client.get("/api/v1/users/options/").data["units"][0]["editable"] is True
     policy = {"messages": "read", "settings": "none", "reports": "read", "reportWhatsApp": "none"}
     assert client.post("/api/v1/permission-roles/", {"name": "Equipe", "permissions": policy}, format="json").status_code == 201
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("resource", ["preparations", "layouts", "policies", "sources", "flow-rules", "flow-runs", "templates"])
+@pytest.mark.parametrize("level,expected", [("none", 403), ("read", 200)])
+def test_configuration_resources_allow_settings_without_legacy_permissions(resource, level, expected):
+    unit = Unit.objects.create(slug="ame", name="AME")
+    user = get_user_model().objects.create_user("pessoa")
+    Membership.objects.create(user=user, unit=unit, role="admin", permissions={"settings": level, "operationsAdmin": "none", "campaigns": "none"})
+    client = APIClient()
+    client.force_authenticate(user)
+    response = client.get(f"/api/v1/{resource}/")
+    assert response.status_code == expected, (resource, response.data)
+    if expected == 403:
+        assert "permissão" in str(response.data).lower()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("resource", ["preparations", "layouts", "policies", "sources", "flow-rules", "templates"])
+@pytest.mark.parametrize("level,allowed", [("none", False), ("read", False), ("write", True)])
+def test_configuration_writes_require_settings_write(resource, level, allowed):
+    unit = Unit.objects.create(slug="ame", name="AME")
+    user = get_user_model().objects.create_user("pessoa")
+    Membership.objects.create(user=user, unit=unit, role="admin", permissions={"settings": level, "operationsAdmin": "none", "campaigns": "none"})
+    client = APIClient()
+    client.force_authenticate(user)
+    response = client.post(f"/api/v1/{resource}/", {}, format="json")
+    if allowed:
+        assert response.status_code == 400, (resource, response.data)
+    else:
+        assert response.status_code == 403, (resource, response.data)
+        assert "permissão" in str(response.data).lower()
