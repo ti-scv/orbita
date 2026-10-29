@@ -25,6 +25,11 @@ def test_defaults_and_isolation(data):
     config = Configuration.objects.create(unit=unit)
     assert not any([config.enabled, config.booking_enabled, config.appointment_enabled, config.oracle_enabled])
     assert (config.channel, config.lead_value, config.lead_unit, config.weekdays) == ("meta", 24, "hours", [0, 1, 2, 3, 4])
+    config.holidays = ["2026-02-30"]
+    with pytest.raises(ValidationError): config.save()
+    config.holidays = []
+    config.lead_value = 0
+    with pytest.raises(ValidationError): config.save()
     with pytest.raises(ValidationError): Configuration.objects.create(unit=other)
     with pytest.raises(ValidationError): CheckIn.objects.create(unit=other, appointment=appointment)
     with pytest.raises(ValidationError): CheckIn.objects.create(unit=unit)
