@@ -20,7 +20,7 @@ from core.access import (
     role_permissions,
     validate_permissions,
 )
-from core.models import Audit, Membership, PermissionRole, RemoteInstance, RemoteMembership, Unit, UserAccessProfile
+from core.models import Audit, Membership, PermissionRole, RemoteInstance, RemoteMembership, SyncedUserIdentity, Unit, UserAccessProfile
 from core.permissions import get_unit
 
 
@@ -225,6 +225,58 @@ class UserViewSet(viewsets.GenericViewSet):
         get_unit(request)
         return Response({"units": scope_options(request.user), "sections": SECTIONS})
 
+    @action(detail=False, methods=["get"], url_path="synced")
+    def synced(self, request):
+        anchor = get_unit(request, ["admin"])
+        identities = SyncedUserIdentity.objects.filter(connection__local_unit=anchor).select_related("connection").order_by("login", "id")
+        return Response([{"id": item.pk, "connection": str(item.connection_id),
+                          "unit": item.connection.name, "remote_user_id": item.remote_user_id,
+                          "login": item.login, "name": item.name, "email": item.email,
+                          "state": item.state, "removed_at_origin": item.removed_at_origin,
+                          "user_id": item.user_id, "last_synced_at": item.last_synced_at}
+                         for item in identities])
+
+    @action(detail=True, methods=["post"], url_path="resolve-sync-conflict")
+    def resolve_sync_conflict(self, request, pk=None):
+        anchor = get_unit(request, ["admin"])
+        login = request.data.get("username", "")
+        field = serializers.RegexField(r"^[\w.@+-]{3,150}$")
+        login = field.run_validation(login)
+        with transaction.atomic():
+            item = get_object_or_404(SyncedUserIdentity.objects.select_for_update(),
+                                     pk=pk, connection__local_unit=anchor)
+            if item.state != SyncedUserIdentity.State.CONFLICT or item.removed_at_origin:
+                raise ValidationError("O conflito não está disponível para decisão.")
+            if get_user_model().objects.filter(username=login).exists():
+                raise ValidationError("Login indisponível.")
+            user = get_user_model()(username=login, first_name=item.name, email=item.email, is_active=False)
+            user.set_unusable_password()
+            user.save()
+            UserAccessProfile.objects.create(user=user, managing_unit=anchor, explicit_units=True)
+            item.user, item.state = user, SyncedUserIdentity.State.PENDING
+            item.save(update_fields=["user", "state"])
+            Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_resolved",
+                                 object_id=str(item.pk), details={"user_id": user.pk})
+        return Response({"id": item.pk, "user_id": user.pk, "state": item.state})
+
+    @action(detail=True, methods=["post"], url_path="release-synced")
+    def release_synced(self, request, pk=None):
+        anchor = get_unit(request, ["admin"])
+        with transaction.atomic():
+            item = get_object_or_404(SyncedUserIdentity.objects.select_for_update(),
+                                     pk=pk, connection__local_unit=anchor)
+            if item.state != SyncedUserIdentity.State.PENDING or item.removed_at_origin or not item.user_id:
+                raise ValidationError("Usuário não está disponível para liberação.")
+            if not request.data.get("password") or not request.data.get("active") or not request.data.get("grants"):
+                raise ValidationError("Informe senha, acesso ativo e ao menos uma unidade.")
+            self._releasing_synced = item.user_id
+            result = self.configure_user(request, str(item.user_id))
+            item.state = SyncedUserIdentity.State.RELEASED
+            item.save(update_fields=["state"])
+            Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.released",
+                                 object_id=str(item.pk), details={"user_id": item.user_id})
+            return result
+
     @extend_schema(request=UserInput, responses=UserOutput)
     def create(self, request):
         return self.configure_user(request)
@@ -303,6 +355,11 @@ class UserViewSet(viewsets.GenericViewSet):
             if pk:
                 target = get_object_or_404(self.scoped_users(request, options), pk=pk)
                 user = get_user_model().objects.select_for_update().get(pk=target.pk)
+                identity = SyncedUserIdentity.objects.filter(user=user).first()
+                if identity and (identity.removed_at_origin or
+                                 (identity.state != SyncedUserIdentity.State.RELEASED and
+                                  getattr(self, "_releasing_synced", None) != user.pk)):
+                    raise PermissionDenied("Identidade pendente ou removida na origem.")
                 if user.pk == request.user.pk or user.is_superuser:
                     raise PermissionDenied("Esta conta administrativa não pode ser alterada por esta tela.")
                 profile = UserAccessProfile.objects.select_for_update().filter(user=user).first()

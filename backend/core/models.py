@@ -54,6 +54,7 @@ class InstanceAccessKey(models.Model):
     issuer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     name = models.CharField(max_length=120)
     role = models.CharField(max_length=12, choices=Membership.Role.choices)
+    export_user_identities = models.BooleanField(default=False)
     secret_hash = models.CharField(max_length=64, editable=False)
     issuance_key = models.CharField(max_length=100, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -158,3 +159,25 @@ class PermissionRole(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["unit", "name"], name="permission_role_unit_name")]
+
+
+class SyncedUserIdentity(models.Model):
+    """Identification from one remote unit; never evidence for linking a local account."""
+
+    class State(models.TextChoices):
+        PENDING = "pending", "Pendente de liberação"
+        CONFLICT = "conflict", "Conflito de login"
+        RELEASED = "released", "Liberado"
+
+    connection = models.ForeignKey(RemoteInstance, on_delete=models.PROTECT, related_name="synced_users")
+    remote_user_id = models.CharField(max_length=150)
+    login = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
+    last_synced_at = models.DateTimeField()
+    removed_at_origin = models.BooleanField(default=False)
+    state = models.CharField(max_length=12, choices=State.choices, default=State.PENDING)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="synced_identity")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["connection", "remote_user_id"], name="synced_identity_origin_unique")]

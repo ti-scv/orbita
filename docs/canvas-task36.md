@@ -1,0 +1,51 @@
+# Tarefa 36 — investigação da release 7354299
+
+## Cadastro e comunicação
+
+`RemoteInstance` (`backend/core/models.py`) associa uma unidade local à identidade da instalação e ao slug remoto. A restrição de unicidade usa os três valores. `RemoteInstanceViewSet.configure_connection` (`backend/core/federation.py`) exige administrador da unidade, valida o manifesto antes de salvar e audita `instance.connected`. O cadastro hoje depende da disponibilidade do manifesto; não existe uma segunda chamada para sincronizar usuários.
+
+A origem emite `InstanceAccessKey`: o segredo é exibido uma vez, seu hash fica na origem e o segredo cifrado fica na conexão. `InstanceKeyAuthentication` valida chave, validade, emissor e unidade, limita o papel e autoriza somente o manifesto e recursos explicitamente permitidos. O manifesto não contém usuários. O transporte `federation_network.py` valida endereços, fixa a resolução, limita tempo e tamanho e não segue redirecionamentos. O proxy (`RemoteProxyView`) é autenticado por sessão, verifica o acesso local e retransmite apenas recursos permitidos; ele não cria usuários.
+
+## Contas e acesso
+
+A autenticação disponível é local: `LoginView` chama `authenticate` com login e senha; `session` retorna unidades e políticas. Não foi encontrado login federado nem endpoint de sincronização de usuários nesta base. A criação administrativa em `core/users.py` exige senha local e rejeita login já existente. O comando `bootstrap` também cria conta local. Nenhum desses fluxos deve ser confundido com importação de identidade externa.
+
+`Membership` e `RemoteMembership` concedem acesso. Para preservar comportamento anterior, `remote_access` pode derivar acesso remoto da associação local quando não há `UserAccessProfile.explicit_units`. `UserAccessProfile.managing_unit` permite incluir na listagem administrativa contas sem vínculos. O fluxo administrativo aplica os tipos da tarefa 35 e registra `user.access_configured`. O controle por seção ocorre no backend (`SectionPermission` e checagens do proxy); a sessão e o login são exceções necessárias para exibir o estado de uma conta sem unidades.
+
+## Pontos a resolver na implementação
+
+- Criar identidade de origem persistente por instalação, unidade e id remoto e marcador explícito de pendência. Novas contas devem ter senha inutilizável, perfil de unidades explícitas e nenhum vínculo. A atualização não pode criar ou restaurar vínculos nem mudar acesso já liberado.
+- Login igual não prova que duas identidades sejam da mesma pessoa. Vincular automaticamente por nome de usuário pode entregar uma conta existente a outra pessoa; conflitos precisam de tratamento explícito, sem alterar contas antigas. A deduplicação entre origens requer identidade confiável ou resolução administrativa.
+- A chave atual não autoriza administração de usuários. Uma exportação de identificação precisa de escopo específico, sem senhas ou permissões, validação de integridade e paginação completa antes de marcar desaparecidos. Desativação/remoção na origem não deve excluir a conta mãe nem presumir remoção após falha parcial.
+- O cadastro deve permanecer salvo se a sincronização posterior falhar, com erro auditado e nova tentativa disponível. Não enfraquecer a validação de identidade do manifesto nem a proteção do transporte para obter isso.
+- A liberação deve exigir administrador, escolher acessos e tipos locais e ser auditada; a sessão precisa sinalizar pendência sem conceder unidades. São necessários testes de isolamento, colisões, repetição, remoção e duas instâncias, além de migração aditiva reversível.
+
+## Estado
+
+Investigação realizada; sincronização, migração, backend, interface e testes da tarefa ainda não foram implementados. Nenhum banco ou ambiente de execução foi alterado. A porta específica para staging desta etapa é 8110; a porta 8091 está expressamente proibida por `task-36a.md`.
+
+## Validação 36d — 29/10/2026
+
+Esta seção atualiza o estado anterior: o backend e a interface já estão implementados na branch. A validação foi feita em `8a22253`, em staging descartável e com dados fictícios. Nenhum recurso de produção foi usado.
+
+Duas instalações Django/Gunicorn independentes usam PostgreSQL e redes Docker separados (`orbita-36d-mae`, `orbita-36d-unidade`); a API da unidade também se conecta à rede da mãe para a comunicação federada. Os painéis estão em `127.0.0.1:8110` e `127.0.0.1:8111` no scv59, em modo simulado. A mãe está disponível para revisão com usuário `teste36`; a senha está em `/workspace/orbita-canvas/teste36.txt` no workspace do solicitante. Estado observado por HTTP autenticado: `pendente36a` e `pendente36b` pendentes, `teste36` em conflito, `liberado36` liberado, e `desativado36` liberado anteriormente e marcado como removido na origem. Para acessar localmente, `ssh -L 8110:127.0.0.1:8110 scv59` e abrir `http://127.0.0.1:8110`.
+
+### Comandos e resultados
+
+- Builds: `docker build -t orbita-36d-api ./backend` e `docker build -t orbita-36d-panel ./frontend`: sucesso. Os bancos são volumes novos `orbita-36d-mae-db` e `orbita-36d-unidade-db`; nenhum volume do compose padrão foi utilizado.
+- Em cada banco recém-criado, executados `python manage.py migrate --noinput`, `python manage.py migrate core 0012 --noinput` e novamente `python manage.py migrate --noinput` em contêineres com env próprio: `0014` e `0013` revertidas e reaplicadas com sucesso. A reversão de 0013 apaga a tabela e os dados das identidades sincronizadas; a de 0014 apaga o campo de autorização de exportação das chaves. Reaplicar não recupera esses dados. Contas e concessões existentes em outras tabelas não são restauradas automaticamente.
+- Ensaio com APIClient autenticado na mãe e chamadas HTTP reais da mãe para a unidade: `docker exec -i orbita-36d-unidade-api python manage.py shell < /tmp/orbita-36d/origin.py` e `docker exec -i orbita-36d-mae-api python manage.py shell < /tmp/orbita-36d/mother.py`; scripts e logs de execução em `/tmp/orbita-36d/`. Emissão de chave com exportação explícita, cadastro da conexão e sincronização automática retornaram 200 e cinco identidades. A identidade colidente não foi vinculada; contas novas ficaram inativas, sem senha utilizável ou associação; três rotas representativas responderam 403 mesmo com autenticação forçada. Liberação com concessão local retornou 200; nova sincronização retornou 200, sem duplicar nem revogar a concessão. Após trocar temporariamente a URL por hostname inexistente, sincronização retornou 502 com erro simples, preservando a conexão; a URL foi restaurada e a tentativa posterior passou. Auditorias `user_sync.completed`, `user_sync.released` e `user_sync.failed` verificadas.
+- Após liberar `desativado36`, desativação na unidade e nova sincronização (`/tmp/orbita-36d/release_removed.py` e `removed.py`) marcaram a identidade como removida e desativaram a conta na mãe. A conta liberada `liberado36` permaneceu ativa.
+- `pytest -q -p no:cacheprovider tests`, com PostgreSQL descartável em contêiner, `REDIS_URL` vazio e envio simulado, na branch: 1275 passaram, 5 ignorados, 2 falharam e 7 erros. A mesma suíte em `7354299`, em outro banco/rede: 1273 passaram, 5 ignorados, as mesmas 2 falhas e 7 erros. Falhas comuns: `test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates`. Os 7 erros de `test_operational_sql.py` eram falta de `ORACLE_CREDENTIALS_KEY` no ambiente de teste; repetidos na branch com chave Fernet fictícia e banco de teste independente: 7 passaram. Nenhuma falha nova identificada nesta comparação; `test_report_catalog` passou nas duas suítes PostgreSQL.
+- `npm test` em contêiner Node: primeira execução concorrente às duas suítes backend teve 9 timeouts; repetição integral `npm test -- --maxWorkers=2` passou: 75 arquivos, 665 testes. Build do frontend passou.
+- `git merge-tree --write-tree c6d6d45 8a22253` retornou árvore `492a5c3d339b5d61e12527ee12958dba72ac9080` sem conflitos; sem alterar branch ou fazer merge. A branch `feature/canvas-release-merge` avançou para `ff4fa24`; `git merge-tree --write-tree ff4fa24 8a22253` também foi limpo, árvore `2944d4cbf6ce925cd55cf97c6db22ea8f530ba2f`.
+
+Limites: três rotas representativas foram verificadas diretamente para a conta pendente, além da inatividade e senha inutilizável; não foi feita uma enumeração exaustiva de todas as rotas.
+
+### Complemento da validação 36d
+
+- Com proxy HTTP descartável que responde ao manifesto e fecha a conexão na exportação, `docker exec -i orbita-36d-mae-api python manage.py shell < /tmp/orbita-36d/failure-create.py`: cadastro 200, `user_sync.ok=false` e `connection_failed`; a conexão persistiu e nova tentativa retornou 200. A unidade temporária criada para este ensaio foi removida.
+- `/tmp/orbita-36d/type-test.py` liberou `tipo36` com `permission_role` de um tipo válido da tarefa 35: 200, associação com o tipo confirmada no banco; depois a origem foi desativada para preservar somente um liberado ativo na revisão. Uma primeira tentativa com tipo incompleto inserido diretamente no banco produziu 500; esse dado não representava um tipo válido criado pela API.
+- Navegador Chromium/Playwright em `orbita-t31b-qa`, acesso por 8110, login e Configurações → Usuários e acessos: pendências, conflito, liberação e desativação exibidos. Evidência: [usuarios.png](evidencias-task36d/usuarios.png).
+
+A suíte completa da branch foi repetida com `ORACLE_CREDENTIALS_KEY` fictícia e banco PostgreSQL de teste independente: 1282 passaram, 5 ignorados e 2 falharam em 312 segundos. As duas falhas são exatamente as observadas em `7354299` acima; não houve erros de setup nessa repetição. Logs: `docker logs orbita-36d-tests-configured`.
