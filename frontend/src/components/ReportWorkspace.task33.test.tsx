@@ -71,7 +71,7 @@ it("busca, adiciona, ordena e remove relatórios preservando os dados da composi
     if (path === "reports/1") return {parameter_audit: {items: [], component_issues: []}};
     if (path === "reports/1/configure" && method === "POST") return {id: 1};
     if (path.endsWith("/users")) return [];
-    return {results: path === "reports" ? reports : [], count: reports.length, next: null};
+    return {results: path === "reports" || path === "reports/composition-catalog" ? reports : [], count: reports.length, next: null};
   });
   render(<ReportWorkspace unit="ame" admin operate />);
   fireEvent.click(await screen.findByRole("button", {name: "Editar Composto"}));
@@ -88,4 +88,27 @@ it("busca, adiciona, ordena e remove relatórios preservando os dados da composi
   await vi.waitFor(() => expect(vi.mocked(request).mock.calls.some(call => call[0] === "reports/1/configure")).toBe(true));
   const saved = vi.mocked(request).mock.calls.find(call => call[0] === "reports/1/configure")![2] as any;
   expect(saved.components).toEqual([{code: "antigo", parameters: {limite: 3}, extra: "preservado"}, {code: "novo"}]);
+});
+
+it("agrupa unidades e adiciona relatórios de mesmo código por ID", async () => {
+  const row = { id: 1, name: "Composto", code: "pai", version: 1, source: "composite", output_format: "pdf", parameter_schema: {}, components: [], keywords: [] };
+  const catalog = [row, {id: 2, name: "Vendas", code: "vendas", unit_slug: "ame", unit_name: "AME"}, {id: 3, name: "Vendas", code: "vendas", unit_slug: "outra", unit_name: "Outra unidade"}];
+  vi.mocked(request).mockImplementation(async (path: string, method?: string) => {
+    if (path === "reports/inventory") return {};
+    if (path === "reports/1") return {parameter_audit: {items: [], component_issues: []}};
+    if (path === "reports/1/configure" && method === "POST") return {id: 1};
+    if (path.endsWith("/users")) return [];
+    return {results: path === "reports/composition-catalog" ? catalog : path === "reports" ? [row] : [], next: null};
+  });
+  render(<ReportWorkspace unit="ame" admin operate />);
+  fireEvent.click(await screen.findByRole("button", {name: "Editar Composto"}));
+  const dialog = screen.getByRole("dialog", {name: /Editar · Relatórios/});
+  fireEvent.change(within(dialog).getByLabelText("Buscar relatórios por nome"), {target: {value: "vendas"}});
+  const other = await within(dialog).findByRole("list", {name: "Resultados da busca · Outra unidade"});
+  fireEvent.click(within(other).getByRole("button", {name: "Adicionar Vendas ID 3"}));
+  fireEvent.click(within(dialog).getByRole("button", {name: "Adicionar Vendas ID 2"}));
+  fireEvent.click(within(dialog).getByRole("button", {name: /Salvar/}));
+  await vi.waitFor(() => expect(vi.mocked(request).mock.calls.some(call => call[0] === "reports/1/configure")).toBe(true));
+  const saved = vi.mocked(request).mock.calls.find(call => call[0] === "reports/1/configure")![2] as any;
+  expect(saved.components).toEqual([{code: "vendas", report_id: 3}, {code: "vendas"}]);
 });

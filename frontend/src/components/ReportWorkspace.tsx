@@ -469,7 +469,7 @@ export default function ReportWorkspace({
     let alive = true;
     setCompositionCatalog([]);
     setCompositionLoading(true);
-    all("reports", unit, "all").then(items => { if (alive) setCompositionCatalog(items); })
+    all("reports/composition-catalog", unit).then(items => { if (alive) setCompositionCatalog(items); })
       .catch(e => { if (alive) setError(e.message); })
       .finally(() => { if (alive) setCompositionLoading(false); });
     return () => { alive = false; };
@@ -1386,20 +1386,28 @@ export default function ReportWorkspace({
                           <input value={componentSearch} onChange={e => setComponentSearch(e.target.value)} />
                         </Field>
                         {compositionLoading && <p role="status">Carregando relatórios…</p>}
-                        {componentSearch.trim() && !compositionLoading && !compositionCatalog.some(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.code === r.code)) && <p role="status">Nenhum relatório encontrado.</p>}
-                        {componentSearch.trim() && <ul className="report-composition-list" aria-label="Resultados da busca">
-                          {compositionCatalog.filter(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.code === r.code)).map(r => <li key={r.id}>
-                            <span>{r.name} <small>· {unit} · ID {r.id} · {r.code}</small></span>
-                            <button type="button" className="button" aria-label={`Adicionar ${r.name} ID ${r.id}`} onClick={() => setComponents(current => [...current, {code: r.code}])}>Adicionar</button>
-                          </li>)}
-                        </ul>}
+                        {(() => {
+                          const matches = compositionCatalog.filter(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.report_id ? c.report_id === r.id : (!r.unit_slug || r.unit_slug === unit) && c.code === r.code));
+                          const groups = Array.from(new Set(matches.map(r => r.unit_name || r.unit_slug || unit)));
+                          if (!componentSearch.trim()) return null;
+                          if (!compositionLoading && !matches.length) return <p role="status">Nenhum relatório encontrado.</p>;
+                          return groups.map(group => <div key={group}>
+                            <h4>{group}</h4>
+                            <ul className="report-composition-list" aria-label={`Resultados da busca · ${group}`}>
+                              {matches.filter(r => (r.unit_name || r.unit_slug || unit) === group).map(r => <li key={r.id}>
+                                <span>{r.name} <small>· {r.unit_name || r.unit_slug || unit} · ID {r.id} · {r.code}</small></span>
+                                <button type="button" className="button" aria-label={`Adicionar ${r.name} ID ${r.id}`} onClick={() => setComponents(current => [...current, r.unit_slug && r.unit_slug !== unit ? {code: r.code, report_id: r.id} : {code: r.code}])}>Adicionar</button>
+                              </li>)}
+                            </ul>
+                          </div>);
+                        })()}
                         <h3>Relatórios adicionados</h3>
                         {components.length === 0 ? <p>Nenhum relatório adicionado.</p> : <ol className="report-composition-list">
                           {components.map((component, index) => {
-                            const report = compositionCatalog.find(r => r.code === component.code);
-                            const name = report?.name || `Relatório não localizado (${component.code || "sem código"})`;
+                            const report = compositionCatalog.find(r => component.report_id ? r.id === component.report_id : (!r.unit_slug || r.unit_slug === unit) && r.code === component.code);
+                            const name = report?.name || (component.unavailable ? "Relatório indisponível" : `Relatório não localizado (${component.code || "sem código"})`);
                             return <li key={index}>
-                              <span>{name} <small>· {unit}{report ? ` · ID ${report.id}` : ""} · {component.code}</small></span>
+                              <span>{name} {!component.unavailable && <small>· {report?.unit_name || report?.unit_slug || unit}{report ? ` · ID ${report.id}` : ""} · {component.code}</small>}</span>
                               <div className="report-composition-actions">
                                 <button type="button" className="button" disabled={index === 0} aria-label={`Subir ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>Subir</button>
                                 <button type="button" className="button" disabled={index === components.length - 1} aria-label={`Descer ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; })}>Descer</button>
