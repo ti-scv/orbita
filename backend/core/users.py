@@ -243,6 +243,7 @@ class UserViewSet(viewsets.GenericViewSet):
         grants = data["grants"]
         if len(grants) > 200 or len({g["unit"] for g in grants}) != len(grants):
             raise ValidationError("Selecione unidades únicas; limite de 200 acessos por operação.")
+        limitations = []
         for grant in grants:
             if grant["unit"] not in writable:
                 raise PermissionDenied("Você não pode conceder ou alterar acesso nesta unidade.")
@@ -263,6 +264,19 @@ class UserViewSet(viewsets.GenericViewSet):
                 }
             from core.federation_auth import RANK
 
+            if option["remote"]:
+                changes = []
+                if RANK[grant["role"]] > RANK[option["max_role"]]:
+                    grant["role"] = option["max_role"]
+                    changes.append("perfil")
+                role_ceiling = role_permissions(grant["role"], {"reportWhatsApp": "write"})
+                for section, level in grant["permissions"].items():
+                    ceiling = min(option["permissions"].get(section, "none"), role_ceiling[section], key=lambda v: LEVELS[v])
+                    if LEVELS[level] > LEVELS[ceiling]:
+                        grant["permissions"][section] = ceiling
+                        changes.append(SECTIONS[section])
+                if changes:
+                    limitations.append({"unit": option["name"], "sections": changes})
             if RANK[grant["role"]] > RANK[option["max_role"]]:
                 raise ValidationError(f"O perfil excede a permissão disponível na unidade {option['name']}.")
             policy = role_permissions(
@@ -371,7 +385,7 @@ class UserViewSet(viewsets.GenericViewSet):
                     "active": user.is_active,
                 },
             )
-            return user_output(user, options, request.user)
+            return {**user_output(user, options, request.user), "limitations": limitations}
 
         import hashlib
         import hmac

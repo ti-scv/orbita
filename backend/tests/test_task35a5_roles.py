@@ -128,3 +128,20 @@ def test_membership_role_migration_round_trip():
     finally:
         executor = MigrationExecutor(connection)
         executor.migrate(executor.loader.graph.leaf_nodes())
+
+@pytest.mark.django_db
+def test_remote_excess_is_limited_and_reported(setup):
+    connection = RemoteInstance.objects.create(
+        local_unit=setup["unit"], name="AME remota", base_url="http://example.test",
+        key_ciphertext="encrypted", remote_instance_id=uuid4(), remote_unit_slug="remote",
+        remote_role="admin", remote_permissions={"reports": "read", "reportWhatsApp": "none"},
+    )
+    payload = {"version": 0, "username": "limite_remoto", "password": "Senha-teste-2026!",
+               "grants": [{"unit": f"remote:{connection.pk}", "role": "admin",
+                           "permissions": {"reports": "write", "reportWhatsApp": "read"}}]}
+    response = setup["client"].post("/api/v1/users/", payload, format="json", HTTP_IDEMPOTENCY_KEY=str(uuid4()))
+    assert response.status_code == 200, response.data
+    grant = response.data["grants"][0]
+    assert grant["permissions"]["reports"] == "read"
+    assert grant["permissions"]["reportWhatsApp"] == "none"
+    assert response.data["limitations"] == [{"unit": "AME remota", "sections": ["Relatórios", "WhatsApp dos relatórios"]}]

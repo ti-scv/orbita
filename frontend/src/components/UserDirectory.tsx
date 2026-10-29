@@ -34,6 +34,7 @@ export const templatePermissions = (role: PermissionRole, sections: Record<strin
 export default function UserDirectory({unit, editable = true, onChanged}: {unit: string; editable?: boolean; onChanged?: () => Promise<void>}) {
   const [rows, setRows] = useState<UserRow[]>([]), [options, setOptions] = useState<Options>({units:[], sections:{}});
   const [revision, setRevision] = useState(0), [error, setError] = useState(""), [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
   const [roles, setRoles] = useState<Record<string, PermissionRole[]>>({});
   useEffect(() => {
@@ -64,12 +65,14 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   async function save(row:UserRow|undefined, body:unknown) {
     setBusy(true);setError("");
     try {
-      await request(query(row ? `users/${row.id}/configure` : "users",{unit}),"POST",body);
+      const result = await request<{limitations?: {unit: string; sections: string[]}[]}>(query(row ? `users/${row.id}/configure` : "users",{unit}),"POST",body);
+      setNotice((result.limitations || []).map(item => `${item.unit}: ${item.sections.join(", ")}`).join("; "));
       setRevision(v=>v+1); await onChanged?.();
     } catch(e) {setError((e as Error).message);throw e;} finally {setBusy(false);}
   }
   return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
+    {notice && <p role="status">Acessos limitados: {notice}.</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
       {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
@@ -101,7 +104,7 @@ function UserForm({row, options, roles, busy, error, revision, save}:{row?:UserR
       </div>
       <label className="checkbox-label"><input type="checkbox" disabled={!global} checked={active} onChange={e=>setActive(e.target.checked)}/>Usuário ativo</label>
       <h3>Unidades e abas</h3>
-      {limited.map(g => <p role="status" key={g.unit}>As permissões de {options.units.find(o=>o.slug===g.unit)?.name} foram limitadas ao disponível na conexão remota e serão salvas com esses níveis.</p>)}
+      {limited.map(g => { const option = options.units.find(o=>o.slug===g.unit)!; const capped = limitRemoteGrant(g, option); const changes = Object.keys(g.permissions).filter(k=>g.permissions[k] !== capped.permissions[k]).map(k=>`${options.sections[k]}: ${g.permissions[k]} → ${capped.permissions[k]}`); if (g.role !== capped.role) changes.unshift(`Perfil: ${profiles[g.role]} → ${profiles[capped.role]}`); return <p role="status" key={g.unit}>Acesso em {option.name} limitado: {changes.join(", ")}.</p>; })}
       {options.units.map(option=>{
         const grant=grants.find(g=>g.unit===option.slug);
         const selectedRole = grant?.permission_role && (roles[option.slug] || []).find(r => r.id === grant.permission_role?.id);
