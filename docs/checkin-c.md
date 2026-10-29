@@ -51,3 +51,7 @@ Verificação específica, em contêiner sem rede, SQLite temporário e transpor
 ### Fila
 
 O tick prepara e enfileira prévias de ciclos pendentes na fila `messaging` existente, sem adicionar transporte. O `send_guard` bloqueia deliberadamente todos os check-ins enquanto a revalidação de expedição não estiver implementada; portanto esta etapa isolada não envia. O interruptor do tick permanece desligado por padrão.
+
+### Revalidação inicial
+
+A guarda da fila consulta novamente a configuração, unidade, origem, estado, revisão, horário, contato, opt-out e janela comercial. Falhas bloqueiam a mensagem; a expedição permanece bloqueada mesmo após validação, até integrar confirmação de aceite e tratamento concorrente. A verificação ainda precisa de bloqueios transacionais compatíveis com a expedição, de validação do template no catálogo Meta e de testes de concorrência: não habilitar.
