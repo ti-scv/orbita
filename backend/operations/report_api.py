@@ -648,6 +648,11 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
         units = [unit.pk] if isinstance(request.auth, InstanceAccessKey) else (
             None if request.user.is_superuser else Membership.objects.filter(user=request.user).values_list("unit_id", flat=True))
         qs = self.queryset if units is None else self.queryset.filter(unit_id__in=units)
+        if request.query_params.get("kind") == "report":
+            qs = qs.filter(catalog_kind="report")
+        search = request.query_params.get("search", "").strip()
+        if search:
+            qs = qs.filter(name__icontains=search)
         results = [{"id": r.pk, "name": r.name, "code": r.code,
                     "unit_id": r.unit_id, "unit_name": r.unit.name, "unit_slug": r.unit.slug}
                    for r in qs if can_use_component(request.user, r)]

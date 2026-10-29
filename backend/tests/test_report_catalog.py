@@ -1079,3 +1079,20 @@ def test_cross_unit_composition_catalog_resolution_and_revocation(report_env):
     detail = e["client"].get(f"/api/v1/reports/{parent.pk}/?unit=ame")
     assert detail.data["components"] == [{"unavailable": True}]
     assert child.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+
+
+def test_composition_catalog_report_search_respects_unit_access(report_env):
+    e = report_env
+    other_unit = Unit.objects.create(slug="search33n", name="Unidade 33n")
+    report = ReportDefinition.objects.create(unit=other_unit, code="r33n", name="Alvo 33n", source="sql")
+    component = ReportDefinition.objects.create(unit=other_unit, code="c33n", name="Alvo componente", source="sql", catalog_kind="component")
+    path = "/api/v1/reports/composition-catalog/?unit=ame&kind=report&search=alvo"
+    assert report.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+    Membership.objects.create(user=e["user"], unit=other_unit, role="admin")
+    results = e["client"].get(path).data["results"]
+    assert [(r["id"], r["unit_slug"], r["unit_name"]) for r in results] == [(report.pk, "search33n", "Unidade 33n")]
+    assert component.pk not in {r["id"] for r in results}
+    Membership.objects.filter(user=e["user"], unit=other_unit).delete()
+    e["user"].is_superuser = True
+    e["user"].save()
+    assert report.pk in {r["id"] for r in e["client"].get(path).data["results"]}
