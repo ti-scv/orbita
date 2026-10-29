@@ -276,7 +276,11 @@ class RemoteInstanceViewSet(viewsets.ReadOnlyModelViewSet):
                 object_id=str(connection.pk),
                 details={"version": connection.version},
             )
-            return RemoteSerializer(connection).data
+            result = RemoteSerializer(connection).data
+            if not pk:
+                from core.user_sync import sync_users
+                result["user_sync"] = sync_users(connection, request.user)
+            return result
 
         return Response(
             idempotent(
@@ -296,6 +300,13 @@ class RemoteInstanceViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"])
     def configure(self, request, pk=None):
         return self.configure_connection(request, pk)
+
+    @action(detail=True, methods=["post"], url_path="sync-users")
+    def sync_users(self, request, pk=None):
+        connection = self.get_object()
+        from core.user_sync import sync_users
+        result = sync_users(connection, request.user)
+        return Response(result, status=200 if result["ok"] else 502)
 
     @extend_schema(request=InstanceVersionInput, responses=RemoteSerializer)
     @action(detail=True, methods=["post"])

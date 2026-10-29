@@ -145,6 +145,9 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0},
     "operations": {"task": "operations.tick", "schedule": 60.0},
 }
+USER_SYNC_INTERVAL_SECONDS = int(os.getenv("USER_SYNC_INTERVAL_SECONDS", "0"))
+if USER_SYNC_INTERVAL_SECONDS > 0:
+    CELERY_BEAT_SCHEDULE["sync-remote-users"] = {"task": "core.sync_remote_users", "schedule": USER_SYNC_INTERVAL_SECONDS}
 SEND_MODE = os.getenv("SEND_MODE", "simulated")
 META_REAL_ENABLED = os.getenv("META_REAL_ENABLED", "0") == "1"
 META_PILOT_TEMPLATE = os.getenv("META_PILOT_TEMPLATE", "")
