@@ -51,3 +51,29 @@ def test_role_template_is_applied_to_membership_and_session(setup):
     assert permissions["settings"] == permissions["reportWhatsApp"] == "none"
     assert setup["client"].get("/api/v1/messages/").status_code == 200
     assert setup["client"].get("/api/v1/report-whatsapp/").status_code == 403
+
+
+@pytest.mark.django_db(transaction=True)
+def test_role_migration_reverses_without_changing_memberships():
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+
+    executor = MigrationExecutor(connection)
+    executor.migrate([("core", "0008_report_whatsapp_permission")])
+    apps = executor.loader.project_state([("core", "0008_report_whatsapp_permission")]).apps
+    user = apps.get_model("auth", "User").objects.create(username="migracao_tipo")
+    unit = apps.get_model("core", "Unit").objects.create(slug="tipo", name="Tipo")
+    member = apps.get_model("core", "Membership").objects.create(
+        user_id=user.pk, unit_id=unit.pk, role="operator", permissions={"messages": "read"},
+    )
+    try:
+        executor = MigrationExecutor(connection)
+        executor.migrate([("core", "0009_permission_roles")])
+        apps = executor.loader.project_state([("core", "0009_permission_roles")]).apps
+        apps.get_model("core", "PermissionRole").objects.create(unit_id=unit.pk, name="Teste", permissions={})
+        MigrationExecutor(connection).migrate([("core", "0008_report_whatsapp_permission")])
+        member.refresh_from_db()
+        assert member.permissions == {"messages": "read"}
+    finally:
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
