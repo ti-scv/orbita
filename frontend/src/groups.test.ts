@@ -14,10 +14,11 @@ describe("group navigation and schedule", () => {
   });
   it("preserves group detail URL", () => {
     const id = "b6dee523-2618-494d-8cfb-4d11e1c8db5b";
-    expect(readRoute("/grupos")).toEqual({ page: "groups", groupId: null });
+    expect(readRoute("/grupos")).toEqual({ page: "groups", groupId: null, notFound: false });
     expect(readRoute(routePath("groups", id))).toEqual({
       page: "groups",
       groupId: id,
+      notFound: false,
     });
     expect(readRoute("/responses").page).toBe("groups");
   });
