@@ -30,6 +30,49 @@ def is_admin(user, unit):
     )
 
 
+def composition_child(report, entry):
+    if not isinstance(entry, dict):
+        return None
+    qs = ReportDefinition.objects.select_related("unit", "connection")
+    if "report_id" in entry:
+        if type(entry["report_id"]) is not int:
+            return None
+        return qs.filter(pk=entry["report_id"], code=entry.get("code", "")).first()
+    return qs.filter(unit=report.unit, code=entry.get("code", "")).first()
+
+
+def can_use_component(user, report):
+    if not user or not user.is_active:
+        return False
+    if not user.is_superuser and not Membership.objects.filter(user=user, unit=report.unit).exists():
+        return False
+    if local_permissions(user, report.unit).get("reports", "none") == "none":
+        return False
+    if is_admin(user, report.unit):
+        return True
+    from operations.models import ReportAccess
+    return report.catalog_kind == "report" and (
+        ReportGrant.objects.filter(unit=report.unit, report=report, active=True, manual=True,
+            recipient__active=True, recipient__manual_enabled=True,
+            recipient__verified_at__isnull=False, recipient__user=user).exists()
+        or ReportAccess.objects.filter(unit=report.unit, user=user, active=True,
+            verified_at__isnull=False, reports=report).exists())
+
+
+def check_composition_access(report, user, seen=None):
+    seen = set(seen or ())
+    if report.pk in seen:
+        raise PermissionDenied("Composição circular.")
+    seen.add(report.pk)
+    if report.source != "composite":
+        return
+    for entry in report.components:
+        child = composition_child(report, entry)
+        if not child or (child.unit_id != report.unit_id and not can_use_component(user, child)):
+            raise PermissionDenied("Componente indisponível ou não autorizado.")
+        check_composition_access(child, user, seen)
+
+
 def readiness(report, seen=None, *, check_external_file=True, canvas_reports=None):
     seen = set(seen or ())
     if report.pk in seen:
@@ -84,18 +127,10 @@ def readiness(report, seen=None, *, check_external_file=True, canvas_reports=Non
             missing.append("Definir componentes da composição")
         elif report.reviewed:
             for entry in report.components:
-                child = (
-                    ReportDefinition.objects.filter(
-                        unit=report.unit, code=entry.get("code", "")
-                    )
-                    .select_related("connection")
-                    .first()
-                    if isinstance(entry, dict)
-                    else None
-                )
+                child = composition_child(report, entry)
                 if not child or not child.enabled or readiness(child, seen):
                     missing.append(
-                        "Componente pendente: " + str(entry.get("code", "?"))
+                        ("Componente pendente" if "report_id" in entry else "Componente pendente: " + str(entry.get("code", "?")))
                         if isinstance(entry, dict)
                         else "Componente inválido"
                     )
@@ -160,6 +195,8 @@ def execution_access(job, *, for_download=False):
         or readiness(r, check_external_file=job.state != "ready")
     ):
         raise PermissionDenied("Relatório desativado, alterado ou com pendências.")
+    if not r.canvas_enabled and r.handler not in {"bed_snapshots_v1", "stock_loans_v1", "medical_indicators_v1"}:
+        check_composition_access(r, job.requester)
     if r.canvas_enabled:
         from operations.report_canvas.engine import check_snapshot
         check_snapshot(job)
@@ -372,7 +409,9 @@ def collect(report, values, seen=None):
     if report.source == "composite":
         output = []
         for entry in report.components:
-            child = ReportDefinition.objects.get(unit=report.unit, code=entry["code"])
+            child = composition_child(report, entry)
+            if not child:
+                raise ValidationError("Componente indisponível.")
             child_values = {
                 **{k: v for k, v in values.items() if k in child.parameter_schema},
                 **entry.get("parameters", {}),

@@ -173,6 +173,9 @@ def parameter_audit(report, seen=None):
 
         for entry in report.components if isinstance(report.components, list) else []:
             code = entry.get("code") if isinstance(entry, dict) else None
+            if isinstance(entry, dict) and "report_id" in entry:
+                issues.append("Auditoria de componente externo indisponível.")
+                continue
             child = (
                 ReportDefinition.objects.select_related("connection")
                 .filter(unit=report.unit, code=code)

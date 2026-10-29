@@ -1042,3 +1042,40 @@ def test_composition_catalog_is_scoped_and_configuration_preserves_parts(report_
     assert response.status_code == 200, response.data
     parent.refresh_from_db()
     assert parent.components == parts
+
+
+def test_cross_unit_composition_catalog_resolution_and_revocation(report_env):
+    from operations.reporting import composition_child, check_composition_access, collect
+    e = report_env
+    other_unit = Unit.objects.create(slug="outra33i", name="Outra unidade")
+    conn = ReportConnection.objects.create(unit=other_unit, name="Fonte", engine="sqlite",
+        database=e["connection"].database, enabled=True, validated=True)
+    child = ReportDefinition.objects.create(unit=other_unit, code=e["report"].code, name="Totais",
+        source="sql", connection=conn, reviewed=True, enabled=True,
+        query_sql="SELECT name,value FROM totals WHERE value >= :minimo",
+        parameter_schema={"minimo": {"type": "integer"}})
+    parent = ReportDefinition.objects.create(unit=e["unit"], code="parent33i", name="Composto",
+        source="composite", reviewed=True, enabled=False, components=[])
+    path = "/api/v1/reports/composition-catalog/?unit=ame"
+    assert child.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+    parts = [{"code": child.code, "report_id": child.pk}]
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 400
+    Membership.objects.create(user=e["user"], unit=other_unit, role="admin")
+    assert child.pk in {r["id"] for r in e["client"].get(path).data["results"]}
+    parent.refresh_from_db()
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 200, response.data
+    parent.refresh_from_db()
+    assert composition_child(parent, parts[0]).pk == child.pk
+    assert composition_child(parent, {"code": child.code}).pk == e["report"].pk
+    parent.enabled = True
+    parent.save()
+    check_composition_access(parent, e["user"])
+    assert collect(parent, {"minimo": 0})[0][2] == [["A", "10"], ["B", "20"]]
+    Membership.objects.filter(user=e["user"], unit=other_unit).delete()
+    with pytest.raises(PermissionDenied):
+        check_composition_access(parent, e["user"])
+    detail = e["client"].get(f"/api/v1/reports/{parent.pk}/?unit=ame")
+    assert detail.data["components"] == [{"unavailable": True}]
+    assert child.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
