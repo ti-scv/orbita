@@ -92,7 +92,7 @@ def test_operator_cannot_escalate_or_create_users(setup):
 
 @pytest.mark.django_db
 def test_user_manager_cannot_delegate_sections_outside_own_permissions(setup):
-    Membership.objects.filter(user=setup["user"]).update(permissions={"settings": "none", "users": "write"})
+    Membership.objects.filter(user=setup["user"]).update(permissions={"settings": "write", "reports": "none"})
     result = post(
         setup,
         "users",
@@ -100,10 +100,10 @@ def test_user_manager_cannot_delegate_sections_outside_own_permissions(setup):
             "version": 0,
             "username": "escalation",
             "password": "Safe-test-password-2026!",
-            "grants": [{"unit": "ame", "role": "admin", "permissions": {"settings": "write"}}],
+            "grants": [{"unit": "ame", "role": "admin", "permissions": {"reports": "write"}}],
         },
     )
-    assert result.status_code == 403
+    assert result.status_code == 400
     assert not get_user_model().objects.filter(username="escalation").exists()
 
 

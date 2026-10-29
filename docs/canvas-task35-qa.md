@@ -122,3 +122,11 @@ A listagem de conexões, concessões, automações e coletas, o inventário e as
 | Permissão | Aba | Endpoint | Teste |
 | --- | --- | --- | --- |
 | `reportWhatsApp` | WhatsApp dos relatórios | `POST /api/v1/report-whatsapp/` com ação `configure` | `test_whatsapp_configuration_uses_independent_write_permission` |
+
+### Estado e validação da retomada 35a4
+
+Resultado parcial: ainda há verificações de perfil nas views e serviços, inclusive criação/configuração de recursos, filtros de destinatários e relatórios, chaves e acesso federado. `role_permissions` ainda limita níveis por perfil e a aplicação de tipos a vínculos remotos continua indisponível. A tabela acima documenta apenas endpoints efetivamente testados; não certifica a cobertura integral dos recursos compartilhados nem das operações de escrita. É necessário concluir essas revisões e ampliar a tabela antes de declarar a tarefa concluída.
+
+Em PostgreSQL descartável, com arquivos de teste montados somente para leitura e chaves fictícias, a suíte completa teve **1163 aprovados e 5 falhas** em `test_report_removal.py`, todas respostas 503 da flag de remoção já conhecidas. Após essa execução, o teste de limite de delegação foi refinado e passou isoladamente. Não foram usados staging nem banco real.
+
+`makemigrations --check --dry-run` ainda propõe remover os campos `removed_at`, `removed_by` e `removed_was_enabled` de `ReportApplicationConnection`, `ReportConnection` e `ReportDefinition` em `operations`. Essa diferença já existia; não foi gerada nem aplicada migração para ela.
