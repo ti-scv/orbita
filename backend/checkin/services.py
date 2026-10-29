@@ -54,7 +54,7 @@ def transition(*, unit, checkin_id, version, idempotency_key, origin, response=N
             raise ValidationError("Oracle não altera resposta.")
         if response not in RESPONSE_TRANSITIONS[record.response] and origin != "operator":
             raise ValidationError("Transição de resposta inválida.")
-        if response == "no_response" and origin != "operator" and (not record.response_deadline or timezone.now() < record.response_deadline):
+        if response == "no_response" and (not record.response_deadline or timezone.now() < record.response_deadline):
             raise ValidationError("Prazo de resposta ainda não expirou.")
     if attendance != record.attendance:
         if origin == "automatic":
