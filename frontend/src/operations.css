@@ -3023,3 +3023,14 @@
   border-color: #52647b;
   background: #263447;
 }
+
+.access-grant > .op-field { display: flex; flex-direction: column; }
+.access-grant > .op-field + .op-field { margin-top: 24px; }
+[data-theme="dark"] .access-grant .directory-table td,
+[data-theme="dark"] .panel .directory-table td { color: #d7e1ed; }
+[data-theme="dark"] .op-pager .button:disabled,
+[data-theme="dark"] .report-workspace .op-pager .button:disabled {
+  color: #d4deea;
+  border-color: #75869a;
+  background: #29394d;
+}
