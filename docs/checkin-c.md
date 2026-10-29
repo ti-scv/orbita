@@ -59,3 +59,9 @@ A guarda da fila consulta novamente a configuração, unidade, origem, estado, r
 ### Respostas
 
 O webhook reconhece mensagens de finalidade `checkin` somente com contexto explícito, unidade, canal e remetente correspondentes; sem contexto, não tenta adivinhar o ciclo. Respostas textuais exatas “Confirmar” e “Solicitar cancelamento” usam a transição auditada; cancelamento cria uma pendência e não altera agenda nem Oracle. Resposta ambígua, anterior, conflitante ou para origem alterada gera pendência. A ligação de IDs após aceite ainda está pendente, portanto este caminho não habilita envios.
+
+### Aceite simulado
+
+A fila despacha check-in apenas com `SEND_MODE=simulated` e `SimulatedTransport`, respeitando a pausa da unidade. No aceite confirmado, o ID do provedor é associado ao ciclo e a transição auditada marca `sent`; resultado incerto permanece em quarentena e não marca envio. A expedição bloqueia e revalida configuração e origem, contato, template e janela, incluindo mudanças na configuração desde a criação da prévia. As mensagens reais continuam bloqueadas: a guarda e o filtro do piloto Meta existente exigem liberação de grupo e um template aprovado de lembretes, e ainda não há template Meta de check-in aprovado e mapeado nesta entrega. Não habilitar até implementar e validar essa integração e os cenários de concorrência/reconciliação de aceite. Não se enviou mensagem real.
+
+Verificação específica: 20 testes passaram em contêiner sem rede, SQLite temporário e transporte simulado, incluindo aceite, resultado incerto, alteração de origem e contato e respostas.

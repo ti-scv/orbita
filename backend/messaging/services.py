@@ -55,12 +55,18 @@ def issue_once(message, code, description):
     )[0]
 
 
-def send_guard(message):
+def send_guard(message, now=None):
     if message.purpose == "checkin":
         from checkin.deliveries import dispatch_error
-        error = dispatch_error(message, timezone.now())
-        # Real and simulated dispatch remain blocked until acceptance is integrated.
-        return error or "checkin_acceptance_pending"
+        error = dispatch_error(message, now or timezone.now())
+        if error:
+            return error
+        if message.unit.paused:
+            return "paused"
+        # The real Meta pilot has no approved check-in template integration yet.
+        if settings.SEND_MODE != "simulated":
+            return "checkin_meta_template_unavailable"
+        return ""
     if message.snapshot.get("oracle_agenda"):
         return "oracle_agenda_preview_only"
 
@@ -210,12 +216,15 @@ def dispatch(message_id, transport=None, now=None):
     # Persist the claim BEFORE touching the network. A killed worker leaves 'sending',
     # which is quarantined as uncertain instead of causing a duplicate external send.
     with transaction.atomic():
-        initial = Message.objects.only("unit_id", "appointment_id").get(pk=message_id)
+        initial = Message.objects.only("unit_id", "appointment_id", "purpose").get(pk=message_id)
         # Allow foreign-key checks for audit inserts while serializing unit changes.
         # FOR UPDATE here deadlocks with another worker committing its delivery.
         unit = Unit.objects.select_for_update(no_key=True).get(pk=initial.unit_id)
         from scheduling.models import Appointment
 
+        if initial.purpose == "checkin":
+            from checkin.models import Configuration
+            Configuration.objects.select_for_update().filter(unit=unit).first()
         if initial.appointment_id:
             Appointment.objects.select_for_update().get(pk=initial.appointment_id)
         message = (
@@ -228,6 +237,8 @@ def dispatch(message_id, transport=None, now=None):
             if type(transport) is not MetaTransport:
                 raise ValueError("meta_transport_required")
             transport.unit_id = unit.pk
+        if message.purpose == "checkin" and settings.SEND_MODE == "simulated" and type(transport) is not SimulatedTransport:
+            raise ValueError("checkin_simulation_transport_required")
         if manual_simulation(message) and type(transport) is not SimulatedTransport:
             raise ValueError("simulation_transport_required")
         if message.state != Message.State.QUEUED:
@@ -265,7 +276,13 @@ def dispatch(message_id, transport=None, now=None):
             message.state = Message.State.EXPIRED
             message.save()
             return message
-        error = send_guard(message)
+        if message.purpose == "checkin":
+            from checkin.models import CheckIn
+            checkin = CheckIn.objects.select_for_update().filter(unit=unit, message_id=str(message.pk)).first()
+            if checkin and checkin.booking_id:
+                from autoagenda.models import Booking
+                Booking.objects.select_for_update().get(pk=checkin.booking_id)
+        error = send_guard(message, now=now)
         if error in {
             "paused",
             "campaign_sending_disabled",
@@ -370,6 +387,9 @@ def dispatch(message_id, transport=None, now=None):
         attempt.completed_at = now
         attempt.save()
         message.save()
+        if message.purpose == "checkin" and failure is None:
+            from checkin.deliveries import record_acceptance
+            record_acceptance(message, now)
         Audit.objects.create(
             unit=unit,
             action="message." + attempt.outcome,
