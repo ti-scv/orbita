@@ -317,7 +317,8 @@
 
 .cv-root .cv-page-empty-wrap {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
