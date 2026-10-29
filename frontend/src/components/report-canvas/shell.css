@@ -989,16 +989,8 @@
   background: var(--cv-surface, #fff); color: var(--cv-text, #222); box-shadow: 0 4px 16px #0003;
 }
 
-/* Portability notices float above the workspace without changing its size. */
-.cv-root .cv-banner-floating {
-  position: absolute;
-  right: 16px;
-  bottom: 40px;
-  max-width: min(560px, calc(100% - 32px));
-  border: 1px solid var(--cv-warning-line);
-  border-radius: var(--cv-r-sm);
-  box-shadow: 0 4px 16px #0003;
-}
+/* Keep the notice in the layout, outside the report sheet. */
+.cv-root .cv-banner-floating { flex: 0 0 auto; }
 
 [data-theme="dark"] .cv-root .cv-banner-conflict { background: #3b2b0b; color: #ffe39a; }
 [data-theme="dark"] .cv-root .cv-banner-conflict .cv-banner-text { color: #fff1c4; }
