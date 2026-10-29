@@ -28,7 +28,7 @@ def recipient_for(record):
 
 @transaction.atomic
 def create_message(checkin_id):
-    record = CheckIn.objects.select_for_update().select_related(
+    record = CheckIn.objects.select_for_update(of=("self",)).select_related(
         "unit", "appointment", "booking__conversation"
     ).get(pk=checkin_id)
     if record.message_id:

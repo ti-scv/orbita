@@ -67,3 +67,5 @@ A fila despacha check-in apenas com `SEND_MODE=simulated` e `SimulatedTransport`
 Verificação específica: 20 testes passaram em contêiner sem rede, SQLite temporário e transporte simulado, incluindo aceite, resultado incerto, alteração de origem e contato e respostas.
 
 A correlação também envia para revisão respostas fora de ordem ou associadas a contato alterado. Repetição dos testes específicos após essa verificação: 21 passaram.
+
+Os 21 testes específicos também passaram em PostgreSQL isolado. As consultas que bloqueiam um ciclo restringem `FOR UPDATE` à própria tabela para permitir suas relações opcionais em PostgreSQL.

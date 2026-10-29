@@ -13,7 +13,7 @@ def apply_checkin_reply(event, unit, message):
     data = event.data
     text = (data.get("text") or "").strip().casefold()
     choice = {"confirmar": "confirmed", "solicitar cancelamento": "cancelled"}.get(text)
-    record = CheckIn.objects.select_for_update().filter(unit=unit, message_id=str(message.pk)).select_related(
+    record = CheckIn.objects.select_for_update(of=("self",)).filter(unit=unit, message_id=str(message.pk)).select_related(
         "appointment", "booking__conversation", "unit__checkin_configuration"
     ).first()
     reason = ""
