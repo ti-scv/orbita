@@ -47,6 +47,10 @@ export function createDuotoneIcon(
       fillNodes.map(([tag, attrs], idx) => createElement(tag, { ...attrs, key: `f-${idx}` }))
     ) : null;
 
+    const softLine = ["Activity", "MessageCircle", "Settings2"].includes(displayName)
+      ? createElement("g", {fill: "none", stroke: color, strokeWidth: 5, strokeOpacity: 0.18, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true},
+          strokeNodes.map(([tag, attrs], idx) => createElement(tag, {...attrs, key: `soft-${idx}`})))
+      : null;
     const strokeChildren = createElement(
       "g",
       {
@@ -80,6 +84,7 @@ export function createDuotoneIcon(
       },
       title ? createElement("title", { key: "title" }, title) : null,
       fillChildren,
+      softLine,
       strokeChildren,
       children
     );
