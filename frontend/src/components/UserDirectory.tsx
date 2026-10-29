@@ -85,8 +85,8 @@ export default function UserDirectory({unit, editable = true, onChanged}: {unit:
   }
   return <><Panel title="Usuários da instância" action={editable && <UserForm key={`new:${revision}`} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/> }>
     {error && <p role="alert" className="inline-error">{error}</p>}
-    {notice && <p role="status">Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</p>}
     <label className="op-field">Buscar usuário<input value={search} onChange={e=>setSearch(e.target.value)} /></label>
+    {notice && <p role="status">Acesso remoto limitado pelo perfil ou pelas permissões da conexão em {notice}. Confira os níveis efetivos no acesso da unidade.</p>}
     <div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Unidades</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
       {rows.map(row=><tr key={row.id}><td><strong>{row.full_name||row.username}</strong><small className="directory-detail">{row.username}</small></td><td>{row.grants.map(g=><small className="directory-detail" key={g.unit}>{options.units.find(u=>u.slug===g.unit)?.name||g.unit} · {g.permission_role?.name || profiles[g.role]}</small>)}{!row.grants.length&&"Sem acesso"}</td><td>{row.active?"Ativo":"Desativado"}</td><td>{editable&&row.editable?<UserForm key={`${row.id}:${row.version}`} row={row} options={options} roles={roles} busy={busy} error={error} revision={revision} save={save}/>:"—"}</td></tr>)}
     </tbody></table></div>{loading ? <p role="status">Carregando usuários…</p> : !error && !rows.length && <p className="directory-empty">Nenhum usuário encontrado.</p>}
