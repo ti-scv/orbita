@@ -43,3 +43,23 @@ Em 29/10/2026, uma cópia descartável do banco do staging 8105, já com core at
 ## Verificação final 37s
 
 O staging descartável 8105 foi reconstruído com a API e o painel atualizados; painel HTTP 200 e migrações sem pendências. Em Node 24, 665 testes de frontend em 75 arquivos, TypeScript, ESLint de hooks e build passaram; o build mantém o aviso de chunk acima de 500 kB. A suíte direcionada de usuários e permissões de relatórios passou: 51 testes em PostgreSQL isolado. O aviso preexistente de divergência de modelos em `operations` permanece.
+
+## Layouts existentes
+
+Em 29/10/2026, o relatório ativo `id=1` da unidade de teste `qa33c` no 8105 tinha `enabled=true`, `canvas_enabled=true` e `canvas_layout={}`. O modal de edição exibe a pendência porque `readiness` chama `report_readiness` e `definition_snapshot`, que validam o layout armazenado e rejeitam `{}` por não ter `schema_version=1`. Trata-se do relatório simples criado para o staging descartável, não de um formato legado válido. No 8095, o relatório `id=1` de `qa33c` tem layout Canvas versão 1 com página e bloco; os dados dos dois ambientes não são equivalentes. O validador `schema.py` e o parser `model.ts` são idênticos em `a6be4ff`, na base de produção `32c69c7` e na release `7354299`; a pendência não foi introduzida pela release.
+
+A produção foi consultada com `BEGIN READ ONLY`, `SELECT` de id, unidade, estados `enabled` e `canvas_enabled` e layout de todos os registros, e `COMMIT`. Os dados extraídos foram validados fora do banco pelos validadores reais das imagens da release e de `32c69c7`, em contêineres sem rede. Também passaram pelo `normalizeLayout` real do frontend e novamente pelo backend. Os arquivos temporários com dados foram removidos ao final.
+
+| Resultado | Release 7354299 | Produção 32c69c7 |
+| --- | ---: | ---: |
+| Registros consultados | 396 | 396 |
+| Layouts brutos que geram “Layout inválido ou versão não suportada.” | 59 | 59 |
+| Desses, com Canvas ativado (`canvas_enabled=true`) | 0 | 0 |
+| Desses, com relatório ativo (`enabled=true`), mas Canvas desativado | 10 | 10 |
+| Layouts brutos válidos | 328 | 328 |
+| Rejeitados por bloco fora dos limites | 9 | 9 |
+| Aceitos após normalização do frontend | 396 | 396 |
+
+Os 49 restantes entre os 59 também têm relatório e Canvas desativados. Os nove layouts com bloco fora dos limites têm relatório ativo e Canvas desativado, e produzem outra mensagem se validados diretamente; a normalização os ajusta. Para layouts vazios, a resposta de configuração Canvas fornece o layout padrão; o parser também usa padrão para versão ou páginas inválidas e pode ajustar conteúdo, portanto aceitação após normalização não prova preservação integral do desenho. A contagem operacional da mensagem no caminho de prontidão do modal é **zero em ambas as versões** para os dados consultados, pois esse caminho valida o layout armazenado apenas quando Canvas está ativado. Isso não cobre outras falhas de prontidão, fontes ou imagens.
+
+Não há regressão de formato que justifique alteração de código, migração ou rebuild. Nenhum dado de produção foi alterado. Referências: release `7354299`, fila `a6be4ff`, produção `32c69c7`; este registro é alteração documental local, sem push.
