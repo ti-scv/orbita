@@ -95,3 +95,13 @@ A continuação incluiu `settings` para `preparations`, `layouts`, `policies`, `
 | --- | --- | --- | --- |
 | `settings` | Configurações | `GET /api/v1/{preparations,layouts,policies,sources,flow-rules,flow-runs,templates}/` | `test_configuration_resources_allow_settings_without_legacy_permissions` |
 | `settings` | Configurações | `POST /api/v1/{preparations,layouts,policies,sources,flow-rules,templates}/` | `test_configuration_writes_require_settings_write` |
+
+### Recursos compartilhados: atendimento
+
+`cases`, `contacts` e `movements` atendem Pendências e também fluxos legados de Agendamentos ou Importa CROSS: aceitam `messages` ou as permissões anteriores. A leitura de `appointments` e `agenda-items` filtrada por grupo ou pendência atende Grupos/Pendências e aceita `messages`; a consulta geral continua vinculada a Agendamentos. Contatos continuam filtrados aos eventos de agendamento quando não há permissão de Agendamentos ou CROSS. A migração 0010 já consolidou os níveis antigos de grupos, pendências e agendamentos em `messages`. As restrições adicionais de perfil continuam pendentes de revisão.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `messages` | Grupos / Pendências | `GET /api/v1/{appointments,agenda-items}/` com filtro de grupo ou pendência | `test_shared_reads_allow_messages_permission` |
+| `messages` | Pendências | `GET /api/v1/{cases,contacts,movements}/` | `test_shared_reads_allow_messages_permission` |
+| `messages` | Pendências | `POST /api/v1/cases/{id}/act/`, `contacts/{id}/review/`, `movements/` | `test_shared_writes_require_messages_write` (validação ou objeto ausente após autorização) |

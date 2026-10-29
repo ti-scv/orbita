@@ -30,9 +30,9 @@ RESOURCES = {
     "messages": ["messages"],
     "replies": ["messages"],
     "issues": ["messages"],
-    "cases": ["appointments", "issues", "campaigns"],
-    "contacts": ["appointments", "issues", "campaigns"],
-    "movements": ["appointments", "issues"],
+    "cases": ["messages", "appointments", "issues", "campaigns"],
+    "contacts": ["messages", "appointments", "issues", "campaigns"],
+    "movements": ["messages", "appointments", "issues"],
     "campaigns": ["campaigns"],
     "sheet-imports": ["campaigns"],
     "reports": ["reports"],
@@ -166,11 +166,11 @@ def required_sections(resource, method, params):
             sections.append("operationsAdmin")
         if root in {"appointments", "agenda-items"}:
             if params.get("group"):
-                sections.append("groups")
+                sections.append("messages")
             if params.get("operational_pending") == "true":
-                sections.append("issues")
+                sections.append("messages")
         if root in {"cases", "contacts"}:
-            sections.append("groups")
+            sections.append("messages")
     return sections
 
 
