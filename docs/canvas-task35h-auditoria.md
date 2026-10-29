@@ -96,3 +96,39 @@ que só têm Grupos não conseguem completar esse fluxo. A matriz genérica de
 Mensagens, Agendamentos e Pendências ainda não foi certificada para cada
 finalidade e efeito de movements. Portanto esta etapa não certifica o fluxo
 inteiro nem encerra a auditoria.
+
+## Continuação 35h5 — auditoria do escopo de Grupos
+
+- **Resolvida (35h3 e 35h4):** casos, histórico, comunicações e ações recebem
+  o grupo na interface e na origem. O caso precisa pertencer a agendamento da
+  unidade com mensagem do grupo na revisão atual; mensagens e respostas nas
+  comunicações são limitadas ao mesmo grupo e revisão. A seleção de mensagens
+  para registrar resposta também respeita o grupo. A idempotência distingue o
+  contexto.
+- **Resolvida (35h2):** consultas com grupo em agenda, agendamentos, casos,
+  contatos e movimentações exigem a subárea Grupos no nível do método; grupos
+  de outras unidades e objetos fora do grupo não são acessíveis. Ações que
+  consultam toda a unidade mantêm as exigências próprias. Resumos e
+  comunicações da agenda usam mensagens da revisão atual do grupo.
+- **Resolvida (35h3):** confirmada a matriz de leitura e escrita de casos por
+  subárea: Mensagens, Pendências, Agendamentos ou CROSS podem autorizar casos
+  gerais, Grupos somente os casos filtrados por grupo; Visão geral não autoriza.
+  A finalidade CROSS continua exigindo Agendamentos ou CROSS no nível do método.
+- **Resolvida (35h4):** confirmada a matriz genérica de movimentações: Mensagens,
+  Pendências ou Agendamentos autorizam no nível do método; Grupos autoriza
+  somente com filtro e escopo de grupo. A confirmação opera sobre a movimentação
+  filtrada e a revisão de contato mantém a exigência adicional de escrita.
+- **Resolvida (federação):** o proxy exige suporte declarado ao escopo de grupo
+  antes de encaminhar; a origem aplica o teto efetivo, valida a unidade e filtra
+  os objetos. Origens antigas são recusadas.
+
+Auditoria do escopo solicitado de Grupos e das pendências herdadas acima concluída.
+Este resultado não certifica os demais recursos do inventário inicial, que não
+foram objeto desta etapa.
+
+Validação: suíte completa do backend com 1.270 aprovados e 1 ignorado, em banco
+isolado, chaves temporárias e arquivos de teste; após os ajustes finais, 54 testes
+focados em Grupos, casos, contatos, movimentações e agenda aprovados. A matriz
+complementar de permissões passou com 81 testes na rodada anterior. O frontend
+compilou. A primeira execução integral identificou configuração incompleta do
+contêiner de teste; a repetição com os recursos de teste configurados passou.

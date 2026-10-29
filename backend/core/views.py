@@ -276,7 +276,7 @@ class AppointmentViewSet(ScopedReadViewSet):
             .order_by("-created_at")
         )
         if request.query_params.get("group"):
-            messages = messages.filter(group_id=request.query_params["group"])
+            messages = messages.filter(group_id=request.query_params["group"], appointment_revision=F("appointment__revision"))
         page = self.paginate_queryset(messages)
         response = self.get_paginated_response(MessageSerializer(page, many=True).data)
         event = getattr(appointment, "sourceevent", None)

@@ -207,8 +207,10 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             group_id = serializers.UUIDField().run_validation(params["group"])
             group = get_object_or_404(AppointmentGroup, pk=group_id, unit=unit)
             qs = qs.filter(
+                event__appointment__isnull=False,
                 messages__group=group,
-                messages__appointment_revision=F("event__revision"),
+                messages__appointment=F("event__appointment"),
+                messages__appointment_revision=F("event__appointment__revision"),
             )
         kind = params.get("kind", "")
         if kind:
@@ -462,7 +464,7 @@ class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
             .order_by("-created_at", "pk")
         )
         if request.query_params.get("group"):
-            messages = messages.filter(group_id=request.query_params["group"])
+            messages = messages.filter(group_id=request.query_params["group"], appointment_revision=F("appointment__revision"))
         page = self.paginate_queryset(messages)
         response = self.get_paginated_response(MessageSerializer(page, many=True).data)
         response.data["manual_responses"] = InteractionSerializer(

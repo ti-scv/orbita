@@ -367,6 +367,7 @@ class ManifestOutput(serializers.Serializer):
     role = serializers.CharField()
     sending_enabled = serializers.BooleanField()
     permissions = serializers.DictField(child=serializers.CharField())
+    group_object_scope = serializers.BooleanField()
     cases_section_limit = serializers.BooleanField()
     contacts_movements_section_limit = serializers.BooleanField()
 
@@ -385,6 +386,7 @@ class ManifestView(APIView):
                 "unit": UnitSerializer(get_unit(request)).data,
                 "role": request.auth.effective_role,
                 "sending_enabled": False,
+                "group_object_scope": True,
                 "cases_section_limit": True,
                 "contacts_movements_section_limit": True,
                 "permissions": intersect_permissions(
@@ -441,7 +443,7 @@ class RemoteProxyView(APIView):
         params = {k: request.query_params.getlist(k) for k in request.query_params if k != "unit"}
         params["unit"] = connection.remote_unit_slug
         root = resource.split("/")[0]
-        if root in {"cases", "contacts", "movements"}:
+        if root in {"cases", "contacts", "movements"} or (request.query_params.get("group") and root in {"appointments", "agenda-items"}):
             # Older origins ignore the section ceiling; refuse them before reads or writes.
             manifest_code, _, manifest_body = remote_http(
                 connection.base_url, decrypt_key(connection.key_ciphertext),
@@ -449,7 +451,10 @@ class RemoteProxyView(APIView):
             )
             try:
                 feature = "cases_section_limit" if root == "cases" else "contacts_movements_section_limit"
-                supported = manifest_code == 200 and json.loads(manifest_body).get(feature) is True
+                features = json.loads(manifest_body)
+                supported = manifest_code == 200 and (root not in {"cases", "contacts", "movements"} or features.get(feature) is True)
+                if request.query_params.get("group"):
+                    supported = supported and features.get("group_object_scope") is True
             except (ValueError, UnicodeError, AttributeError):
                 supported = False
             if not supported:

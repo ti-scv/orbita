@@ -51,7 +51,7 @@ class ScopedRead(viewsets.ReadOnlyModelViewSet):
                     "path": request.path,
                     "data": request.data,
                     **({"group": request.query_params.get("group", "")}
-                       if isinstance(self, (ContactViewSet, MovementViewSet)) else {}),
+                       if isinstance(self, (CaseViewSet, ContactViewSet, MovementViewSet)) else {}),
                 },
                 execute,
             )
@@ -70,11 +70,12 @@ class CaseViewSet(ScopedRead):
 
         policy = effective_permissions(self.request, get_unit(self.request))
         level = 1 if self.request.method in {"GET", "HEAD", "OPTIONS"} else 2
-        if LEVELS[policy["campaigns"]] < level:
+        if not self.request.query_params.get("group") and LEVELS[policy["campaigns"]] < level:
             allowed = ["appointment", "absence", "movement"]
             if LEVELS[policy["appointments"]] >= level:
                 allowed += ["waitlist", "summons", "postoperative"]
             qs = qs.filter(purpose__in=allowed)
+        qs = group_appointment_scope(self.request, qs, "event__appointment")
         for field in [
             "state",
             "purpose",
@@ -236,13 +237,17 @@ class CaseViewSet(ScopedRead):
         from responses.models import Reply
 
         case = self.get_object()
+        messages = case.messages.all()
+        if request.query_params.get("group"):
+            messages = messages.filter(group_id=request.query_params["group"], appointment_id=case.event.appointment_id, appointment_revision=F("appointment__revision"))
+        message_scope = messages
         messages = (
-            case.messages.select_related("appointment", "template", "rule")
+            messages.select_related("appointment", "template", "rule")
             .prefetch_related("attempts", "replies__event")
             .order_by("-created_at")[:100]
         )
         replies = (
-            Reply.objects.filter(message__case=case)
+            Reply.objects.filter(message__in=message_scope)
             .select_related("event", "message__appointment")
             .order_by("-event__occurred_at")[:100]
         )
@@ -309,6 +314,8 @@ class CaseViewSet(ScopedRead):
                 messages = case.messages.filter(
                     recipient=phone, appointment_revision=case.event.revision
                 )
+                if request.query_params.get("group"):
+                    messages = messages.filter(group_id=request.query_params["group"])
                 message = (
                     messages.filter(pk=data["message_id"]).first()
                     if data.get("message_id")
@@ -558,6 +565,7 @@ def group_appointment_scope(request, qs, appointment_path):
     group_id = serializers.UUIDField().run_validation(group_value)
     group = get_object_or_404(AppointmentGroup, pk=group_id, unit=get_unit(request))
     return qs.filter(**{
+        f"{appointment_path}__unit": get_unit(request),
         f"{appointment_path}__messages__group": group,
         f"{appointment_path}__messages__appointment_revision": F(f"{appointment_path}__revision"),
     }).distinct()
