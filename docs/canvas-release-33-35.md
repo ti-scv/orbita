@@ -35,3 +35,7 @@ Esse comando recria api, worker, scheduler e panel com as imagens orbita-api:can
 ## Validação da integração
 
 Backend em PostgreSQL isolado, com dados de apoio montados e chaves descartáveis: 1.282 testes aprovados e cinco pulados com a flag de remoção desligada. Em execução separada com a flag ligada somente no teste, os cinco testes de remoção e os testes direcionados de relatórios somaram 62 aprovados. Os testes de paginação foram ajustados para aceitar continuações e procurar os textos no documento inteiro. Frontend em Node 24: 665 testes aprovados em 75 arquivos, TypeScript, ESLint de hooks e build aprovados; build avisa sobre chunk maior que 500 kB. A primeira execução do backend sem as chaves e arquivos de apoio apropriados apresentou falhas de configuração; foi substituída pela execução completa acima.
+
+## Compatibilidade de volta para 32c69c7
+
+Em 29/10/2026, uma cópia descartável do banco do staging 8105, já com core até 0012, foi restaurada em PostgreSQL isolado. A API e o painel das imagens `canvas-32c69c7` foram iniciados nessa cópia, sem reverter migrações. Login, opções e lista de usuários e gravação de acesso existente retornaram HTTP 200; a lista de relatórios da unidade qa33c retornou HTTP 200 com um relatório. O painel antigo abriu após login e a tela de relatórios carregou. Não houve HTTP 500 ou traceback nos logs da API durante as verificações. A gravação testada preservou os valores enviados; o teste não cobre todas as combinações de dados ou ações posteriores ao rollback.
