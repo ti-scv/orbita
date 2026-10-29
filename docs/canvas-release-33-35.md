@@ -23,10 +23,10 @@ O downgrade seguido de upgrade foi executado em uma cópia descartável do banco
 5. Em caso de falha de aplicação, restaurar as imagens anteriores com:
 
 ```bash
-bash /opt/orbita-deploy-32c69c7/rollback-images-v3.sh
+bash /opt/orbita-deploy-release-33-35/rollback-to-32c69c7.sh
 ```
 
-Esse comando recria api, worker, scheduler e panel com as imagens configuradas orbita-api:canvas-27ef2cc e orbita-panel:canvas-27ef2cc, não com a base 32c69c7; **não reverte migrações, esquema ou dados**. Reverter migrações é uma operação separada, com perda dos tipos e associações descrita acima; validar compatibilidade da versão anterior e decidir o procedimento de dados antes de executá-la.
+Esse comando recria api, worker, scheduler e panel com as imagens orbita-api:canvas-32c69c7 e orbita-panel:canvas-32c69c7. **Não faça downgrade das migrações**: ele apagaria tipos de permissão e associações entre vínculos e tipos criados após a atualização. O script não reverte migrações, esquema ou dados.
 
 ## Staging descartável
 
