@@ -4,6 +4,7 @@ import base64
 import re
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -671,6 +672,34 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     def canvas_assets(self, request, pk=None):
         from operations.report_canvas.api import assets
         return assets(self, request)
+
+    @action(detail=True, methods=["post"], url_path="parameter-audit")
+    def parameter_audit_action(self, request, pk=None):
+        get_unit(request, ["admin"])
+        from operations.report_parameters import parameter_audit
+        with transaction.atomic():
+            obj = self.get_queryset().select_for_update(of=("self",)).get(pk=self.get_object().pk)
+            if type(request.data.get("version")) is not int or request.data["version"] != obj.version:
+                raise Conflict()
+            operation = request.data.get("operation")
+            preferences = dict((obj.legacy or {}).get("parameter_audit_preferences") or {})
+            if operation == "remove":
+                key = request.data.get("key")
+                if not isinstance(key, str) or key not in {item["audit_key"] for item in parameter_audit(obj)["items"]}:
+                    raise ValidationError("Parâmetro identificado não encontrado.")
+                preferences["hidden"] = list(dict.fromkeys([*preferences.get("hidden", []), key]))
+            elif operation == "remove_all":
+                preferences["hidden_all"] = True
+            elif operation == "restore":
+                preferences = {}
+            else:
+                raise ValidationError("Operação inválida.")
+            obj.legacy = {**(obj.legacy or {}), "parameter_audit_preferences": preferences}
+            obj.version += 1
+            obj.save(update_fields=["legacy", "version"])
+            Audit.objects.create(unit=obj.unit, actor=request.user, action="report.parameter_audit." + operation,
+                                 object_id=str(obj.pk), details={"key": request.data.get("key", "")})
+            return Response({"version": obj.version, "parameter_audit": parameter_audit(obj)})
 
     queryset = m.ReportDefinition.objects.select_related("connection", "app_connection", "unit").order_by(
         "name"

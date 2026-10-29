@@ -114,7 +114,7 @@ const states: Record<string, string> = {
   blocked_access_changed: "Permissão alterada",
   invalid_recipient: "Destinatário inválido",
 };
-function ReportParameterAudit({ report }: { report: Row }) {
+function ReportParameterAudit({ report, onChange, busy }: { report: Row; onChange: (operation: string, key?: string) => void; busy: boolean }) {
   const audit = report.parameter_audit;
   if (!audit)
     return report.id ? (
@@ -141,8 +141,11 @@ function ReportParameterAudit({ report }: { report: Row }) {
       <div className="report-parameter-heading">
         <h3>Parâmetros identificados</h3>
         <span>{items.length}</span>
+        {audit.has_exclusions && <button type="button" className="button" disabled={busy} onClick={() => onChange("restore")}>Restaurar detecção automática</button>}
+        {!audit.hidden_all && (allItems.length > 0 || audit.component_issues?.length > 0) && <button type="button" className="button" disabled={busy} onClick={() => { if (window.confirm("Remover todo o bloco de parâmetros identificados?")) onChange("remove_all"); }}>Remover bloco</button>}
       </div>
-      {items.length ? (
+      <p className="report-parameter-empty">A remoção afeta somente esta identificação; a configuração e a consulta permanecem inalteradas.</p>
+      {audit.hidden_all ? <p className="report-parameter-empty">Bloco removido.</p> : items.length ? (
         <div className="report-table-scroll">
           <table className="report-table report-parameter-table">
             <thead>
@@ -151,6 +154,7 @@ function ReportParameterAudit({ report }: { report: Row }) {
                 <th>Tipo / formato</th>
                 <th>Conteúdo cadastrado</th>
                 <th>Uso identificado</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -213,6 +217,7 @@ function ReportParameterAudit({ report }: { report: Row }) {
                       <small>{p.report_name}</small>
                     )}
                   </td>
+                  <td><button type="button" className="button" disabled={busy} aria-label={`Remover parâmetro ${p.name}`} onClick={() => { if (window.confirm(`Remover o parâmetro identificado ${p.name}?`)) onChange("remove", p.audit_key); }}>Remover</button></td>
                 </tr>
               ))}
             </tbody>
@@ -227,8 +232,8 @@ function ReportParameterAudit({ report }: { report: Row }) {
         <details className="report-technical-parameters">
           <summary>Parâmetros internos dos componentes · {technical.length}</summary>
           <div className="report-table-scroll">
-            <table className="report-table"><thead><tr><th>Componente</th><th>Parâmetro</th><th>Tipo</th></tr></thead>
-              <tbody>{technical.map((p, i) => <tr key={`${p.report_code}-${p.name}-${i}`}><td>{p.report_name}</td><td><code>{p.name}</code></td><td>{p.type}</td></tr>)}</tbody>
+            <table className="report-table"><thead><tr><th>Componente</th><th>Parâmetro</th><th>Tipo</th><th>Ações</th></tr></thead>
+              <tbody>{technical.map((p, i) => <tr key={`${p.report_code}-${p.name}-${i}`}><td>{p.report_name}</td><td><code>{p.name}</code></td><td>{p.type}</td><td><button type="button" className="button" disabled={busy} aria-label={`Remover parâmetro ${p.name} do componente ${p.report_name}`} onClick={() => { if (window.confirm(`Remover o parâmetro identificado ${p.name}?`)) onChange("remove", p.audit_key); }}>Remover</button></td></tr>)}</tbody>
             </table>
           </div>
         </details>
@@ -477,7 +482,7 @@ export default function ReportWorkspace({
     if (modal?.kind !== "edit" || modal.tab !== "reports" || !modal.row.id) return;
     let alive = true;
     request<Row>(query(`reports/${modal.row.id}`, { unit }))
-      .then(d => {if (alive) setModal(current => current ? {...current, row:{...current.row, parameter_audit:d.parameter_audit, technical_description:d.technical_description}} : current);})
+      .then(d => {if (alive) setModal(current => current ? {...current, row:{...current.row, parameter_audit:d.parameter_audit, technical_description:d.technical_description, version:d.version ?? current.row.version}} : current);})
       .catch(e => {if (alive) setError(e.message);});
     return () => {alive = false;};
   }, [modal?.kind, modal?.tab, modal?.row.id, unit]);
@@ -1374,7 +1379,12 @@ export default function ReportWorkspace({
                     {form.catalog_kind !== "component" && <Field label="Mensagem ao selecionar o relatório">
                       <textarea rows={2} maxLength={2000} value={form.request_message || ""} onChange={e => update("request_message", e.target.value)} />
                     </Field>}
-                    <ReportParameterAudit report={modal.row} />
+                    <ReportParameterAudit report={modal.row} busy={busy} onChange={async (operation, key) => {
+                      try {
+                        const result = await post(`reports/${modal.row.id}/parameter-audit`, {version: modal.row.version, operation, key}, false);
+                        setModal(current => current && current.row.id === modal.row.id ? {...current, row: {...current.row, ...result}} : current);
+                      } catch { /* post displays the error */ }
+                    }} />
                     <ReportParameterEditor value={json} onChange={setJson} sql={form.source === "sql" ? form.query_sql || "" : ""} />
                     <div className="report-form-grid">
                       {form.catalog_kind !== "component" && <Field label="Palavras-chave (uma por linha)">
