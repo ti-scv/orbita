@@ -1116,6 +1116,8 @@ class ExecutionViewSet(ScopedRead):
             report = get_object_or_404(
                 m.ReportDefinition, unit=unit, pk=request.data.get("report")
             )
+            from operations.checkin_report_access import check_report
+            check_report(report, request=request)
             recipient = (
                 get_object_or_404(
                     m.ReportRecipient, unit=unit, pk=request.data["recipient"]
@@ -1145,6 +1147,8 @@ class ExecutionViewSet(ScopedRead):
     def download(self, request, pk=None):
         job = self.get_object()
         execution_access(job, for_download=True)
+        from operations.checkin_report_access import check_report
+        check_report(job.report, request=request)
         if job.state != "ready":
             raise ValidationError("Resultado ainda não disponível.")
         if job.snapshot.get("no_data"):

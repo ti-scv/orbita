@@ -24,6 +24,8 @@ HANDLERS = {
 
 def check_access(job):
     report, user = job.report, job.requester
+    from operations.checkin_report_access import check_report
+    check_report(report, user=user)
     membership = Membership.objects.filter(unit=job.unit, user=user).first()
     if not user.is_active or not (user.is_superuser or membership):
         raise PermissionDenied("Acesso à unidade revogado.")
