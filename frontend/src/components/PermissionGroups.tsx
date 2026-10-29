@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { Activity, MessageCircle, Settings2, WhatsApp } from "./icons";
+import { Lightbulb, MessageCircle, Settings2, WhatsApp } from "./icons";
 const groups = [
   {name: "Mensagens", icon: MessageCircle, keys: ["overview", "messages", "groups", "issues"]},
   {name: "Configurações", icon: Settings2, keys: ["settings", "operationsAdmin", "users"]},
-  {name: "Relatórios", icon: Activity, keys: ["reports"]},
+  {name: "Relatórios", icon: Lightbulb, keys: ["reports"]},
   {name: "WhatsApp", icon: WhatsApp, keys: ["reportWhatsApp"]},
 ];
 export function PermissionGroups({sections, render}: {sections: Record<string, string>; render: (key: string, label: string) => ReactNode}) {

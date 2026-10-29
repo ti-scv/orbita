@@ -1,4 +1,4 @@
-import { Activity } from "./components/icons";
+import { Activity, Lightbulb } from "./components/icons";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -80,7 +80,7 @@ const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   { id: "issues", label: "Pendências", icon: ClipboardList },
-  { id: "reports", label: "Relatórios", icon: Activity },
+  { id: "reports", label: "Relatórios", icon: Lightbulb },
   { id: "settings", label: "Configurações", icon: Settings2 },
 ];
 type Data = {
