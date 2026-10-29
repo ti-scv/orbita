@@ -55,3 +55,7 @@ O tick prepara e enfileira prévias de ciclos pendentes na fila `messaging` exis
 ### Revalidação inicial
 
 A guarda da fila consulta novamente a configuração, unidade, origem, estado, revisão, horário, contato, opt-out e janela comercial. Falhas bloqueiam a mensagem; a expedição permanece bloqueada mesmo após validação, até integrar confirmação de aceite e tratamento concorrente. A verificação ainda precisa de bloqueios transacionais compatíveis com a expedição, de validação do template no catálogo Meta e de testes de concorrência: não habilitar.
+
+### Respostas
+
+O webhook reconhece mensagens de finalidade `checkin` somente com contexto explícito, unidade, canal e remetente correspondentes; sem contexto, não tenta adivinhar o ciclo. Respostas textuais exatas “Confirmar” e “Solicitar cancelamento” usam a transição auditada; cancelamento cria uma pendência e não altera agenda nem Oracle. Resposta ambígua, anterior, conflitante ou para origem alterada gera pendência. A ligação de IDs após aceite ainda está pendente, portanto este caminho não habilita envios.
