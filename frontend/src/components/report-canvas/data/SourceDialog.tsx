@@ -126,7 +126,7 @@ export default function SourceDialog({
     .filter(s => showOtherUnits || !ownerEstablishment || !s.establishment || s.establishment === ownerEstablishment)
     .sort((a, b) => Number(b.establishment === ownerEstablishment) - Number(a.establishment === ownerEstablishment) || (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
   useEffect(() => {
-    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
+    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || availableSources.find(s => s.id === Number(sourceModal.reportId))?.available === false || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
     try {
       const params = JSON.parse(sourceModal.parametersJson || "{}");
       const draft = {id: sourceModal.id || "previa", type: "report" as const, report_id: Number(sourceModal.reportId), parameters: params};
@@ -404,6 +404,7 @@ export default function SourceDialog({
 
   // Test and load preview
   const handleTestPreview = async () => {
+    if (selectedCatalog?.available === false) return;
     testAbort.current?.abort();
     const controller = new AbortController();
     testAbort.current = controller;
@@ -550,7 +551,7 @@ export default function SourceDialog({
           </p>
         )}
 
-        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">{friendlySourceError(selectedCatalog.unavailable_reason || "", constructDraftSource(), selectedCatalog)}</p>}
+        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">Esta fonte pertence à unidade {unit.toUpperCase()}, mas está em revisão e ainda não está disponível para uso. {friendlySourceError(selectedCatalog.unavailable_reason || "", constructDraftSource(), selectedCatalog)}</p>}
         <h3>2. Escolha os dados</h3>
         {/* Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (
@@ -558,7 +559,7 @@ export default function SourceDialog({
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <small>Unidade selecionada: {unit.toUpperCase()}. Estabelecimento do relatório: {ownerEstablishment || "não identificado"}.</small>
+                <small>Unidade selecionada: {unit.toUpperCase()}. Este relatório foi classificado no estabelecimento {ownerEstablishment || "não identificado"} com base nos dados legados.</small>
                 <Select className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
                   const chosen = availableSources.find(item => item.id === Number(e.target.value));
                   onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
@@ -566,7 +567,7 @@ export default function SourceDialog({
                     parametersJson: "{}", testPreview: null, testError: null});
                 }}>
                   <option value="">Escolha um relatório</option>
-                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment === ownerEstablishment ? "Estabelecimento do relatório" : "Outros estabelecimentos"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Em revisão" : ""}</option>)}
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment === ownerEstablishment ? `Relatórios deste estabelecimento (${unit.toUpperCase()})` : "Relatórios de outros estabelecimentos"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Em revisão" : ""}</option>)}
                 </Select>
               </label>
 
@@ -598,7 +599,7 @@ export default function SourceDialog({
                 {fields.map(field => <label className="op-field" key={field.name}>
                   <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
                   {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
-                  {/^(?:wpa_)?(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && values[field.name] && <small>Usada {unitOptionLabel(field.name, values[field.name], field.options.find(option => option.value === values[field.name])?.label || values[field.name])}: a unidade {unit.toUpperCase()} não está disponível nesta fonte.</small>}
+                  {/^(?:wpa_)?(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && values[field.name] && <small>Usamos {unitOptionLabel(field.name, values[field.name], field.options.find(option => option.value === values[field.name])?.label || values[field.name])} porque a unidade {unit.toUpperCase()} não está disponível nesta fonte.</small>}
                   {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
                     {!field.options.some(option => option.value === "") && <option value="">Selecione</option>}{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
                   </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}

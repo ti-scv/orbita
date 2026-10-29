@@ -22,15 +22,20 @@ export function getDraftStorageKey(unit: string, reportId: number, version: numb
 export function formatDraftTime(timestamp: number): string {
   try {
     return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
-    }).format(new Date(timestamp));
+    }).format(new Date(timestamp)).replace(",", "");
   } catch {
     const d = new Date(timestamp);
     const h = String(d.getHours()).padStart(2, "0");
     const m = String(d.getMinutes()).padStart(2, "0");
-    return `${h}:${m}`;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${d.getFullYear()} ${h}:${m}`;
   }
 }
 
@@ -131,4 +136,13 @@ export function isDraftDifferent(
   const draftSanitized = JSON.stringify(canonical(sanitizeLayoutForApi(draft.layout)));
   const currentSanitized = JSON.stringify(canonical(sanitizeLayoutForApi(current.layout)));
   return draftSanitized !== currentSanitized;
+}
+
+export function recoverDifferentDraft(unit: string, reportId: number, version: number, current: {layout: CanvasLayout; enabled: boolean; outputFormat: OutputFormat}): DraftPayload | null {
+  const draft = loadDraftFromStorage(unit, reportId, version);
+  if (draft && !isDraftDifferent(draft, current)) {
+    clearDraftFromStorage(unit, reportId, version);
+    return null;
+  }
+  return draft;
 }

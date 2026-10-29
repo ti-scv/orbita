@@ -53,3 +53,29 @@ it("remove opções repetidas por valor e prefere a unidade permitida", async()=
  const source={id:"s",type:"report" as const,report_id:1};
  expect(previewParameters(source,schema,{},"scv",new Date(),true).values.unidade).toBe("scv");
 });
+
+it("apaga rascunho igual e preserva o diferente", async()=>{
+ const {saveDraftToStorage,recoverDifferentDraft,getDraftStorageKey,formatDraftTime}=await import("./state/draftRecovery");
+ localStorage.clear(); const layout=normalizeLayout({}); const current={layout,enabled:false,outputFormat:"pdf" as const};
+ saveDraftToStorage("scv",57,1,current); expect(recoverDifferentDraft("scv",57,1,current)).toBeNull(); expect(localStorage.getItem(getDraftStorageKey("scv",57,1))).toBeNull();
+ saveDraftToStorage("scv",57,1,{...current,enabled:true}); expect(recoverDifferentDraft("scv",57,1,current)?.enabled).toBe(true); expect(localStorage.getItem(getDraftStorageKey("scv",57,1))).not.toBeNull();
+ expect(formatDraftTime(new Date(2026,9,28,11,37).getTime())).toBe("28/10/2026 11:37"); localStorage.clear();
+});
+it("mostra tipo estimado e detecta datas na gaveta",()=>{
+ render(<DataDrawer source={{id:"s",type:"inline",columns:["Data da resposta"],rows:[["2026-10-28"]]}} preview={{columns:[{name:"Data da resposta",type:"text",estimated:true}],rows:[["2026-10-28"]],total_rows:1,truncated:false}} onClose={()=>{}}/>);
+ expect(screen.getByText(/tipo estimado/)).toBeTruthy(); expect(screen.getByLabelText(/Tipo de dado: Data/)).toBeTruthy();
+});
+it("fonte em revisão explica a situação e não envia prévia",async()=>{
+ Element.prototype.scrollIntoView=vi.fn(); const fetchMock=vi.fn().mockResolvedValue({ok:true,status:200,json:async()=>({parameter_schema:{}})}); vi.stubGlobal("fetch",fetchMock); mount();
+ fireEvent.click(screen.getByRole("combobox")); fireEvent.click(screen.getByRole("option",{name:/ID 58/}));
+ expect(await screen.findByText(/Esta fonte pertence à unidade SCV, mas está em revisão/)).toBeTruthy();
+ await new Promise(resolve=>setTimeout(resolve,650)); expect(fetchMock.mock.calls.filter(call=>call[1].method === "POST")).toHaveLength(0);
+});
+it("busca relatório pelo ID",()=>{
+ Element.prototype.scrollIntoView=vi.fn();
+ const many=Array.from({length:10},(_,i)=>({id:i+10,name:"Mesmo nome",code:`s${i}`,establishment:"AME Votuporanga"}));
+ const init=createSourceModalState([],many); if(!init.ok) throw Error(init.error);
+ render(<SourceDialog sourceModal={init.state} onChange={()=>{}} availableSources={many} reportId={57} unit="scv" sourceEstablishment="AME Votuporanga" onClose={()=>{}} onSubmit={e=>e.preventDefault()}/>);
+ fireEvent.click(screen.getByRole("combobox")); fireEvent.change(screen.getByRole("combobox",{name:/Buscar em/}),{target:{value:"18"}});
+ expect(screen.getByRole("option",{name:/ID 18/})).toBeTruthy(); expect(screen.queryByRole("option",{name:/ID 17/})).toBeNull();
+});

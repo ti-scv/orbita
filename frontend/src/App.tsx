@@ -111,14 +111,20 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
-    [checking, setChecking] = useState(true);
+    [checking, setChecking] = useState(true),
+    [bootError, setBootError] = useState(false),
+    [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
+    let active = true;
+    setChecking(true); setBootError(false);
+    const timer = window.setTimeout(() => { if (active) { active = false; setChecking(false); setBootError(true); } }, 20000);
     initCsrf()
       .then(() => request<Session>("/api/v1/auth/session/"))
-      .then(setSession)
-      .catch(() => {})
-      .finally(() => setChecking(false));
-  }, []);
+      .then(value => { if (active) setSession(value); })
+      .catch(error => { if (active && error?.status !== 401 && error?.status !== 403) setBootError(true); })
+      .finally(() => { if (active) { window.clearTimeout(timer); setChecking(false); } });
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
     const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
@@ -133,6 +139,7 @@ function AppRoot() {
         <span>Carregando painel…</span>
       </div>
     );
+  if (bootError) return <div className="boot"><BrandLogo /><p>Não foi possível carregar o painel. Confira a conexão e tente de novo.</p><button className="button" onClick={() => setBootAttempt(value => value + 1)}>Tentar de novo</button></div>;
   if (!session) return <Login onLogin={setSession} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (

@@ -41,6 +41,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
     setInitialCanvas(undefined);
     setError("");
     setLoadingStep("Carregando relatório…");
+    const timer = window.setTimeout(() => { if (alive) { alive = false; setError("Não foi possível carregar o relatório. Confira a conexão e tente de novo."); } }, 20000);
     if (admin) {
       performance.mark("canvas-abertura-inicio");
       void loadReportCanvas().catch(() => {});
@@ -49,16 +50,18 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
         request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })).then(value => { performance.mark("canvas-fontes-prontas"); return value; }),
       ])
         .then(([res, canvas]) => {
-          if (alive) { setInitialCanvas(canvas); setReport(res); }
+          if (alive) { window.clearTimeout(timer); setInitialCanvas(canvas); setReport(res); }
         })
         .catch((err: unknown) => {
           if (alive) {
+            window.clearTimeout(timer);
             setError((err as {status?: number}).status === 404 || /No ReportDefinition matches/i.test((err as Error).message) ? "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista." : (err as Error).message || "Não foi possível carregar os dados do relatório.");
           }
         });
     }
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
   }, [id, unit, admin, reloadTick]);
 
