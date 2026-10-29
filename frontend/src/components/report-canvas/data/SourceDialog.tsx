@@ -78,6 +78,18 @@ export default function SourceDialog({
   const [schema, setSchema] = useState<Record<string, unknown>>({});
   const [schemaReportId, setSchemaReportId] = useState("");
   const [showOtherUnits, setShowOtherUnits] = useState(false);
+  const [otherCatalog, setOtherCatalog] = useState<CatalogSqlSource[]>([]);
+  const [catalogError, setCatalogError] = useState(false);
+  useEffect(() => {
+    if (!sourceModal || sourceModal.type !== "report" || !showOtherUnits) return;
+    const controller = new AbortController();
+    setOtherCatalog([]);
+    setCatalogError(false);
+    request<{results: Array<{id: number; name: string; code: string; unit_name: string; unit_slug: string}>}>(query("reports/composition-catalog", {unit, kind: "report"}), "GET", undefined, controller.signal)
+      .then(data => setOtherCatalog(data.results.filter(item => item.unit_slug !== unit).map(item => ({id: item.id, name: item.name, code: item.code, establishment: item.unit_name}))))
+      .catch(() => { if (!controller.signal.aborted) setCatalogError(true); });
+    return () => controller.abort();
+  }, [sourceModal?.type, showOtherUnits, unit]);
   useEffect(() => { if (!sourceModal) setShowOtherUnits(false); }, [sourceModal === null]);
   const previewAction = useRef<() => void>(() => {});
   const [schemaStatus, setSchemaStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -122,9 +134,10 @@ export default function SourceDialog({
 
   const ownerEstablishment = sourceEstablishment || availableSources.find(s => s.id === reportId)?.establishment;
   const fallbackUnit = ({"AME Votuporanga":"ame", "AME Jales":"ame-jales", "AME Santa Fé":"ame-santa-fe"} as Record<string,string>)[ownerEstablishment || ""] || "";
-  const filteredCatalog = useMemo(() => availableSources
+  const catalog = useMemo(() => [...availableSources, ...otherCatalog.filter(item => !availableSources.some(local => local.id === item.id))], [availableSources, otherCatalog]);
+  const filteredCatalog = useMemo(() => (showOtherUnits ? catalog : availableSources)
     .filter(s => showOtherUnits || !ownerEstablishment || !s.establishment || s.establishment === ownerEstablishment)
-    .sort((a, b) => Number(b.establishment === ownerEstablishment) - Number(a.establishment === ownerEstablishment) || (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
+    .sort((a, b) => Number(b.establishment === ownerEstablishment) - Number(a.establishment === ownerEstablishment) || (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, catalog, ownerEstablishment, showOtherUnits]);
   useEffect(() => {
     if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || availableSources.find(s => s.id === Number(sourceModal.reportId))?.available === false || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
     try {
@@ -187,7 +200,7 @@ export default function SourceDialog({
 
   const isCreate = sourceModal.mode === "create";
 
-  const selectedCatalog = availableSources.find(
+  const selectedCatalog = catalog.find(
     (s) => s.id === Number(sourceModal.reportId),
   );
 
@@ -559,9 +572,9 @@ export default function SourceDialog({
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <small>Unidade selecionada: {unit.toUpperCase()}. Este relatório foi classificado no estabelecimento {ownerEstablishment || "não identificado"} com base nos dados legados.</small>
-                <Select className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
-                  const chosen = availableSources.find(item => item.id === Number(e.target.value));
+                <small>Unidade selecionada: {unit.toUpperCase()}. Estabelecimento do relatório: {ownerEstablishment || "não identificado"}.</small>
+                <Select searchable className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
+                  const chosen = catalog.find(item => item.id === Number(e.target.value));
                   onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
                     label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
                     parametersJson: "{}", testPreview: null, testError: null});
@@ -572,6 +585,7 @@ export default function SourceDialog({
               </label>
 
               <label className="op-field"><span><input type="checkbox" checked={showOtherUnits} onChange={e => setShowOtherUnits(e.target.checked)} /> Mostrar outros estabelecimentos</span></label>
+            {showOtherUnits && catalogError && <p role="alert">Não foi possível carregar relatórios de outras unidades.</p>}
             {!!selectedCatalog?.datasets?.length && (
                 <label className="op-field">
                   <span>Conjunto de dados</span>

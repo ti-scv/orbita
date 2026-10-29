@@ -155,6 +155,27 @@ export default function PageInspector({
             </select>
           </div>
 
+          <div className="cv-field">
+            <label htmlFor={`${autoId}-orientation`} className="cv-label">Orientação</label>
+            <select
+              id={`${autoId}-orientation`}
+              className="cv-input"
+              disabled={!onUpdatePageConfig}
+              value={pageConfig.width > pageConfig.height ? "landscape" : "portrait"}
+              onChange={(e) => {
+                const { width, height } = pageConfig;
+                if ((e.target.value === "landscape" && width < height) ||
+                    (e.target.value === "portrait" && width > height)) {
+                  setForceCustom(false);
+                  onUpdatePageConfig?.({ width: height, height: width });
+                }
+              }}
+            >
+              <option value="portrait">Vertical (retrato)</option>
+              <option value="landscape">Horizontal (paisagem)</option>
+            </select>
+          </div>
+
           <div className="cv-grid-pair">
             <NumberField
               label="Largura"

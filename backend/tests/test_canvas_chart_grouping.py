@@ -302,7 +302,9 @@ def test_chart_series_colors_in_pdf(env):
     content, count = export(report, layout, {}, [], "pdf")
     assert count == 2
     reader = PdfReader(io.BytesIO(base64.b64decode(content)))
-    assert len(reader.pages) == 1
+    assert len(reader.pages) == 2
+    assert "S1" in reader.pages[1].extract_text()
+    assert "S2" in reader.pages[1].extract_text()
 
 
 def test_source_label_validation():

@@ -31,6 +31,20 @@ def text(c,b,w,h):
     paragraph.drawOn(c,0,h-height)
 
 
+def text_parts(b,w,h):
+    value=(b.get("title","")+"\n"+b.get("text","")).strip()
+    pending=Paragraph(escape(value).replace("\n","<br/>"),style(b))
+    parts=[]
+    while True:
+        _,height=pending.wrap(w,h)
+        if height<=h+1:
+            parts.append(pending);return parts
+        pieces=pending.split(w,h)
+        if len(pieces)<2:fail("Uma linha não cabe no bloco de texto: "+b.get("title",b["id"]))
+        parts.append(pieces[0]);pending=pieces[1]
+        if len(parts)>200:fail("Texto excede 200 páginas.")
+
+
 def draw_paragraph(c,b,text,w,top,size=10):
     p=Paragraph(escape(text),style(b,size));_,ph=p.wrap(w,10000);p.drawOn(c,0,top-ph)
 
@@ -119,9 +133,23 @@ def chart(c,b,w,h):
 def table_parts(b,w,h):
     cols=b["columns"];rows=b["rows"]
     if not cols:return []
+    # Split very wide tables into column groups before splitting their rows.
+    count=max(1,int(w//48))
+    if len(cols)>count:
+        parts=[]
+        for start in range(0,len(cols),count):
+            group=dict(b)
+            group["columns"]=cols[start:start+count]
+            group["rows"]=[row[start:start+count] for row in rows]
+            group["options"]=dict(b["options"])
+            if group["options"].get("column_widths"):
+                group["options"]["column_widths"]=group["options"]["column_widths"][start:start+count]
+            parts.extend(table_parts(group,w,h))
+            if len(parts)>200:fail("Tabela excede 200 páginas.")
+        return parts
     data=[[Paragraph(escape(display(v)),style(b,b["options"].get("font_size",10)*.75)) for v in row] for row in [cols,*[[display_cell(v, cols[i]) for i, v in enumerate(row)] for row in rows]]]
     weights=b["options"].get("column_widths") or [1]*len(cols)
-    t=LongTable(data,colWidths=[w*v/sum(weights) for v in weights],repeatRows=1,hAlign="LEFT")
+    t=LongTable(data,colWidths=[w*v/sum(weights) for v in weights],repeatRows=1,splitInRow=1,hAlign="LEFT")
     t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),colors.HexColor("#ededed")),("VALIGN",(0,0),(-1,-1),"TOP"),("LINEBELOW",(0,0),(-1,-1),0.25,colors.HexColor("#d4d4d4")),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3)]))
     available=h-(18 if b.get("title") else 0)
     parts=[]
@@ -142,7 +170,21 @@ class PDFExporter:
         total_pages=0
         for page in document["pages"]:
             tables={b["id"]:table_parts(b,b["width"]*.75,b["height"]*.75) for b in page["blocks"] if b["type"]=="table"}
-            continuation=max([1,*[len(parts) for parts in tables.values()]])
+            texts={b["id"]:text_parts(b,b["width"]*.75,b["height"]*.75) for b in page["blocks"] if b["type"]=="text"}
+            # Charts use numbered categories and series in the drawing, followed by
+            # their complete labels and values in a paginated table.
+            charts={}
+            for b in page["blocks"]:
+                if b["type"] not in {"bar","line","pie"} or not b["rows"]:
+                    continue
+                data=dict(b)
+                data["type"]="table"
+                data["title"]=""
+                data["columns"]=["Categoria", *[f"S{i}: {v}" for i,v in enumerate(b["columns"][1:],1)]]
+                data["rows"]=[[f"{i+1}: {row[0]}", *row[1:]] for i,row in enumerate(b["rows"])]
+                data["options"]={"font_size": 10}
+                charts[b["id"]]=table_parts(data,b["width"]*.75,b["height"]*.75)
+            continuation=max([1,*[len(parts) for parts in tables.values()],*[len(parts) for parts in texts.values()],*[1+len(parts) for parts in charts.values()]])
             for index in range(continuation):
                 total_pages+=1
                 if total_pages>200:fail("Relatório excede 200 páginas.")
@@ -156,6 +198,18 @@ class PDFExporter:
                         if index<len(parts):
                             if b.get("title"):draw_paragraph(c,b,b["title"],bw,bh)
                             t=parts[index];_,height=t.wrap(bw,bh);t.drawOn(c,0,bh-(18 if b.get("title") else 0)-height)
+                    elif b["type"]=="text":
+                        parts=texts[b["id"]]
+                        if index<len(parts):
+                            p=parts[index];_,height=p.wrap(bw,bh);p.drawOn(c,0,bh-height)
+                    elif b["id"] in charts:
+                        if index == 0:
+                            numbered=dict(b)
+                            numbered["columns"]=[b["columns"][0], *[f"S{i}" for i in range(1,len(b["columns"]))]]
+                            numbered["rows"]=[[str(i+1), *row[1:]] for i,row in enumerate(b["rows"])]
+                            RENDERERS[b["type"]](c,numbered,bw,bh)
+                        elif index-1<len(charts[b["id"]]):
+                            t=charts[b["id"]][index-1];_,height=t.wrap(bw,bh);t.drawOn(c,0,bh-height)
                     else:RENDERERS[b["type"]](c,b,bw,bh)
                     c.restoreState()
                 c.showPage()

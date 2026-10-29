@@ -43,7 +43,7 @@ export default function TextPreview({
     .join("\n");
 
   return (
-    <div className="cv-block-inner">
+    <div className="cv-block-inner" style={{ fontSize: `${fontSize}px`, lineHeight: 1.25 }}>
       <div
         className="cv-block-text-body"
         style={{ fontSize: `${fontSize}px`, color: primaryColor }}

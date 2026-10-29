@@ -1,6 +1,5 @@
 import { friendlyDatabaseName } from "../reportLabels";
 import ReportDataPreview from "./ReportDataPreview";
-import ReportAppConnections from "./ReportAppConnections";
 import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
 import Select from "./Select";
@@ -115,7 +114,7 @@ const states: Record<string, string> = {
   blocked_access_changed: "Permissão alterada",
   invalid_recipient: "Destinatário inválido",
 };
-function ReportParameterAudit({ report }: { report: Row }) {
+function ReportParameterAudit({ report, onChange, busy }: { report: Row; onChange: (operation: string, key?: string) => void; busy: boolean }) {
   const audit = report.parameter_audit;
   if (!audit)
     return report.id ? (
@@ -142,8 +141,11 @@ function ReportParameterAudit({ report }: { report: Row }) {
       <div className="report-parameter-heading">
         <h3>Parâmetros identificados</h3>
         <span>{items.length}</span>
+        {audit.has_exclusions && <button type="button" className="button" disabled={busy} onClick={() => onChange("restore")}>Restaurar detecção automática</button>}
+        {!audit.hidden_all && (allItems.length > 0 || audit.component_issues?.length > 0) && <button type="button" className="button" disabled={busy} onClick={() => { if (window.confirm("Remover todo o bloco de parâmetros identificados?")) onChange("remove_all"); }}>Remover bloco</button>}
       </div>
-      {items.length ? (
+      <p className="report-parameter-empty">A remoção afeta somente esta identificação; a configuração e a consulta permanecem inalteradas.</p>
+      {audit.hidden_all ? <p className="report-parameter-empty">Bloco removido.</p> : items.length ? (
         <div className="report-table-scroll">
           <table className="report-table report-parameter-table">
             <thead>
@@ -152,6 +154,7 @@ function ReportParameterAudit({ report }: { report: Row }) {
                 <th>Tipo / formato</th>
                 <th>Conteúdo cadastrado</th>
                 <th>Uso identificado</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -214,6 +217,7 @@ function ReportParameterAudit({ report }: { report: Row }) {
                       <small>{p.report_name}</small>
                     )}
                   </td>
+                  <td><button type="button" className="button" disabled={busy} aria-label={`Remover parâmetro ${p.name}`} onClick={() => { if (window.confirm(`Remover o parâmetro identificado ${p.name}?`)) onChange("remove", p.audit_key); }}>Remover</button></td>
                 </tr>
               ))}
             </tbody>
@@ -228,8 +232,8 @@ function ReportParameterAudit({ report }: { report: Row }) {
         <details className="report-technical-parameters">
           <summary>Parâmetros internos dos componentes · {technical.length}</summary>
           <div className="report-table-scroll">
-            <table className="report-table"><thead><tr><th>Componente</th><th>Parâmetro</th><th>Tipo</th></tr></thead>
-              <tbody>{technical.map((p, i) => <tr key={`${p.report_code}-${p.name}-${i}`}><td>{p.report_name}</td><td><code>{p.name}</code></td><td>{p.type}</td></tr>)}</tbody>
+            <table className="report-table"><thead><tr><th>Componente</th><th>Parâmetro</th><th>Tipo</th><th>Ações</th></tr></thead>
+              <tbody>{technical.map((p, i) => <tr key={`${p.report_code}-${p.name}-${i}`}><td>{p.report_name}</td><td><code>{p.name}</code></td><td>{p.type}</td><td><button type="button" className="button" disabled={busy} aria-label={`Remover parâmetro ${p.name} do componente ${p.report_name}`} onClick={() => { if (window.confirm(`Remover o parâmetro identificado ${p.name}?`)) onChange("remove", p.audit_key); }}>Remover</button></td></tr>)}</tbody>
             </table>
           </div>
         </details>
@@ -261,11 +265,11 @@ function Field({
     </label>
   );
 }
-async function all(resource: string, unit: string): Promise<Row[]> {
+async function all(resource: string, unit: string, section?: string): Promise<Row[]> {
   const result: Row[] = [];
   for (let page = 1; page <= 100; page++) {
     const data = await request<{ results: Row[]; next: string | null }>(
-      query(resource, { unit, page: String(page) }),
+      query(resource, { unit, page: String(page), ...(section ? { section } : {}) }),
     );
     result.push(...data.results);
     if (!data.next) return result;
@@ -342,7 +346,7 @@ export default function ReportWorkspace({
   operate: boolean;
 }) {
   const initialTab = new URLSearchParams(location.search).get("reportTab");
-  const initial = (initialTab === "review" ? "components" : initialTab === "grants" ? "recipients" : initialTab === "components" && new URLSearchParams(location.search).get("componentCategory") === "collection" ? "snapshots" : initialTab) as Tab;
+  const initial = (initialTab === "appSources" ? "reports" : initialTab === "review" ? "components" : initialTab === "grants" ? "recipients" : initialTab === "components" && new URLSearchParams(location.search).get("componentCategory") === "collection" ? "snapshots" : initialTab) as Tab;
   const [tab, setTab] = useState<Tab>(initial in names ? initial : "reports"),
     [rows, setRows] = useState<Row[]>([]),
     [loadedScope, setLoadedScope] = useState(""),
@@ -368,6 +372,8 @@ export default function ReportWorkspace({
   const [recipientKindFilter, setRecipientKindFilter] = useState("");
   const [scheduleFilters, setScheduleFilters] = useState<ScheduleFilters>({search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
   const [catalog, setCatalog] = useState<Row[]>([]),
+    [compositionCatalog, setCompositionCatalog] = useState<Row[]>([]),
+    [compositionLoading, setCompositionLoading] = useState(false),
     [connections, setConnections] = useState<Row[]>([]),
     [recipients, setRecipients] = useState<Row[]>([]),
     [users, setUsers] = useState<Row[]>([]);
@@ -378,7 +384,8 @@ export default function ReportWorkspace({
     } | null>(null),
     [form, setForm] = useState<Row>({}),
     [json, setJson] = useState("{}"),
-    [components, setComponents] = useState("[]"),
+    [components, setComponents] = useState<Row[]>([]),
+    [componentSearch, setComponentSearch] = useState(""),
     [keywords, setKeywords] = useState(""),
     [preview, setPreview] = useState<Row | null>(null),
     [inventory, setInventory] = useState<Row | null>(null);
@@ -458,6 +465,16 @@ export default function ReportWorkspace({
     };
   }, [unit, admin, tab, revision, modal?.kind, isReports]);
   useEffect(() => {
+    if (modal?.kind !== "edit" || modal.tab !== "reports" || form.source !== "composite") return;
+    let alive = true;
+    setCompositionCatalog([]);
+    setCompositionLoading(true);
+    all("reports/composition-catalog", unit).then(items => { if (alive) setCompositionCatalog(items); })
+      .catch(e => { if (alive) setError(e.message); })
+      .finally(() => { if (alive) setCompositionLoading(false); });
+    return () => { alive = false; };
+  }, [unit, modal?.kind, modal?.tab, form.source]);
+  useEffect(() => {
     if (!admin) {
       setInventory(null);
       return;
@@ -478,7 +495,7 @@ export default function ReportWorkspace({
     if (modal?.kind !== "edit" || modal.tab !== "reports" || !modal.row.id) return;
     let alive = true;
     request<Row>(query(`reports/${modal.row.id}`, { unit }))
-      .then(d => {if (alive) setModal(current => current ? {...current, row:{...current.row, parameter_audit:d.parameter_audit, technical_description:d.technical_description}} : current);})
+      .then(d => {if (alive) setModal(current => current ? {...current, row:{...current.row, parameter_audit:d.parameter_audit, technical_description:d.technical_description, version:d.version ?? current.row.version}} : current);})
       .catch(e => {if (alive) setError(e.message);});
     return () => {alive = false;};
   }, [modal?.kind, modal?.tab, modal?.row.id, unit]);
@@ -518,7 +535,8 @@ export default function ReportWorkspace({
         2,
       ),
     );
-    setComponents(JSON.stringify(value.components || [], null, 2));
+    setComponents(value.components || []);
+    setComponentSearch("");
     setKeywords((value.keywords || []).join("\n"));
     setError("");
     setModal({ kind, row: row || {}, tab: editTab });
@@ -635,7 +653,7 @@ export default function ReportWorkspace({
         data.connection = form.source !== "app" && form.connection ? Number(form.connection) : null;
         data.app_connection = form.app_connection ? Number(form.app_connection) : null;
         data.parameter_schema = JSON.parse(json);
-        data.components = JSON.parse(components);
+        data.components = components;
         data.keywords = keywords
           .split("\n")
           .map((x) => x.trim())
@@ -763,7 +781,7 @@ export default function ReportWorkspace({
     <div className="report-workspace">
       <div className="report-tabs" role="tablist" aria-label="Relatórios" onKeyDown={navigateTabs}>
         {(Object.keys(names) as Tab[])
-          .filter((t) => t !== "grants" && t !== "snapshots" && (admin || t === "reports" || t === "executions"))
+          .filter((t) => t !== "grants" && t !== "snapshots" && t !== "appSources" && (admin || t === "reports" || t === "executions"))
           .map((t) => {
             const Icon=tabIcons[t];
             return <button
@@ -791,7 +809,7 @@ export default function ReportWorkspace({
           {error}
         </div>
       )}
-      {tab === "appSources" ? <ReportAppConnections key={unit} unit={unit}/> : tab === "whatsapp" ? <ReportWhatsApp unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
+      {tab === "whatsapp" ? <ReportWhatsApp unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
       {admin && inventory?.legacy_import?.issues?.length > 0 && (
         <details className="report-inventory">
           <summary>
@@ -1037,8 +1055,8 @@ export default function ReportWorkspace({
                             <Edit3 size={14} />
                           </button>
                         )}
-                        {admin && (tab === "reports" || tab === "connections") && (
-                          <RemovalButton unit={unit} resource={resources[tab]} active={tab === "reports" && !!r.enabled} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
+                        {admin && tab === "connections" && (
+                          <RemovalButton unit={unit} resource={resources[tab]} row={{ id: r.id, name: r.name, version: r.version }} kind="conexão" onChanged={() => setRevision(n => n + 1)} />
                         )}
                         {admin && isReports && (
                           <button
@@ -1163,6 +1181,11 @@ export default function ReportWorkspace({
                     Testar consulta salva
                   </button>
                 )}
+              {admin && modal.kind === "edit" && modal.tab === "reports" && modal.row.id && (
+                <RemovalButton unit={unit} resource="reports" active={!!modal.row.enabled}
+                  row={{ id: modal.row.id, name: modal.row.name, version: modal.row.version }}
+                  kind="relatório" showLabel onChanged={() => { setModal(null); setRevision(n => n + 1); }} />
+              )}
               <div className="report-dialog-footer-actions">
                 <button
                   type="button"
@@ -1358,19 +1381,52 @@ export default function ReportWorkspace({
                       </Field>
                     )}
                     {form.source === "composite" && (
-                      <Field label="Componentes (código e parâmetros)">
-                        <textarea
-                          className="report-code"
-                          rows={5}
-                          value={components}
-                          onChange={(e) => setComponents(e.target.value)}
-                        />
-                      </Field>
+                      <section className="report-composition" aria-label="Composição">
+                        <Field label="Buscar relatórios por nome">
+                          <input value={componentSearch} onChange={e => setComponentSearch(e.target.value)} />
+                        </Field>
+                        {compositionLoading && <p role="status">Carregando relatórios…</p>}
+                        {(() => {
+                          const matches = compositionCatalog.filter(r => r.id !== modal.row.id && String(r.name || "").toLocaleLowerCase().includes(componentSearch.trim().toLocaleLowerCase()) && !components.some(c => c.report_id ? c.report_id === r.id : (!r.unit_slug || r.unit_slug === unit) && c.code === r.code));
+                          const groups = Array.from(new Set(matches.map(r => String(r.unit_id || r.unit_slug || unit))));
+                          if (!componentSearch.trim()) return null;
+                          if (!compositionLoading && !matches.length) return <p role="status">Nenhum relatório encontrado.</p>;
+                          return groups.map(group => <div key={group}>
+                            <h4>{matches.find(r => String(r.unit_id || r.unit_slug || unit) === group)?.unit_name || group}</h4>
+                            <ul className="report-composition-list" aria-label={`Resultados da busca · ${matches.find(r => String(r.unit_id || r.unit_slug || unit) === group)?.unit_name || group}`}>
+                              {matches.filter(r => String(r.unit_id || r.unit_slug || unit) === group).map(r => <li key={r.id}>
+                                <span>{r.name} <small>· {r.unit_name || r.unit_slug || unit} · ID {r.id} · {r.code}</small></span>
+                                <button type="button" className="button" aria-label={`Adicionar ${r.name} ID ${r.id}`} onClick={() => setComponents(current => [...current, r.unit_slug && r.unit_slug !== unit ? {code: r.code, report_id: r.id} : {code: r.code}])}>Adicionar</button>
+                              </li>)}
+                            </ul>
+                          </div>);
+                        })()}
+                        <h3>Relatórios adicionados</h3>
+                        {components.length === 0 ? <p>Nenhum relatório adicionado.</p> : <ol className="report-composition-list">
+                          {components.map((component, index) => {
+                            const report = compositionCatalog.find(r => component.report_id ? r.id === component.report_id : (!r.unit_slug || r.unit_slug === unit) && r.code === component.code);
+                            const name = report?.name || (component.unavailable ? "Relatório indisponível" : `Relatório não localizado (${component.code || "sem código"})`);
+                            return <li key={index}>
+                              <span>{name} {!component.unavailable && <small>· {report?.unit_name || report?.unit_slug || unit}{report ? ` · ID ${report.id}` : ""} · {component.code}</small>}</span>
+                              <div className="report-composition-actions">
+                                <button type="button" className="button" disabled={index === 0} aria-label={`Subir ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>Subir</button>
+                                <button type="button" className="button" disabled={index === components.length - 1} aria-label={`Descer ${name} posição ${index + 1}`} onClick={() => setComponents(current => { const next = [...current]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; return next; })}>Descer</button>
+                                <button type="button" className="button" aria-label={`Remover ${name} posição ${index + 1}`} onClick={() => setComponents(current => current.filter((_, i) => i !== index))}>Remover</button>
+                              </div>
+                            </li>;
+                          })}
+                        </ol>}
+                      </section>
                     )}
                     {form.catalog_kind !== "component" && <Field label="Mensagem ao selecionar o relatório">
                       <textarea rows={2} maxLength={2000} value={form.request_message || ""} onChange={e => update("request_message", e.target.value)} />
                     </Field>}
-                    <ReportParameterAudit report={modal.row} />
+                    <ReportParameterAudit report={modal.row} busy={busy} onChange={async (operation, key) => {
+                      try {
+                        const result = await post(`reports/${modal.row.id}/parameter-audit`, {version: modal.row.version, operation, key}, false);
+                        setModal(current => current && current.row.id === modal.row.id ? {...current, row: {...current.row, ...result}} : current);
+                      } catch { /* post displays the error */ }
+                    }} />
                     <ReportParameterEditor value={json} onChange={setJson} sql={form.source === "sql" ? form.query_sql || "" : ""} />
                     <div className="report-form-grid">
                       {form.catalog_kind !== "component" && <Field label="Palavras-chave (uma por linha)">

@@ -15,7 +15,7 @@ export function permissionsFor(session: Session, unit: string): SectionPermissio
 }
 export function canAccess(session: Session, unit: string, page: PageName, write = false): boolean {
   const policy = permissionsFor(session, unit);
-  if (page === "settings" && !write) return ["settings", "operationsAdmin", ...(unit.startsWith("remote:") ? [] : ["users"])].some(key => !!policy[key] && policy[key] !== "none");
+  if (page === "settings" && !write) return ["settings", "operationsAdmin", ...(unit.startsWith("remote:") ? [] : ["users"])].some(key => !!policy[key] && policy[key] !== "none") || (!unit.startsWith("remote:") && session.roles[unit] === "admin" && policy.reports === "write");
   const level = policy[pageSection(page)] || "none";
   return write ? level === "write" : level !== "none";
 }

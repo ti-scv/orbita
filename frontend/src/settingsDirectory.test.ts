@@ -18,8 +18,14 @@ describe("Configurações unificadas", () => {
   });
   it("não oferece cadastros administrativos a quem acessa somente configurações", () => {
     const found = ids({settings:"write"});
-    expect(found).toContain("meta"); expect(found).toContain("rules");
+    expect(found).toContain("meta"); expect(found).toContain("appSources"); expect(found).toContain("rules");
     expect(found).not.toContain("users"); expect(found).not.toContain("sources");
+  });
+  it("mantém a configuração acessível ao administrador de relatórios", () => {
+    const policy = {reports: "write"} as const;
+    expect(settingsEntries(policy, "admin", false).find(item => item.id === "appSources")?.section).toBe("reports");
+    const session = {units:[{slug:"ame"}],permissions:{ame:policy},roles:{ame:"admin"}} as unknown as Session;
+    expect(canAccess(session, "ame", "settings")).toBe(true);
   });
   it("respeita papéis de consulta e unidades remotas", () => {
     expect(ids({settings:"read"},"viewer")).toEqual(["rules","activity","logs"]);

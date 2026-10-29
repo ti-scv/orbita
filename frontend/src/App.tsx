@@ -5,7 +5,7 @@ import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
 import FormAction from "./components/FormAction";
 import { Badge, Empty, Panel, SearchField } from "./components/ui";
-import OperationalAppointments from "./components/OperationalAppointments";
+
 import AppointmentGroups from "./components/AppointmentGroups";
 import ExecutionLogs from "./components/ExecutionLogs";
 import MetaConfiguration from "./components/MetaConfiguration";
@@ -16,10 +16,11 @@ import UserDirectory from "./components/UserDirectory";
 import { canAccess, permissionsFor, reconcileSession } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
+import ReportAppConnections from "./components/ReportAppConnections";
 import UnitSelector from "./components/UnitSelector";
 import { readRoute, routePath } from "./routes";
 import ModalContent from "./components/ModalContent";
-import OperationsWorkspace from "./components/OperationsWorkspace";
+
 import { ThemeToggle } from "./components/ThemeToggle";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import Login from "./components/Login";
@@ -73,6 +74,8 @@ import type {
   Template,
 } from "./types";
 
+const OperationalAppointments = lazy(() => import("./components/OperationalAppointments"));
+const OperationsWorkspace = lazy(() => import("./components/OperationsWorkspace"));
 const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
 const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
@@ -243,6 +246,14 @@ function Workspace({
   const isRemote = unit.startsWith("remote:");
   useEffect(() => { setSettingsTab(null); }, [unit]);
   useEffect(() => { if (page !== "settings") setSettingsTab(null); }, [page]);
+  useEffect(() => {
+    if (page !== "reports" || new URLSearchParams(window.location.search).get("reportTab") !== "appSources") return;
+    if (!configurationEntries.some(item => item.id === "appSources")) return;
+    window.history.replaceState({}, "", `${routePath("settings")}?unit=${encodeURIComponent(unit)}`);
+    setPage("settings");
+    setSettingsTab("appSources");
+  }, [page, unit, policy.settings, policy.reports, actualRole]);
+
   function changeUnit(slug: string) {
     setCanvasId(null);
     setData(null);
@@ -272,6 +283,7 @@ function Workspace({
     setError("");
     try {
       const filters = { unit, kind, start, end };
+      const settingsOnly = page === "settings";
       const empty = {count:0,next:null,previous:null,results:[]};
       const read = <T,>(section: string, url:string, fallback:unknown): Promise<T> =>
         session.permissions?.[unit]?.[section] && session.permissions[unit][section] !== "none" ? request<T>(url) : Promise.resolve(fallback as T);
@@ -287,8 +299,8 @@ function Workspace({
         audit,
         control,
       ] = await Promise.all([
-        read<Indicators>("overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
-        read<Paginated<Appointment>>("appointments",
+        read<Indicators>(settingsOnly ? "" : "overview", query("indicators", filters), {appointments:0,messages:0,accepted:0,delivered:0,confirmed:0,declined:0,no_response:0,issues:0,synthetic_appointments:0,states:{},responses:{},by_kind:[],trend:[],paused:true}),
+        read<Paginated<Appointment>>(settingsOnly ? "" : "appointments",
           query("appointments", {
             ...filters,
             page: String(page === "appointments" ? listPage : 1),
@@ -296,7 +308,7 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Message>>("messages",
+        read<Paginated<Message>>(settingsOnly ? "" : "messages",
           query("messages", {
             ...filters,
             page: String(page === "messages" ? listPage : 1),
@@ -306,14 +318,14 @@ function Workspace({
           }),
           empty,
         ),
-        read<Paginated<Reply>>("messages",
+        read<Paginated<Reply>>(settingsOnly ? "" : "messages",
           query("replies", {
             ...filters,
             page: String(page === "responses" ? listPage : 1),
           }),
           empty,
         ),
-        read<Paginated<Issue>>("issues",
+        read<Paginated<Issue>>(settingsOnly ? "" : "issues",
           query("issues", {
             ...filters,
             page: String(page === "issues" ? listPage : 1),
@@ -679,8 +691,8 @@ function Workspace({
             </div>
           )}
           {["care", "campaigns", "reports"].includes(page) && (
-            <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} />
+            <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
+              username={session.username} userAccess={false} /></Suspense>
           )}
           {page === "messages" && (
             <div className="filters">
@@ -736,7 +748,7 @@ function Workspace({
                 </Suspense>
               )}
               {page === "appointments" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={unit}
                   unit={unit}
                   periodFilter={periodFilter}
@@ -746,7 +758,7 @@ function Workspace({
                   refreshKey={loadSequence.current}
                   start={start}
                   end={end}
-                />
+                /></Suspense>
               )}
               {page === "messages" && (
                 <Panel
@@ -900,7 +912,7 @@ function Workspace({
                 />
               )}
               {page === "issues" && (
-                <OperationalAppointments
+                <Suspense fallback={<p role="status">Carregando…</p>}><OperationalAppointments
                   key={`${unit}-issues`}
                   unit={unit}
                   role={role}
@@ -910,7 +922,7 @@ function Workspace({
                   start={start}
                   end={end}
                   issuesOnly
-                />
+                /></Suspense>
               )}
               {page === "settings" && (
                 <div className="settings-workspace">
@@ -928,15 +940,16 @@ function Workspace({
                   </div>
                   {activeConfiguration && <InlineDialog title={activeConfiguration.label} legacy={activeConfiguration.legacy} subtitle="" className="configuration-dialog"
                     onClose={() => setSettingsTab(null)} footer={<button className="button" onClick={() => setSettingsTab(null)}>Fechar</button>}>
-                    {activeConfiguration.section === "operationsAdmin" && <OperationsWorkspace
+                    {activeConfiguration.section === "operationsAdmin" && <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace
                       key={`${unit}:${settingsTab}`} page="operationsAdmin" unit={unit} role={role}
-                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} />}
+                      username={session.username} userAccess={false} administrationCategory={settingsTab || undefined} /></Suspense>}
                     {settingsTab === "users" && <UserDirectory unit={unit} editable={policy.users === "write" && actualRole === "admin"} onChanged={onSessionRefresh} />}
                   {settingsTab === "logs" && <ExecutionLogs key={unit} unit={unit} />}
                   {settingsTab === "units" && actualRole === "admin" && !isRemote && (
                     <UnitDirectory unit={unit} editable={role === "admin"} onChanged={onSessionRefresh} />
                   )}
 
+                  {settingsTab === "appSources" && role === "admin" && !isRemote && <ReportAppConnections key={unit} unit={unit} />}
                   {settingsTab === "instances" &&
                     role === "admin" &&
                     !isRemote && (

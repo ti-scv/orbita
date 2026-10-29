@@ -4,6 +4,7 @@ import base64
 import re
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -314,6 +315,13 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
         if getattr(self.context.get("view"), "action", None) == "list":
             data.pop("canvas_layout", None)
         request = self.context.get("request")
+        if request and is_admin(request.user, obj.unit) and isinstance(data.get("components"), list):
+            from operations.reporting import composition_child, can_use_component
+            from core.models import InstanceAccessKey
+            data["components"] = [entry if not isinstance(entry, dict) or "report_id" not in entry or (
+                (child := composition_child(obj, entry)) and (child.unit_id == obj.unit_id or (
+                    not isinstance(request.auth, InstanceAccessKey) and can_use_component(request.user, child))))
+                else {"unavailable": True} for entry in data["components"]]
         if request and not is_admin(request.user, obj.unit):
             for field in (
                 "query_sql",
@@ -632,6 +640,24 @@ class ConnectionViewSet(ReversibleRemovalMixin, Managed):
 )
 class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     pagination_class = ReportPagination
+    @action(detail=False, methods=["get"], url_path="composition-catalog")
+    def composition_catalog(self, request):
+        unit = get_unit(request, ["admin"])
+        from core.models import InstanceAccessKey
+        from operations.reporting import can_use_component
+        units = [unit.pk] if isinstance(request.auth, InstanceAccessKey) else (
+            None if request.user.is_superuser else Membership.objects.filter(user=request.user).values_list("unit_id", flat=True))
+        qs = self.queryset if units is None else self.queryset.filter(unit_id__in=units)
+        if request.query_params.get("kind") == "report":
+            qs = qs.filter(catalog_kind="report")
+        search = request.query_params.get("search", "").strip()
+        if search:
+            qs = qs.filter(name__icontains=search)
+        results = [{"id": r.pk, "name": r.name, "code": r.code,
+                    "unit_id": r.unit_id, "unit_name": r.unit.name, "unit_slug": r.unit.slug}
+                   for r in qs if can_use_component(request.user, r)]
+        return Response({"results": results, "next": None})
+
     @extend_schema(parameters=[OpenApiParameter("metric",str,required=True),OpenApiParameter("start",str),OpenApiParameter("end",str),OpenApiParameter("filters",str)],responses=AppDataResponseSchema)
     @action(detail=False,methods=["get"],url_path="app-data")
     def app_data(self,request):
@@ -671,6 +697,34 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     def canvas_assets(self, request, pk=None):
         from operations.report_canvas.api import assets
         return assets(self, request)
+
+    @action(detail=True, methods=["post"], url_path="parameter-audit")
+    def parameter_audit_action(self, request, pk=None):
+        get_unit(request, ["admin"])
+        from operations.report_parameters import parameter_audit
+        with transaction.atomic():
+            obj = self.get_queryset().select_for_update(of=("self",)).get(pk=self.get_object().pk)
+            if type(request.data.get("version")) is not int or request.data["version"] != obj.version:
+                raise Conflict()
+            operation = request.data.get("operation")
+            preferences = dict((obj.legacy or {}).get("parameter_audit_preferences") or {})
+            if operation == "remove":
+                key = request.data.get("key")
+                if not isinstance(key, str) or key not in {item["audit_key"] for item in parameter_audit(obj)["items"]}:
+                    raise ValidationError("Parâmetro identificado não encontrado.")
+                preferences["hidden"] = list(dict.fromkeys([*preferences.get("hidden", []), key]))
+            elif operation == "remove_all":
+                preferences["hidden_all"] = True
+            elif operation == "restore":
+                preferences = {}
+            else:
+                raise ValidationError("Operação inválida.")
+            obj.legacy = {**(obj.legacy or {}), "parameter_audit_preferences": preferences}
+            obj.version += 1
+            obj.save(update_fields=["legacy", "version"])
+            Audit.objects.create(unit=obj.unit, actor=request.user, action="report.parameter_audit." + operation,
+                                 object_id=str(obj.pk), details={"key": request.data.get("key", "")})
+            return Response({"version": obj.version, "parameter_audit": parameter_audit(obj)})
 
     queryset = m.ReportDefinition.objects.select_related("connection", "app_connection", "unit").order_by(
         "name"
@@ -737,6 +791,17 @@ class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     def validate_config(self, obj):
         from operations.reports import HANDLERS
 
+        from operations.reporting import composition_child, can_use_component
+        from core.models import InstanceAccessKey
+        if obj.source == "composite":
+            for entry in obj.components:
+                if isinstance(entry, dict) and entry.get("unavailable"):
+                    raise ValidationError("Remova o componente indisponível antes de salvar.")
+                if isinstance(entry, dict) and "report_id" in entry:
+                    child = composition_child(obj, entry)
+                    if not child or (child.unit_id != obj.unit_id and (
+                        isinstance(self.request.auth, InstanceAccessKey) or not can_use_component(self.request.user, child))):
+                        raise ValidationError("Componente indisponível ou não autorizado.")
         if obj.catalog_kind == "component":
             paused = m.ReportAutomation.objects.filter(report=obj, enabled=True).update(enabled=False)
             paused += m.ReportSchedule.objects.filter(report=obj, enabled=True).update(enabled=False)

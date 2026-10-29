@@ -1,6 +1,8 @@
 """Document parameter evidence without rewriting queries or running legacy routines."""
 
 import re
+import hashlib
+import json
 
 import sqlparse
 from sqlparse.tokens import Comment, Name
@@ -171,6 +173,9 @@ def parameter_audit(report, seen=None):
 
         for entry in report.components if isinstance(report.components, list) else []:
             code = entry.get("code") if isinstance(entry, dict) else None
+            if isinstance(entry, dict) and "report_id" in entry:
+                issues.append("Auditoria de componente externo indisponível.")
+                continue
             child = (
                 ReportDefinition.objects.select_related("connection")
                 .filter(unit=report.unit, code=code)
@@ -188,4 +193,12 @@ def parameter_audit(report, seen=None):
                     }
                 )
             issues.extend(audit["component_issues"])
-    return {"items": items, "component_issues": issues}
+    for item in items:
+        identity = [item["report_code"], item["origin"], item["name"], item["order"]]
+        item["audit_key"] = hashlib.sha256(json.dumps(identity, ensure_ascii=False).encode()).hexdigest()
+    preferences = legacy.get("parameter_audit_preferences", {})
+    hidden = preferences.get("hidden", []) if isinstance(preferences, dict) else []
+    hidden_all = preferences.get("hidden_all", False) if isinstance(preferences, dict) else False
+    return {"items": [] if hidden_all else [item for item in items if item["audit_key"] not in hidden],
+            "component_issues": [] if hidden_all else issues,
+            "has_exclusions": bool(hidden_all or hidden), "hidden_all": bool(hidden_all)}

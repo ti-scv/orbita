@@ -15,3 +15,13 @@ def test_catalog_preserves_homonyms_and_excludes_other_units(env):
     assert sources[first.pk]["code"] == "same-a"
     assert sources[second.pk]["code"] == "same-b"
     assert foreign.pk not in sources
+
+
+def test_catalog_includes_unreviewed_same_unit_reports_as_unavailable(env):
+    _, report, _ = env
+    draft = ReportDefinition.objects.create(unit=report.unit, code="draft-33l", name="Vendas", source="sql", enabled=False, reviewed=False)
+    other = Unit.objects.create(slug="foreign-33l", name="Outra")
+    foreign = ReportDefinition.objects.create(unit=other, code="foreign-33l", name="Vendas", source="sql")
+    sources = {item["id"]: item for item in response(report)["sources"]}
+    assert sources[draft.pk]["available"] is False
+    assert foreign.pk not in sources
