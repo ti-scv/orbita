@@ -21,3 +21,9 @@ O cursor retornado pertence ao chamador, que deve persistir o resultado apenas a
 ## Continuação 38-D-2: análise das chaves
 
 A leitura do código identifica `Booking.slot_id` como `CD_IT_AGENDA_CENTRAL` da visão `_003`; a consulta existente à visão `_006` usa paciente e data/hora e não demonstra que `_006` disponibilize aquele identificador ou que ele seja único. `Appointment.external_id` é alimentado por `CD_AGENDA` de conectores diferentes, sem demonstração de equivalência com um identificador de atendimento na `_006`. Esses nomes não comprovam uma junção entre visões nem entre origens. Um teste com mock valida apenas a lógica assumida, não a existência, cardinalidade ou significado da chave na fonte. A homologação da visão, chave por origem e credencial continua necessária antes de instalar consulta ou agendamento real; não foi feita conexão Oracle.
+
+## Verificação 38-D-2
+
+Em contêineres isolados e com o lock compartilhado, o frontend passou: 76 arquivos e 671 testes, Vitest com no máximo dois workers e caches desativados; a árvore `frontend` é idêntica à de `cd495d5`. Os quatro testes específicos D também passaram em PostgreSQL isolado, sem acesso ao Oracle.
+
+A suíte completa em SQLite produziu 1.255 aprovados, 7 falhas e 30 erros na branch; A0 produziu 1.251 aprovados, 7 falhas e 30 erros. Os mesmos 30 erros e seis falhas coincidem; o teste de concorrência em falha variou entre execuções. A ausência da chave Oracle fictícia de teste gerou erros de setup e o SQLite não oferece as mesmas garantias de concorrência do PostgreSQL. Comparação em PostgreSQL, com chave fictícia de teste e banco isolado, está pendente de execução sob o lock.
