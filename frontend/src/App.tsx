@@ -973,7 +973,7 @@ function Workspace({
                         <h2>{group}</h2>
                         {entries.map(item => <div className="settings-directory-row" role="listitem" key={item.id}>
                           <LegacyLabel legacy={item.legacy}>{item.label}</LegacyLabel>
-                          <button className="button" type="button" aria-label={`Abrir ${item.label}`} onClick={() => setSettingsTab(item.id)}>Abrir</button>
+                          <button className="button" type="button" aria-label={`Abrir ${item.label}`} onClick={() => { setSettingsTab(item.id); if (item.id === "activity") void load(); }}>Abrir</button>
                         </div>)}
                       </section>;
                     })}
