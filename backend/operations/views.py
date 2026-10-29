@@ -1358,6 +1358,8 @@ class ReportRequestViewSet(ScopedRead):
             unit = get_unit(request, ["admin", "operator"])
             data = values.validated_data
             report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"], **active_conditions())
+            from operations.checkin_report_access import check_report
+            check_report(report, request=request)
             params = validate_parameters(data["parameters"])
             job = m.ReportRequest(
                 unit=unit,
@@ -1394,6 +1396,8 @@ class ReportRequestViewSet(ScopedRead):
     def download(self, request, pk=None):
         job = self.get_object()
         check_access(job)
+        from operations.checkin_report_access import check_report
+        check_report(job.report, request=request)
         if job.state != "ready":
             raise ValidationError("Relatório ainda não está disponível.")
         result = base64.b64decode(job.result) if job.format == "pdf" else job.result

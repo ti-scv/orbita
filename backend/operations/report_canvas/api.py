@@ -288,6 +288,8 @@ def preview(view, request):
     report = context_report(view, request)
     layout = validate_layout(request.data.get("layout", report.canvas_layout))
     validate_complete(layout)
+    from operations.checkin_report_access import check_report
+    check_report(report, request=request, layout=layout)
     definition_snapshot(report, layout)
     values = request.data.get("parameters", {})
     validate_values(report, values)

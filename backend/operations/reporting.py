@@ -185,6 +185,8 @@ def grant_for(report, recipient, mode):
 
 def execution_access(job, *, for_download=False):
     r = job.report
+    from operations.checkin_report_access import check_report
+    check_report(r, user=job.requester)
     if r.handler == "occupancy_indicators_v1" and job.origin == "automatic":
         raise PermissionDenied("Programação automática de Informativos ainda não homologada.")
     if (

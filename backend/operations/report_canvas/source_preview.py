@@ -38,6 +38,8 @@ def source_preview(view, request):
     if source_type == "report":
         from .sources import resolve_report
         child = resolve_report(report, source)
+        from operations.checkin_report_access import check_report
+        check_report(child, request=request, layout={})
     else:
         child = None
 
