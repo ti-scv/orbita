@@ -3,7 +3,7 @@ import json
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -51,9 +51,16 @@ def sync_users(connection, actor=None):
                     else:
                         user = get_user_model()(username=login, first_name=name, email=email, is_active=False)
                         user.set_unusable_password()
-                        user.save()
-                        UserAccessProfile.objects.create(user=user, managing_unit=connection.local_unit, explicit_units=True)
-                        identity.user = user
+                        try:
+                            with transaction.atomic():
+                                user.save()
+                                UserAccessProfile.objects.create(user=user, managing_unit=connection.local_unit, explicit_units=True)
+                        except IntegrityError:
+                            if not get_user_model().objects.filter(username=login).exists():
+                                raise
+                            identity.state = SyncedUserIdentity.State.CONFLICT
+                        else:
+                            identity.user = user
                 identity.login, identity.name, identity.email = login, name, email
                 identity.last_synced_at, identity.removed_at_origin = now, False
                 identity.save()
