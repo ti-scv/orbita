@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from responses.models import Issue, Reply
 
+from .deliveries import recipient_for
 from .models import CheckIn
 from .services import transition
 from .sources import source_snapshot
@@ -20,6 +21,8 @@ def apply_checkin_reply(event, unit, message):
         reason = "correlação inválida"
     elif not record.sent_at or event.occurred_at < record.sent_at:
         reason = "resposta anterior ao envio"
+    elif record.events.filter(occurred_at__gt=event.occurred_at).exists():
+        reason = "resposta fora de ordem"
     elif not choice:
         reason = "resposta ambígua"
     else:
@@ -29,7 +32,13 @@ def apply_checkin_reply(event, unit, message):
                 or (record.appointment_id and source.status != "scheduled")
                 or (record.booking_id and source.state != "confirmed")):
             reason = "origem alterada"
-        elif record.response not in ("sent", "no_response"):
+        else:
+            try:
+                if recipient_for(record) != message.recipient:
+                    reason = "contato alterado"
+            except (ValueError, TypeError, IndexError):
+                reason = "contato inválido"
+        if not reason and record.response not in ("sent", "no_response"):
             reason = "resposta fora de ordem ou conflitante"
     reply = Reply.objects.create(unit=unit, event=event, message=message, sender=data["sender"],
         text=data.get("text", ""), classification=choice if not reason else "review")
@@ -40,6 +49,8 @@ def apply_checkin_reply(event, unit, message):
                 occurred_at=event.occurred_at)
         except ValidationError:
             reason = "transição requer revisão"
+            reply.classification = "review"
+            reply.save(update_fields=["classification"])
     if reason or choice == "cancelled":
         Issue.objects.create(unit=unit, message=message, reply=reply,
             category="checkin_reply_review" if reason else "checkin_cancel_request",

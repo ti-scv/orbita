@@ -140,3 +140,19 @@ def test_uncertain_dispatch_never_marks_sent(delivery, monkeypatch):
     assert result.state == "uncertain", result.error_code
     assert record.response == "pending"
     assert not record.events.exists()
+
+
+@pytest.mark.django_db
+def test_reply_to_changed_recipient_is_reviewed(delivery):
+    record, message, now = delivery
+    message.provider_id, message.channel_id, message.state = "wamid.test", "meta-test", "accepted"
+    message.save()
+    record.provider_message_id, record.response, record.sent_at = message.provider_id, "sent", now - timedelta(seconds=2)
+    record.save()
+    record.appointment.phone = "11999990001"
+    record.appointment.save()
+    event = store_event("meta-test", "stale-contact", "reply", int(now.timestamp()), {"sender": message.recipient, "text": "Confirmar", "context_id": message.provider_id})
+    apply_reply(event, record.unit)
+    record.refresh_from_db()
+    assert record.response == "sent"
+    assert Issue.objects.filter(category="checkin_reply_review").exists()
