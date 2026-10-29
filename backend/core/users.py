@@ -248,8 +248,6 @@ class UserViewSet(viewsets.GenericViewSet):
                 raise PermissionDenied("Você não pode conceder ou alterar acesso nesta unidade.")
             option = writable[grant["unit"]]
             role_id = grant.get("permission_role")
-            if option["remote"] and role_id is not None:
-                raise ValidationError("Tipos de acesso só podem ser aplicados à unidade local.")
             if role_id is not None:
                 if option["remote"]:
                     raise ValidationError("Tipos de acesso só podem ser aplicados à unidade local.")
