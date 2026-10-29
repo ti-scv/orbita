@@ -20,7 +20,7 @@ export function canUseReportWhatsApp(session: Session, unit: string, write = fal
   return write ? level === "write" : level !== "none";
 }
 export function canAccess(session: Session, unit: string, page: PageName, write = false): boolean {
-  if (page === "autoagenda" && unit !== "sansaude") return false;
+  if (["autoagenda", "checkin"].includes(page) && unit !== "sansaude") return false;
   const policy = permissionsFor(session, unit);
   if (page === "settings" && !write) return ["settings", "operationsAdmin", ...(unit.startsWith("remote:") ? [] : ["users"])].some(key => !!policy[key] && policy[key] !== "none") || (!unit.startsWith("remote:") && session.roles[unit] === "admin" && policy.reports === "write");
   if (page === "reports" && !write && canUseReportWhatsApp(session, unit)) return true;

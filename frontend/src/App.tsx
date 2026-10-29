@@ -1,4 +1,5 @@
 import { Activity, Lightbulb } from "./components/icons";
+import CheckInWorkspace from "./components/CheckInWorkspace";
 import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
@@ -84,6 +85,7 @@ const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   {id:"autoagenda",label:"Autoagendamento",icon:CalendarDays},
+  { id: "checkin", label: "Check-in", icon: Lightbulb },
   { id: "issues", label: "Pendências", icon: ClipboardList },
   { id: "reports", label: "Relatórios", icon: Lightbulb },
   { id: "settings", label: "Configurações", icon: Settings2 },
@@ -303,7 +305,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (!canAccess(session, unit, page) || canvasId || page === "reports" || page === "autoagenda") {
+    if (!canAccess(session, unit, page) || canvasId || page === "reports" || page === "autoagenda" || page === "checkin") {
       setBusy(false);
       return;
     }
@@ -728,6 +730,7 @@ function Workspace({
               </button>
             </div>
           )}
+          {page === "checkin" && <CheckInWorkspace key={unit} unit={unit} write={policy.checkin === "write"}/> }
           {page === "autoagenda" && <AutoAgendaWorkspace unit={unit} write={policy.autoagenda==="write"}/> }
           {["care", "campaigns", "reports"].includes(page) && (
             <Suspense fallback={<p role="status">Carregando…</p>}><OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
@@ -755,7 +758,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {page === "reports" || page === "autoagenda" ? null : !data ? (
+          {page === "reports" || page === "autoagenda" || page === "checkin" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />
