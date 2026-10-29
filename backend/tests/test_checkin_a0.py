@@ -87,3 +87,16 @@ def test_concurrent_idempotent_transition():
     assert Event.objects.filter(checkin=record).count() == 1
     record.refresh_from_db()
     assert record.version == 2
+
+
+def test_source_snapshots(data):
+    from autoagenda.models import Booking
+    from checkin.sources import normalize_booking_time, source_snapshot
+    unit, other, appointment, _ = data
+    assert source_snapshot(appointment, unit)["source_revision"] == 1
+    booking = Booking(unit=unit, scheduled_for="30/10/2026 09:00:00")
+    snapshot = source_snapshot(booking, unit)
+    assert snapshot["scheduled_at"].isoformat() == "2026-10-30T12:00:00+00:00"
+    assert normalize_booking_time("inválido", "America/Sao_Paulo") is None
+    assert normalize_booking_time("2018-11-04T00:30:00", "America/Sao_Paulo") is None
+    with pytest.raises(ValidationError): source_snapshot(appointment, other)
