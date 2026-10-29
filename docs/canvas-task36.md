@@ -72,3 +72,15 @@ Verificação: build do frontend passou; suíte frontend 76 arquivos e 670 teste
 Chromium em 8110 confirmou login sem recarga, estados e ações da tabela, diálogo de conflito, validação de senha em português e resultado da sincronização. Evidência em `/tmp/orbita-36d/usuarios-36f.png`; logs `/tmp/orbita-36f-browser.log` e `/tmp/orbita-36f-check.log`. A queixa de botão preso em “Entrando…” não foi reproduzida nesta execução; `Login.tsx`, `App.tsx` e `api.ts` não diferem de `428dd33`, assim como os arquivos de autenticação e permissões examinados. Isso não prova que o comportamento intermitente não ocorra por outra causa. `Login.tsx` não foi alterado.
 
 FIM-TAREFA-36F parcial ec4d565556974da688aa570f01d10ac5a7393235
+
+## Revisão 36g — 29/10/2026
+
+Código: `ebfb232`. A tela Configurações → Importações e auditoria agora usa títulos em português e exibe os metadados existentes: usuário, origem, acessos, contagens e decisão de conflito. Ações sem tradução recebem um título genérico. Eventos antigos sem metadados continuam exibindo apenas os dados disponíveis; novos eventos de liberação incluem acesso, falhas incluem origem e decisões pendentes são registradas explicitamente. As contagens usam singular e plural nas duas telas de sincronização e no histórico de logs. O botão de sincronização tem espaçamento e o indicador residual abaixo da tabela foi removido.
+
+O frontend passou com 77 arquivos e 672 testes (`/tmp/orbita-36g-frontend-final.log`); build do painel e da API passaram. A suíte backend completa, com PostgreSQL de teste isolado e chave fictícia, teve 1297 aprovados, 5 ignorados e as mesmas duas falhas de `428dd33`: `test_cross_body_parameters_are_in_meta_request` e `test_all_sections_share_readonly_session_and_dates` (`/tmp/orbita-36g-backend.log`). O ajuste final de plural no histórico foi feito durante essa execução.
+
+Os contêineres descartáveis `orbita-36d-*` foram atualizados com imagens `orbita-36g-api` e `orbita-36g-panel`, nas portas 8110 e 8111. `pendente36a` foi restaurado a pendente, inativo, sem senha utilizável e sem vínculos; `pendente36b` permanece pendente, `teste36` em conflito, `liberado36` liberado e `desativado36` e `tipo36` removidos na origem. Os serviços anteriores foram preservados parados com sufixo `-36f-backup`. Chromium confirmou a auditoria em português e contagens, sem códigos crus; evidência em `/tmp/orbita-36d/auditoria-36g.png` e log em `/tmp/orbita-36g-browser-final.log`. Ambos os painéis retornaram HTTP 200.
+
+Após o ajuste final, os testes direcionados `tests/test_logs.py` e `tests/test_user_sync_36c.py` passaram: 3 aprovados (`/tmp/orbita-36g-target.log`).
+
+FIM-TAREFA-36G concluída ebfb232
