@@ -142,6 +142,13 @@ class PermissionMigration35TypesBackup(models.Model):
     migrated = models.JSONField()
 
 
+class PermissionMigration35SettingsBackup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    previous = models.JSONField()
+    migrated = models.JSONField()
+
+
 class PermissionRole(models.Model):
     """Modelo reutilizável; os acessos efetivos continuam no vínculo."""
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)

@@ -45,12 +45,12 @@ class PermissionRoleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         unit = get_unit(self.request, ["admin"])
-        if local_permissions(self.request.user, unit)["users"] != "write":
+        if local_permissions(self.request.user, unit)["settings"] != "write":
             raise PermissionDenied("Sem permissão para alterar tipos de acesso.")
         serializer.save(unit=unit)
 
     def perform_update(self, serializer):
         unit = get_unit(self.request, ["admin"])
-        if local_permissions(self.request.user, unit)["users"] != "write":
+        if local_permissions(self.request.user, unit)["settings"] != "write":
             raise PermissionDenied("Sem permissão para alterar tipos de acesso.")
         serializer.save()

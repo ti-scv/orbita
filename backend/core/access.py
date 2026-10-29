@@ -65,10 +65,10 @@ RESOURCES = {
     "oracle-configuration": ["settings"],
     "instance-keys": ["settings"],
     "remote-instances": ["settings"],
-    "members": ["users"],
-    "units": ["operationsAdmin", "users", "settings"],
-    "users": ["users"],
-    "permission-roles": ["users"],
+    "members": ["settings"],
+    "units": ["settings"],
+    "users": ["settings"],
+    "permission-roles": ["settings"],
     "tests": ["appointments", "overview"],
 }
 
@@ -164,8 +164,6 @@ def required_sections(resource, method, params):
     if method in {"GET", "HEAD", "OPTIONS"}:
         if root == "sheet-imports" and resource.rstrip("/") == "sheet-imports/schema":
             sections.append("operationsAdmin")
-        if root == "rules":
-            sections.append("operationsAdmin")
         if root in {"appointments", "agenda-items"}:
             if params.get("group"):
                 sections.append("groups")
@@ -173,8 +171,6 @@ def required_sections(resource, method, params):
                 sections.append("issues")
         if root in {"cases", "contacts"}:
             sections.append("groups")
-        if root == "members":
-            sections.append("operationsAdmin")
     return sections
 
 

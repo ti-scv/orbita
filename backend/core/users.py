@@ -28,7 +28,7 @@ def scope_options(user):
     units = Unit.objects.all() if user.is_superuser else Unit.objects.filter(membership__user=user)
     options = []
     for unit in units.order_by("name"):
-        level = local_permissions(user, unit)["users"]
+        level = local_permissions(user, unit)["settings"]
         if level == "none":
             continue
         options.append(

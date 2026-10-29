@@ -74,3 +74,17 @@ As quatro chaves são estáveis e seus níveis são `none`, `read` e `write`. `r
 | `reportWhatsApp` | WhatsApp dos relatórios | `GET/POST /api/v1/report-whatsapp/` | `test_whatsapp_status_is_independent_of_reports`, `test_whatsapp_connection_requires_write` |
 
 Esta tabela cobre apenas os casos exercitados; faltam testes de escrita e dos demais endpoints, inclusive Configurações e recursos compartilhados.
+
+## Continuação 35a4: Configurações (parcial)
+
+A verificação comum de `members`, `units`, `users` e `permission-roles` usa `settings`, assim como `rules`, `imports`, `audit`, `logs`, `control`, `meta-configuration`, `oracle-agendas`, `oracle-configuration`, `instance-keys` e `remote-instances`. A administração de usuários e tipos também usa `settings` no escopo interno. As exigências de perfil ainda existentes nas views e os recursos compartilhados continuam pendentes; esta etapa não certifica todas as operações.
+
+A migração `core.0011_preserve_settings_access` grava em `settings` o maior nível efetivo anterior entre `settings`, `users` e `operationsAdmin`, em vínculos locais, remotos e limites de conexão. Isso pode ampliar acesso dentro de Configurações para evitar redução. A reversão restaura o valor anterior apenas se ainda for igual ao migrado, preservando edições posteriores. Em banco descartável, reverta para `core 0010_preserve_task35_access` e reaplique `core 0011_preserve_settings_access`.
+
+| Permissão | Aba | Endpoint | Teste |
+| --- | --- | --- | --- |
+| `settings` | Configurações | `GET /api/v1/{rules,imports,audit,logs,control,meta-configuration,oracle-agendas,oracle-configuration,instance-keys,remote-instances,members,units,users,permission-roles}/` | `test_settings_resources_require_settings` |
+| `settings` | Tipos de acesso | `POST /api/v1/permission-roles/` | `test_settings_write_requires_write`, `test_settings_controls_user_options_and_permission_role_write` |
+| `settings` | Usuários | `GET /api/v1/users/options/` | `test_settings_controls_user_options_and_permission_role_write` |
+
+A ida e volta da migração e a preservação de edição posterior são exercitadas por `test_settings_migration_preserves_and_reverses`.
