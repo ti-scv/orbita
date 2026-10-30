@@ -5974,3 +5974,6 @@ body:has([role="dialog"][aria-modal="true"]) {
   mask: url("/brand-wordmark.webp") center / contain no-repeat;
 }
 [data-theme="dark"] .sidebar-heading .brand-image-wordmark { opacity: 0; }
+
+.sidebar-heading .brand-image.brand-image-wordmark{width:100%;max-width:164px;height:auto}.lg .brand-image.brand-image-wordmark{width:180px;max-width:100%;height:auto}.app-shell:not(.sidebar-collapsed) .sidebar-heading{padding:0 0 10px}.lg-brand{padding:20px 24px}
+.sidebar-heading .brand-image{max-height:160px;transition:max-height .2s ease,opacity .2s ease,visibility .2s ease}.sidebar-logo-hidden .sidebar-heading .brand-image{max-height:0;opacity:0;visibility:hidden}@media (prefers-reduced-motion:reduce){.sidebar-heading .brand-image{transition:none}}

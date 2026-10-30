@@ -110,8 +110,6 @@ class Oracle:
         c = self.config
         if not c.enabled or not c.booking_enabled or not c.validated:
             raise SourceError("booking_disabled")
-        if c.environment == 'homologation' and c.oracle_sid.lower() != 'tstvotu':
-            raise SourceError("environment_mismatch")
         fields = {'p_cd_agenda_central':slot['CD_AGENDA_CENTRAL'], 'p_cd_it_agenda_central':slot['CD_IT_AGENDA_CENTRAL'],
                   'p_cd_paciente':beneficiary['CD_PACIENTE_MV'], 'p_dh_agenda':slot['DH_AGENDA'],
                   'p_cd_item_agendamento':slot['CD_ITEM_AGENDAMENTO'], 'p_cd_convenio':c.agreement,

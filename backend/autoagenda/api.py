@@ -26,8 +26,8 @@ from .flow import Flow, TEXTS, OPTIONS
 from .oracle import Oracle, SourceError, error_code
 
 
-def unit_for(request):
-    unit=get_unit(request)
+def unit_for(request, admin=False):
+    unit=get_unit(request,['admin'] if admin else None)
     if not unit_feature_enabled(unit, 'autoagenda'):raise PermissionDenied('Autoagendamento desabilitado para esta unidade.')
     return unit
 
@@ -64,9 +64,9 @@ class ConfigurationView(APIView):
         c=Configuration.objects.filter(unit=unit).first()
         return Response(configuration_data(c) if c else {**configuration_data(Configuration(unit=unit)), 'configured':False})
     def put(self,request):
-        unit=unit_for(request);serializer=ConfigInput(data=request.data);serializer.is_valid(raise_exception=True);data=serializer.validated_data
+        unit=unit_for(request,True);serializer=ConfigInput(data=request.data);serializer.is_valid(raise_exception=True);data=serializer.validated_data
         password=data.pop('oracle_password','');admin_password=data.pop('admin_password','')
-        if password and not request.user.check_password(admin_password):raise ValidationError('Sua senha está incorreta.')
+        if password and not request.user.check_password(admin_password):raise ValidationError('Senha do administrador inválida.')
         if set(data.get('options',{}))-set(OPTIONS) or set(data.get('texts',{}))-set(TEXTS):raise ValidationError('Opções ou mensagens desconhecidas.')
         if data.get('public_base_url'):
             from urllib.parse import urlparse
@@ -79,12 +79,11 @@ class ConfigurationView(APIView):
             c=Configuration.objects.select_for_update().filter(unit=unit).first()
             if not c:c=Configuration(unit=unit)
             if data.pop('version')!=c.version:raise Conflict('Configuração alterada. Recarregue a tela.')
-            changed=any(k in data and data[k]!=getattr(c,k) for k in ['oracle_host','oracle_port','oracle_sid','oracle_user']) or bool(password)
+            changed=any(k in data and data[k]!=getattr(c,k) for k in ['oracle_host','oracle_port','oracle_sid','oracle_user','environment']) or bool(password)
             for k,v in data.items():setattr(c,k,v)
             if password:c.password_ciphertext=seal_credentials({'password':password},admin_password)
             if changed:c.validated=False;c.validated_identity={};c.booking_enabled=False
             if c.booking_enabled and (not c.enabled or not c.validated):raise ValidationError('Valide a conexão e ative o chat antes de liberar reservas.')
-            if c.environment=='homologation' and c.oracle_sid.lower()!='tstvotu':raise ValidationError('Homologação requer o SID tstvotu.')
             c.version+=1;c.save()
             Audit.objects.create(unit=unit,actor=request.user,action='autoagenda.configuration_updated',object_id=str(c.pk),details={'version':c.version,'credentials_changed':bool(password),'booking_enabled':c.booking_enabled})
         return Response(configuration_data(c))
@@ -93,10 +92,9 @@ class ConfigurationView(APIView):
 @extend_schema_view(post=extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT, tags=['Autoagendamento']))
 class ConnectionCheck(APIView):
     def post(self,request):
-        unit=unit_for(request);c=Configuration.objects.get(unit=unit);version=c.version
+        unit=unit_for(request,True);c=Configuration.objects.get(unit=unit);version=c.version
         try:identity=Oracle(c).check()
         except SourceError as exc:return Response({'ok':False,'code':exc.code},status=400)
-        if c.environment=='homologation' and identity.get('DB_NAME','').lower()!='tstvotu':raise ValidationError('A identidade do banco não corresponde à homologação.')
         with transaction.atomic():
             c=Configuration.objects.select_for_update().get(pk=c.pk)
             if c.version!=version:raise Conflict('A conexão foi alterada durante o teste.')
@@ -151,6 +149,9 @@ class ConversationView(APIView):
         return Response({**conversation_data(c),'view':c.view,'booking':booking_data,'events':list(c.events.order_by('id').values('id','actor','text','step','created_at')[:500])})
     def post(self,request,pk):
         unit=unit_for(request)
+        if not request.user.is_superuser:
+            from core.models import Membership
+            if not Membership.objects.filter(unit=unit,user=request.user,role__in=['admin','operator']).exists():raise PermissionDenied()
         if request.data.get('action')=='reconcile':
             c=Conversation.objects.select_related('configuration').filter(unit=unit,pk=pk).first()
             if not c:raise NotFound()
