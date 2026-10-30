@@ -6,6 +6,7 @@ from core.serializers import UnitSerializer
 
 
 class CsrfOutput(serializers.Serializer):
+    authenticated = serializers.BooleanField()
     csrfToken = serializers.CharField()
 
 

@@ -104,7 +104,7 @@ class LoginView(APIView):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def csrf(request):
-    return Response({"csrfToken": get_token(request)})
+    return Response({"csrfToken": get_token(request), "authenticated": request.user.is_authenticated})
 
 
 @extend_schema(methods=["GET"], responses=SessionOutput)

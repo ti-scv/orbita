@@ -128,10 +128,12 @@ function AppRoot() {
         controller = new AbortController();
         const timer = window.setTimeout(() => controller?.abort(), 20000);
         try {
-          const [, incoming] = await Promise.all([
-            initCsrf(controller.signal),
-            request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal),
-          ]);
+          const authenticated = await initCsrf(controller.signal);
+          if (authenticated === false) {
+            if (active) setSession(null);
+            return;
+          }
+          const incoming = await request<Session>("/api/v1/auth/session/", "GET", undefined, controller.signal);
           if (active) setSession(incoming);
           return;
         } catch (error) {
@@ -586,9 +588,9 @@ function Workspace({
               <button
                 key={item.id}
                 onClick={() => navigate(item.id)}
-                className={page === item.id ? "active" : ""}
+                className={!denied && !notFound && page === item.id ? "active" : ""}
                 aria-label={item.label}
-                aria-current={page === item.id ? "page" : undefined}
+                aria-current={!denied && !notFound && page === item.id ? "page" : undefined}
                 title={item.label}
               >
                 <item.icon size={19} />

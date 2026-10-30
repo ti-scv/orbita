@@ -64,7 +64,7 @@ export default function CheckInWorkspace({unit, write}:{unit:string; write:boole
   return <div className="aa-console checkin-workspace">
     <header className="aa-heading"><h1>Check-in</h1><div><button className="button secondary" onClick={()=>{void list();void loadConfig()}}>Atualizar</button>{write && <button className="button secondary" disabled={!config} onClick={()=>{setEdit(structuredClone(config!));setHolidayText(config!.holidays.map(displayFixedDate).join("\n"));setModalError("")}}>Configurar</button>}</div></header>
     {error && <p className="aa-error" role="alert">{error}</p>}
-    {config && <div className="aa-status"><span>Check-in {config.enabled?"ativo":"desativado"}</span><span>Autoagendamento {config.booking_enabled?"ativo":"desativado"}</span><span>Agendamentos {config.appointment_enabled?"ativos":"desativados"}</span><span>Oracle {config.oracle_enabled?"ativo":"desativado"}</span></div>}
+    {config && <div className="aa-status"><span>Check-in habilitado nesta unidade</span><span>Envio automático de check-in {config.enabled?"ligado":"desligado"} na configuração</span><span>Envios de autoagendamento {config.booking_enabled?"ligados":"desligados"} na configuração</span><span>Envios de agendamentos {config.appointment_enabled?"ligados":"desligados"} na configuração</span><span>Apuração Oracle {config.oracle_enabled?"ligada":"desligada"} na configuração</span></div>}
     <div className="aa-filters">
       <label>De <PtBrDateInput value={filters.start} onChange={value=>{setFilters({...filters,start:value});setPage(1)}}/></label>
       <label>Até <PtBrDateInput value={filters.end} onChange={value=>{setFilters({...filters,end:value});setPage(1)}}/></label>

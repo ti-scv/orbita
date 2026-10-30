@@ -176,6 +176,14 @@ function UnitLogoUploader({
   );
 }
 
+function FeatureSwitch({ name, initial, children }: { name: string; initial?: boolean; children: string }) {
+  const [checked, setChecked] = useState(!!initial);
+  return <label className="checkbox-label unit-checkbox-label unit-feature-label">
+    <input className="unit-feature-switch" role="switch" aria-checked={checked} name={name} type="checkbox" checked={checked} onChange={event => setChecked(event.target.checked)} />
+    <span>{children}</span>
+  </label>;
+}
+
 export default function UnitDirectory({
   unit,
   editable = true,
@@ -190,6 +198,8 @@ export default function UnitDirectory({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { if (!saved) return; const timer = window.setTimeout(() => setSaved(false), 4000); return () => window.clearTimeout(timer); }, [saved]);
 
   useEffect(() => {
     let active = true;
@@ -256,10 +266,11 @@ export default function UnitDirectory({
           .filter(Boolean),
         logo: String(values.get("logo") || ""),
       });
-      setRevision((v) => v + 1);
       await onChanged?.();
-    } catch (e) {
-      setError((e as Error).message);
+      setRevision((v) => v + 1);
+      setSaved(true);
+    } catch {
+      setError("Não foi possível salvar a unidade. Tente novamente.");
     } finally {
       setBusy(false);
     }
@@ -267,6 +278,7 @@ export default function UnitDirectory({
 
   return (
     <div className="unit-directory">
+      {saved && <div className="toast" role="status">Unidade salva.</div>}
       <div className="unit-toolbar">
         <div className="unit-summary">
           <span className="unit-count">
@@ -428,14 +440,8 @@ export default function UnitDirectory({
                               />
                             </label>
                           </div>
-                          <label className="checkbox-label unit-checkbox-label">
-                            <input className="unit-feature-switch" role="switch" name="checkin_enabled" type="checkbox" defaultChecked={row.checkin_enabled} />
-                            <span>Check-in — acompanhar confirmações e comparecimento.</span>
-                          </label>
-                          <label className="checkbox-label unit-checkbox-label">
-                            <input className="unit-feature-switch" role="switch" name="autoagenda_enabled" type="checkbox" defaultChecked={row.autoagenda_enabled} />
-                            <span>Autoagendamento — permitir atendimento pelo chat.</span>
-                          </label>
+                          <FeatureSwitch name="checkin_enabled" initial={row.checkin_enabled}>Check-in — acompanhar confirmações e comparecimento.</FeatureSwitch>
+                          <FeatureSwitch name="autoagenda_enabled" initial={row.autoagenda_enabled}>Autoagendamento — permitir atendimento pelo chat.</FeatureSwitch>
                           {row.feature_warnings?.map(warning => <p role="status" key={warning}>{warning}</p>)}
                           <label className="checkbox-label unit-checkbox-label">
                             <input

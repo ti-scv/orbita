@@ -4272,10 +4272,13 @@ body:has([role="dialog"][aria-modal="true"]) {
 }
 
 
-.unit-form .unit-feature-switch {
+.unit-form .unit-feature-label input.unit-feature-switch {
   appearance: none;
   width: 36px !important;
-  height: 20px;
+  height: 20px !important;
+  min-width: 36px;
+  padding: 0 !important;
+  margin: 0;
   flex: 0 0 36px;
   border: 0;
   border-radius: 999px;
@@ -4283,7 +4286,7 @@ body:has([role="dialog"][aria-modal="true"]) {
   position: relative;
   cursor: pointer;
 }
-.unit-form .unit-feature-switch::after {
+.unit-form .unit-feature-label input.unit-feature-switch::after {
   content: "";
   position: absolute;
   top: 3px;
@@ -4294,9 +4297,9 @@ body:has([role="dialog"][aria-modal="true"]) {
   background: white;
   transition: transform .15s;
 }
-.unit-form .unit-feature-switch:checked { background: #12679f; }
-.unit-form .unit-feature-switch:checked::after { transform: translateX(16px); }
-.unit-form .unit-feature-switch:focus-visible { outline: 2px solid #328bd0; outline-offset: 2px; }
+.unit-form .unit-feature-label input.unit-feature-switch:checked { background: #12679f; }
+.unit-form .unit-feature-label input.unit-feature-switch:checked::after { transform: translateX(16px); }
+.unit-form .unit-feature-label input.unit-feature-switch:focus-visible { outline: 2px solid #328bd0; outline-offset: 2px; }
 
 /* Oracle configuration summary and layout */
 .oracle-summary {

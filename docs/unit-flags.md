@@ -24,3 +24,17 @@ As suítes completas são executadas em contêineres sob `flock /tmp/orbita-suit
 A busca `git grep -n sansaude` foi executada e seu resultado está em `/tmp/unitflags-git-grep-sansaude.txt` no servidor. Restam referências históricas em documentação, testes e fixtures, além de identificadores de fontes e dados legados de relatórios não relacionados às regras de acesso dos recursos; estas referências não foram alteradas.
 
 Resultado da execução completa em PostgreSQL: **1.345 passaram, 5 ignorados**. O frontend teve **679 testes aprovados** na suíte completa após a adaptação do chat; o teste focado do chat após o ajuste visual também passou. O build específico do chat passou em Docker. Após o ajuste de concorrência na criação da configuração, os testes focados de recursos, autoagendamento e scheduler tiveram **24 aprovados e 1 ignorado**. O teste focado também exerceu a migração para frente e para trás em banco descartável.
+
+## 39B
+
+Os interruptores têm trilho e botão nos dois temas, com espaço para o rótulo, foco visível e estado acessível; podem ser acionados pelo teclado. O salvamento mostra “Unidade salva.” e mantém o diálogo aberto com erro em português quando falha. Na página sem acesso, nenhum item do menu é marcado como atual.
+
+Os chips usam configurações operacionais por unidade, separadas dos interruptores de acesso: `checkin.Configuration` controla envios e apuração, e `autoagenda.Configuration` controla chat e reservas. Os textos agora identificam o recurso como habilitado na unidade e descrevem os estados dessas configurações sem confundi-los com o interruptor da unidade. As flags globais dos schedulers continuam independentes.
+
+O erro de console reproduzido era o HTTP 401 esperado da consulta de sessão anônima na inicialização. A resposta de CSRF agora informa se a sessão está autenticada, permitindo evitar essa consulta quando não há login; a rota de sessão continua protegida. Navegação headless pelo login, configurações, check-in, autoagendamento e página sem permissão terminou sem erros de console.
+
+Medição no staging isolado 8119 via Chromium headless: antes da alteração, 2.367 ms do clique ao menu, incluindo 1.546 ms no POST de login e 46 ms na consulta de sessão; depois, 1.613 ms, incluindo 1.160 ms no POST e 34 ms na sessão. Não foi reproduzida a espera de 20 s; essas amostras não explicam a lentidão observada anteriormente e não estabelecem uma causa no ambiente.
+
+Verificações: build de frontend em Docker aprovado; suíte frontend 679 aprovados (78 arquivos), com `vitest --maxWorkers=2`; suíte backend 1.349 aprovados e 5 ignorados, com `pytest -n 2`, em PostgreSQL descartável. Ambas sob `flock /tmp/orbita-suite.lock`. Teste focado do contrato CSRF incluído na suíte; verificação no navegador dos estados, dimensões, teclado, erro de salvamento, toast, ausência de item ativo e console. Staging preserva Sansaúde com os dois recursos ligados e outra com ambos desligados.
+
+Capturas novas: [Sansaúde claro](unit-flags/39b-sansaude-light.png), [Sansaúde escuro](unit-flags/39b-sansaude-dark.png), [outra claro](unit-flags/39b-outra-light.png), [outra escuro](unit-flags/39b-outra-dark.png), [check-in](unit-flags/39b-checkin.png), [autoagendamento](unit-flags/39b-autoagenda.png), [sem permissão](unit-flags/39b-sem-permissao.png) e [confirmação](unit-flags/39b-toast.png).
