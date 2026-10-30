@@ -1,4 +1,6 @@
 """Build one reviewable Meta message for a check-in cycle."""
+
+from core.features import unit_feature_enabled
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
@@ -33,7 +35,7 @@ def create_message(checkin_id):
     ).get(pk=checkin_id)
     if record.message_id:
         return Message.objects.filter(pk=record.message_id, unit=record.unit).first()
-    if record.unit.slug != "sansaude" or record.response != "pending" or not record.planned_send_at or not record.scheduled_at:
+    if not unit_feature_enabled(record.unit, "checkin") or record.response != "pending" or not record.planned_send_at or not record.scheduled_at:
         return None
     config = record.unit.checkin_configuration
     if not config.enabled:
@@ -74,7 +76,7 @@ def dispatch_error(message, now):
     from scheduling.models import PatientPhone
     from .sources import source_snapshot
 
-    if not settings.CHECKIN_SCHEDULER_ENABLED or message.unit.slug != "sansaude":
+    if not settings.CHECKIN_SCHEDULER_ENABLED or not unit_feature_enabled(message.unit, "checkin"):
         return "checkin_disabled"
     record = CheckIn.objects.filter(unit=message.unit, message_id=str(message.pk)).select_related(
         "appointment", "booking__conversation", "unit__checkin_configuration"

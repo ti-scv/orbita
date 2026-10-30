@@ -105,7 +105,10 @@
     height: 30px;
     flex: none;
     border-radius: 50%;
-    background: var(--branco) url("/autoagenda/img/icone.png") center / 24px no-repeat;
+    display: grid;
+    place-items: center;
+    color: var(--azul, #055196);
+    background: var(--branco);
     box-shadow: var(--sombra);
 }
 .sa-chat .msg.seq .avatar{ visibility: hidden; }

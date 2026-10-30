@@ -9,7 +9,7 @@ from scheduling.models import Appointment
 
 @pytest.fixture
 def setup(db):
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     other = Unit.objects.create(slug="other", name="Outra")
     user = get_user_model().objects.create_user(username="operator")
     member = Membership.objects.create(user=user, unit=unit, role="operator", permissions={"checkin": "write", "appointments": "read"})
@@ -95,7 +95,7 @@ def test_concurrent_operator_retries():
     from django.db import close_old_connections, connection, connections
     if connection.vendor != "postgresql":
         pytest.skip("Bloqueio de linha exige PostgreSQL")
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     user = get_user_model().objects.create_user(username="concurrent")
     Membership.objects.create(user=user, unit=unit, role="operator", permissions={"checkin": "write"})
     appointment = Appointment.objects.create(unit=unit, external_id="1", kind="exam", patient="Teste", procedure="Teste", scheduled_at=timezone.now(), arrival_time="")

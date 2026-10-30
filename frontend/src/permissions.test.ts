@@ -78,7 +78,7 @@ describe("Permissões da tarefa 35", () => {
 
 
 describe("Autoagendamento Sansaúde", () => {
-  const units = [...session.units, {id: 2, slug: "sansaude", name: "Sansaúde", paused: false, response_hours: 24}];
+  const units = [...session.units, {id: 2, slug: "sansaude", name: "Sansaúde", paused: false, response_hours: 24, autoagenda_enabled: true}];
   it("permite admin e operador autorizado somente na unidade correta", () => {
     for (const role of ["admin", "operator"] as const) {
       const granted = {...session, units, roles: {...session.roles, sansaude: role}, permissions: {ame: {autoagenda: "write" as const}, sansaude: {autoagenda: "write" as const}}};
@@ -87,4 +87,15 @@ describe("Autoagendamento Sansaúde", () => {
       expect(canAccess({...granted, permissions: {sansaude: {autoagenda: "none"}}}, "sansaude", "autoagenda")).toBe(false);
     }
   });
+});
+
+
+it("mostra cada recurso somente quando a unidade está habilitada", () => {
+  const enabled = {...session, units: session.units.map(u => ({...u, checkin_enabled:true, autoagenda_enabled:true})),
+    permissions: {ame: {checkin:"read" as const, autoagenda:"read" as const}}};
+  expect(canAccess(enabled, "ame", "checkin")).toBe(true);
+  expect(canAccess(enabled, "ame", "autoagenda")).toBe(true);
+  const disabled = {...enabled, units: enabled.units.map(u => ({...u, checkin_enabled:false, autoagenda_enabled:false}))};
+  expect(canAccess(disabled, "ame", "checkin")).toBe(false);
+  expect(canAccess(disabled, "ame", "autoagenda")).toBe(false);
 });

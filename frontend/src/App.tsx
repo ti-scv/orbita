@@ -715,7 +715,7 @@ function Workspace({
           className={`content ${page === "appointments" || page === "issues" ? "appointments-page" : ""}`}
         >
 
-          {notFound || denied ? <section className="route-message" role="alert"><h1>{notFound ? "Página não encontrada" : "Sem permissão"}</h1><p>{notFound ? "Esta página não existe ou mudou de endereço." : page === "autoagenda" && unit !== "sansaude" ? "Autoagendamento disponível somente na unidade Sansaúde." : "Você não tem acesso a esta área. Se precisar, peça acesso ao administrador."}</p><button type="button" className="button primary" onClick={() => navigate(visibleNavigation[0]?.id || "overview")}>Voltar ao início</button></section> : <>
+          {notFound || denied ? <section className="route-message" role="alert"><h1>{notFound ? "Página não encontrada" : "Sem permissão"}</h1><p>{notFound ? "Esta página não existe ou mudou de endereço." : "Você não tem acesso a esta área. Se precisar, peça acesso ao administrador."}</p><button type="button" className="button primary" onClick={() => navigate(visibleNavigation[0]?.id || "overview")}>Voltar ao início</button></section> : <>
           {error && (
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />

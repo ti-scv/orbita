@@ -1,4 +1,6 @@
 """Local, aggregate-only check-in dataset for ReportCanvas."""
+
+from core.features import unit_feature_enabled
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 from django.db.models import Count, Q
@@ -11,8 +13,8 @@ COLUMNS = ["Indicador", "Numerador", "Denominador", "Percentual"]
 
 
 def collect(report, values):
-    if report.unit.slug != "sansaude" or report.source != "local" or report.handler != HANDLER:
-        raise ValidationError("Relatório de check-in disponível apenas para Sansaúde.")
+    if not unit_feature_enabled(report.unit, "checkin") or report.source != "local" or report.handler != HANDLER:
+        raise ValidationError("Relatório de check-in indisponível para esta unidade.")
     start, end = date_range(report.unit, values)
     zone = ZoneInfo(report.unit.timezone)
     lo = datetime.combine(start, time.min, zone)

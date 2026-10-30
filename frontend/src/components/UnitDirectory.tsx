@@ -249,6 +249,8 @@ export default function UnitDirectory({
         timezone: values.get("timezone"),
         response_hours: Number(values.get("response_hours")),
         paused: values.get("paused") === "on",
+        checkin_enabled: values.get("checkin_enabled") === "on",
+        autoagenda_enabled: values.get("autoagenda_enabled") === "on",
         authorized_recipients: String(values.get("authorized_recipients") || "")
           .split(/[\s,;]+/)
           .filter(Boolean),
@@ -426,6 +428,15 @@ export default function UnitDirectory({
                               />
                             </label>
                           </div>
+                          <label className="checkbox-label unit-checkbox-label">
+                            <input className="unit-feature-switch" role="switch" name="checkin_enabled" type="checkbox" defaultChecked={row.checkin_enabled} />
+                            <span>Check-in — acompanhar confirmações e comparecimento.</span>
+                          </label>
+                          <label className="checkbox-label unit-checkbox-label">
+                            <input className="unit-feature-switch" role="switch" name="autoagenda_enabled" type="checkbox" defaultChecked={row.autoagenda_enabled} />
+                            <span>Autoagendamento — permitir atendimento pelo chat.</span>
+                          </label>
+                          {row.feature_warnings?.map(warning => <p role="status" key={warning}>{warning}</p>)}
                           <label className="checkbox-label unit-checkbox-label">
                             <input
                               name="paused"

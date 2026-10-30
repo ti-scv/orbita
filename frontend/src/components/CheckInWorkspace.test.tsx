@@ -18,8 +18,8 @@ beforeEach(()=>{vi.mocked(request).mockImplementation(async (url,method) => {
 afterEach(()=>{cleanup();vi.resetAllMocks()});
 describe("Check-in",()=>{
   vi.setConfig({testTimeout:30000});
-  it("limita rota e permissão à Sansaúde e respeita leitura e escrita",()=>{
-    const session={units:[{slug:"sansaude"},{slug:"ame"}],roles:{sansaude:"viewer",ame:"admin"},permissions:{sansaude:{checkin:"read"},ame:{checkin:"write"}}} as unknown as Session;
+  it("aplica a flag da unidade e respeita leitura e escrita",()=>{
+    const session={units:[{slug:"sansaude",checkin_enabled:true},{slug:"ame",checkin_enabled:false}],roles:{sansaude:"viewer",ame:"admin"},permissions:{sansaude:{checkin:"read"},ame:{checkin:"write"}}} as unknown as Session;
     expect(readRoute("/check-in").page).toBe("checkin");expect(routePath("checkin")).toBe("/check-in");
     expect(canAccess(session,"sansaude","checkin")).toBe(true);expect(canAccess(session,"sansaude","checkin",true)).toBe(false);expect(canAccess(session,"ame","checkin")).toBe(false);
   });
@@ -45,7 +45,6 @@ describe("Check-in",()=>{
     render(<CheckInWorkspace unit="sansaude" write/>);
     const button=await screen.findByRole("button",{name:"Configurar"}); await waitFor(()=>expect((button as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(button);
-    expect(screen.getByText(/somente para a unidade Sansaúde/)).toBeTruthy();
     expect((screen.getByLabelText("Início") as HTMLInputElement).value).toBe("08:00");
     fireEvent.change(screen.getByLabelText(/Feriados/),{target:{value:"25/12/2026"}});
     fireEvent.click(screen.getByRole("button",{name:"Salvar"}));

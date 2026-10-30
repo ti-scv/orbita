@@ -1,4 +1,6 @@
 """Source snapshots for creation; no matching between source systems."""
+
+from core.features import unit_feature_enabled
 from datetime import datetime, timezone as utc
 from zoneinfo import ZoneInfo
 
@@ -30,7 +32,7 @@ def normalize_booking_time(text, zone_name):
 
 
 def source_snapshot(source, unit, zone_name="America/Sao_Paulo"):
-    if unit.slug != "sansaude" or source.unit_id != unit.pk:
+    if not unit_feature_enabled(unit, "checkin") or source.unit_id != unit.pk:
         raise ValidationError("Origem ou unidade não autorizada.")
     if isinstance(source, Appointment):
         return {"unit": unit, "appointment": source, "source_revision": source.revision, "scheduled_at": source.scheduled_at}

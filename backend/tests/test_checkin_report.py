@@ -12,8 +12,8 @@ from operations.report_canvas.engine import export
 
 @pytest.mark.django_db
 def test_summary_period_dimensions_and_export():
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde", timezone="America/Sao_Paulo")
-    call_command("configure_checkin_report")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde", timezone="America/Sao_Paulo")
+    call_command("configure_checkin_report", unit="sansaude")
     report = ReportDefinition.objects.get(code="checkin-summary")
     assert not report.enabled and not report.canvas_enabled and not report.manual_enabled
     icon = report.canvas_layout["pages"][0]["blocks"][0]
@@ -47,8 +47,8 @@ def test_checkin_report_access_direct_composed_and_revocation():
     from rest_framework.exceptions import PermissionDenied
     from core.models import Membership
     from operations.checkin_report_access import check_report
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
-    call_command("configure_checkin_report")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
+    call_command("configure_checkin_report", unit="sansaude")
     report = ReportDefinition.objects.get(code="checkin-summary")
     report.enabled = True
     report.canvas_enabled = True
@@ -77,8 +77,8 @@ def test_canvas_checkin_source_requires_permission_even_on_cached_preview():
     from django.contrib.auth import get_user_model
     from rest_framework.test import APIClient
     from core.models import Membership
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde", timezone="America/Sao_Paulo")
-    call_command("configure_checkin_report")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde", timezone="America/Sao_Paulo")
+    call_command("configure_checkin_report", unit="sansaude")
     report = ReportDefinition.objects.get(code="checkin-summary")
     report.enabled = report.canvas_enabled = True
     report.save()
@@ -106,8 +106,8 @@ def test_async_report_access_rechecked_after_revocation():
     from rest_framework.exceptions import PermissionDenied
     from core.models import Membership
     from operations.reporting import make_execution, execution_access
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde", timezone="America/Sao_Paulo")
-    call_command("configure_checkin_report")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde", timezone="America/Sao_Paulo")
+    call_command("configure_checkin_report", unit="sansaude")
     report = ReportDefinition.objects.get(code="checkin-summary")
     report.enabled = report.canvas_enabled = report.manual_enabled = True
     report.save()

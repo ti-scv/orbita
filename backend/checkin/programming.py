@@ -1,4 +1,6 @@
 """Pure scheduling calculations; no queue, database writes or transport access."""
+
+from core.features import unit_feature_enabled
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -32,7 +34,7 @@ def calculate_schedule(scheduled_at, config, now):
     The lead is elapsed time, including for days; an already elapsed window is
     deliberately returned as an exception for human review, never sent late.
     """
-    if config.unit.slug != "sansaude":
+    if not unit_feature_enabled(config.unit, "checkin"):
         raise ScheduleError("unit_not_allowed")
     if not config.enabled:
         raise ScheduleError("disabled")

@@ -1,4 +1,6 @@
 """Conservative, read-only reconciliation of check-in attendance."""
+
+from core.features import unit_feature_enabled
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
@@ -23,8 +25,8 @@ def reconcile_batch(*, unit, source, cursor=0, limit=MAX_BATCH):
     Review entries contain only local ids and generic reason codes, never source
     data or exceptions. A failure does not advance the cursor.
     """
-    if unit.slug != "sansaude":
-        raise ValidationError("Check-in disponível apenas para Sansaúde.")
+    if not unit_feature_enabled(unit, "checkin"):
+        raise ValidationError("Check-in desabilitado para esta unidade.")
     if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= MAX_BATCH:
         raise ValidationError("Cursor ou limite inválido.")
     config = Configuration.objects.filter(unit=unit).first()
@@ -86,7 +88,7 @@ class OracleAttendanceSource:
         identifier = r"[A-Za-z][A-Za-z0-9_$#]*"
         view = settings.CHECKIN_ORACLE_VIEW
         key = settings.CHECKIN_ORACLE_KEY_COLUMN
-        if unit.slug != "sansaude" or not re.fullmatch(identifier + r"(?:\." + identifier + r")?", view) or not re.fullmatch(identifier, key):
+        if not unit_feature_enabled(unit, "checkin") or not re.fullmatch(identifier + r"(?:\." + identifier + r")?", view) or not re.fullmatch(identifier, key):
             raise ValueError("oracle_view_not_configured")
         self.source = OracleSource(unit)
         self.view, self.key = view, key

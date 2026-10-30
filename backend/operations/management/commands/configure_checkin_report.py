@@ -9,13 +9,16 @@ from operations.report_canvas.ports import tabular, block, image_asset
 from operations.report_canvas.schema import validate_layout
 
 class Command(BaseCommand):
-    help = "Cria relatório de check-in desativado para Sansaúde."
+    help = "Cria relatório de check-in desativado para uma unidade habilitada."
+
+    def add_arguments(self, parser):
+        parser.add_argument("--unit", required=True)
 
     @transaction.atomic
     def handle(self, *args, **options):
-        unit = Unit.objects.filter(slug="sansaude").first()
+        unit = Unit.objects.filter(slug=options["unit"], checkin_enabled=True).first()
         if not unit:
-            raise CommandError("Unidade sansaude não encontrada.")
+            raise CommandError("Unidade não encontrada ou check-in desabilitado.")
         if ReportDefinition.objects.filter(unit=unit, code="checkin-summary").exists():
             raise CommandError("Relatório já existe; nenhuma alteração aplicada.")
         report = ReportDefinition.objects.create(

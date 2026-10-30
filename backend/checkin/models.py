@@ -1,3 +1,5 @@
+
+from core.features import unit_feature_enabled
 from datetime import date, time
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -27,8 +29,8 @@ class Configuration(models.Model):
     lead_unit = models.CharField(max_length=8, choices=[("hours", "Horas"), ("days", "Dias")], default="hours")
 
     def clean(self):
-        if self.unit_id and self.unit.slug != "sansaude":
-            raise ValidationError("Check-in disponível apenas para Sansaúde.")
+        if self.unit_id and not unit_feature_enabled(self.unit, "checkin"):
+            raise ValidationError("Check-in desabilitado para esta unidade.")
         if self.business_start >= self.business_end:
             raise ValidationError("Horário comercial inválido.")
         try:
@@ -93,8 +95,8 @@ class CheckIn(models.Model):
         indexes = [models.Index(fields=["unit", "scheduled_at"])]
 
     def clean(self):
-        if not self.unit_id or self.unit.slug != "sansaude":
-            raise ValidationError("Check-in disponível apenas para Sansaúde.")
+        if not self.unit_id or not unit_feature_enabled(self.unit, "checkin"):
+            raise ValidationError("Check-in desabilitado para esta unidade.")
         if bool(self.appointment_id) == bool(self.booking_id):
             raise ValidationError("Informe exatamente uma origem.")
         source = self.appointment if self.appointment_id else self.booking

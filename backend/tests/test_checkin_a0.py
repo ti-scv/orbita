@@ -13,7 +13,7 @@ from scheduling.models import Appointment
 
 @pytest.fixture
 def data(db):
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     other = Unit.objects.create(slug="other", name="Outra")
     appointment = Appointment.objects.create(unit=unit, external_id="1", kind="exam", patient="Teste", procedure="Teste", scheduled_at=timezone.now(), arrival_time="")
     record = CheckIn.objects.create(unit=unit, appointment=appointment, source_revision=1)
@@ -72,7 +72,7 @@ def test_concurrent_idempotent_transition():
     from django.db import close_old_connections, connection, connections
     if connection.vendor != "postgresql":
         pytest.skip("Bloqueio de linha exige PostgreSQL")
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     appointment = Appointment.objects.create(unit=unit, external_id="1", kind="exam", patient="Teste", procedure="Teste", scheduled_at=timezone.now(), arrival_time="")
     record = CheckIn.objects.create(unit=unit, appointment=appointment)
     gate = Barrier(2)

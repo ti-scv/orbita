@@ -5,6 +5,8 @@ from django.db import models
 
 
 class Unit(models.Model):
+    checkin_enabled = models.BooleanField(default=False)
+    autoagenda_enabled = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
     authorized_recipients = models.JSONField(null=True, default=None, blank=True)
     slug = models.SlugField(unique=True)

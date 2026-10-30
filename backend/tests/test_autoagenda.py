@@ -31,7 +31,7 @@ class Repo:
 def env(db):
     from django.core.cache import cache
     cache.clear()
-    unit=Unit.objects.create(slug='sansaude',name='Sansaúde')
+    unit=Unit.objects.create(slug='sansaude', checkin_enabled=True, autoagenda_enabled=True,name='Sansaúde')
     cfg=Configuration.objects.create(unit=unit,enabled=True,validated=True,password_ciphertext=seal({'password':'fictional'}))
     user=get_user_model().objects.create_superuser(username='auto-admin',password='test-auto-pass')
     client=APIClient(HTTP_HOST='localhost');client.force_authenticate(user)
@@ -45,6 +45,7 @@ def open_chat(env):
     client=APIClient(HTTP_HOST='localhost')
     result=client.post('/api/v1/autoagenda/public/',{'action':'start','ticket':ticket},format='json')
     assert result.status_code==200,result.data
+    assert result.data['unit_name']==env[0].name and result.data['unit_logo']==env[0].logo
     token=result.data['session_token'];return client,token,result.data,ticket
 
 def action(client,token,view,act,value='',key=None):
@@ -166,7 +167,7 @@ def test_real_postgresql_row_locks_serialize_two_operators():
     from django.db import connection,transaction,close_old_connections
     from core.models import Unit
     if connection.vendor!='postgresql':pytest.skip('PostgreSQL required')
-    unit=Unit.objects.create(slug='sansaude',name='Sansaúde')
+    unit=Unit.objects.create(slug='sansaude', checkin_enabled=True, autoagenda_enabled=True,name='Sansaúde')
     cfg=Configuration.objects.create(unit=unit)
     c=Conversation.objects.create(unit=unit,configuration=cfg,token_hash='a'*64,expires_at=timezone.now()+timedelta(hours=1))
     barrier=threading.Barrier(2)

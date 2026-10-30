@@ -16,7 +16,7 @@ from scheduling.models import Appointment
 @pytest.fixture
 def delivery(db):
     now = timezone.now()
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde", paused=False)
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde", paused=False)
     Configuration.objects.create(unit=unit, enabled=True, appointment_enabled=True)
     appointment = Appointment.objects.create(unit=unit, external_id="c1", kind="exam", patient="Pessoa", procedure="Exame", phone="11999990000", scheduled_at=now + timedelta(days=1), arrival_time="")
     record = CheckIn.objects.create(unit=unit, appointment=appointment, scheduled_at=appointment.scheduled_at, planned_send_at=now - timedelta(minutes=1), response_deadline=appointment.scheduled_at)

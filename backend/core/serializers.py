@@ -10,6 +10,21 @@ from core.models import Audit, Unit
 
 class UnitSerializer(serializers.ModelSerializer):
     effective_recipients = serializers.SerializerMethodField()
+    feature_warnings = serializers.SerializerMethodField()
+
+    def get_feature_warnings(self, obj):
+        from django.conf import settings
+        from checkin.models import Configuration as CheckinConfiguration
+        from autoagenda.models import Configuration as AutoagendaConfiguration
+        warnings = []
+        config = CheckinConfiguration.objects.filter(unit=obj).first() if obj.checkin_enabled else None
+        if obj.checkin_enabled and (not config or not (config.appointment_enabled or config.booking_enabled)):
+            warnings.append("Check-in: configure uma fonte de agendamentos.")
+        if obj.checkin_enabled and (not settings.CHECKIN_ORACLE_VIEW or not settings.CHECKIN_ORACLE_KEY_COLUMN):
+            warnings.append("Check-in: view ou chave Oracle não configurada; a conciliação não será executada.")
+        if obj.autoagenda_enabled and not AutoagendaConfiguration.objects.filter(unit=obj, validated=True).exists():
+            warnings.append("Autoagendamento: configure e valide a conexão Oracle.")
+        return warnings
 
     def get_effective_recipients(self, obj) -> list[str]:
         from messaging.pilot import authorized_recipients
@@ -45,6 +60,9 @@ class UnitSerializer(serializers.ModelSerializer):
             "authorized_recipients",
             "effective_recipients",
             "logo",
+            "checkin_enabled",
+            "autoagenda_enabled",
+            "feature_warnings",
         ]
         read_only_fields = ["version"]
 

@@ -12,7 +12,7 @@ def dt(day, hour, minute=0):
 
 @pytest.fixture
 def config(db):
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     return Configuration.objects.create(unit=unit, enabled=True)
 
 

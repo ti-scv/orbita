@@ -1,5 +1,7 @@
 """Section permissions are enforced on every API request, not only navigation."""
 
+from core.features import unit_feature_enabled
+
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 
@@ -242,8 +244,8 @@ class SectionPermission(IsAuthenticated):
         from core.permissions import get_unit
 
         unit = get_unit(request)
-        if root in {"checkins", "checkin-configuration"} and unit.slug != "sansaude":
-            raise PermissionDenied("Check-in disponível apenas para Sansaúde.")
+        if root in {"checkins", "checkin-configuration"} and not unit_feature_enabled(unit, "checkin"):
+            raise PermissionDenied("Check-in desabilitado para esta unidade.")
         policy = effective_permissions(request, unit)
         check_resource(policy, path, request.method, request.query_params)
         return True

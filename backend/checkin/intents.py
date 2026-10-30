@@ -1,4 +1,6 @@
 """Create a reviewable check-in cycle without sending any messages."""
+
+from core.features import unit_feature_enabled
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -18,7 +20,7 @@ def create_intent(*, source, unit, cycle=1, now=None):
     This is deliberately not a sender: the queue adapter must still validate the
     current source, recipient, configuration and business window at dispatch.
     """
-    if unit.slug != "sansaude" or source.unit_id != unit.pk:
+    if not unit_feature_enabled(unit, "checkin") or source.unit_id != unit.pk:
         raise ValidationError("Origem ou unidade não autorizada.")
     if type(cycle) is not int or cycle < 1:
         raise ValidationError("Ciclo inválido.")

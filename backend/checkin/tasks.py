@@ -19,7 +19,7 @@ def tick():
     create_cycles(now)
     queue_cycles(now)
     ids = list(CheckIn.objects.filter(
-        unit__slug="sansaude", unit__checkin_configuration__enabled=True,
+        unit__checkin_enabled=True, unit__checkin_configuration__enabled=True,
         response="sent", response_deadline__lte=now,
     ).order_by("response_deadline", "pk").values_list("pk", flat=True)[:100])
     for pk in ids:
@@ -39,16 +39,22 @@ def tick():
 
 def create_cycles(now):
     """Discover eligible origins; identity and eligibility are rechecked under lock."""
+    from .models import Configuration
+
+    configs = Configuration.objects.select_related("unit").filter(
+        unit__checkin_enabled=True, enabled=True
+    )
+    for config in configs.iterator():
+        create_unit_cycles(config, now)
+
+
+def create_unit_cycles(config, now):
     from autoagenda.models import Booking
     from scheduling.models import Appointment
     from .intents import create_intent
     from .sources import normalize_booking_time
-    from .models import Configuration
 
-    config = Configuration.objects.select_related("unit").filter(
-        unit__slug="sansaude", enabled=True
-    ).first()
-    if not config or config.appointment_enabled == config.booking_enabled:
+    if config.appointment_enabled == config.booking_enabled:
         return
     if config.appointment_enabled:
         existing = CheckIn.objects.filter(appointment_id=OuterRef("pk"), source_revision=OuterRef("revision"), cycle=1)
@@ -82,7 +88,7 @@ def queue_cycles(now):
     from .deliveries import create_message
     from messaging.models import Message
 
-    records = CheckIn.objects.filter(unit__slug="sansaude", unit__checkin_configuration__enabled=True,
+    records = CheckIn.objects.filter(unit__checkin_enabled=True, unit__checkin_configuration__enabled=True,
         response="pending", planned_send_at__isnull=False, response_deadline__gt=now).order_by("planned_send_at", "pk")
     queued = 0
     for record in records.iterator():
@@ -99,12 +105,15 @@ def reconcile_oracle():
     if not settings.CHECKIN_ORACLE_SCHEDULER_ENABLED:
         return
     from core.models import Unit
-    from .models import Configuration
+    units = Unit.objects.filter(checkin_enabled=True, checkin_configuration__enabled=True,
+                                checkin_configuration__oracle_enabled=True)
+    for unit in units.iterator():
+        reconcile_unit_oracle(unit)
+
+
+def reconcile_unit_oracle(unit):
     from .oracle_reconciliation import OracleAttendanceSource, reconcile_batch
 
-    unit = Unit.objects.filter(slug="sansaude").first()
-    if not unit or not Configuration.objects.filter(unit=unit, enabled=True, oracle_enabled=True).exists():
-        return
     try:
         source = OracleAttendanceSource(unit)
     except ValueError:

@@ -13,7 +13,7 @@ from scheduling.models import Appointment
 @pytest.mark.django_db
 def test_tick_is_disabled_by_default_and_expires_only_enabled_sansaude():
     now = timezone.now()
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     config = Configuration.objects.create(unit=unit, enabled=True, appointment_enabled=True)
     appointment = Appointment.objects.create(unit=unit, external_id="1", kind="exam", patient="Teste", procedure="Teste", scheduled_at=now, arrival_time="")
     checkin = CheckIn.objects.create(unit=unit, appointment=appointment, scheduled_at=now, response="sent", response_deadline=now - timedelta(seconds=1))
@@ -43,7 +43,7 @@ def test_tick_creates_review_for_stale_revision():
     from responses.models import Issue
 
     now = timezone.now()
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     Configuration.objects.create(unit=unit, enabled=True, appointment_enabled=True)
     appointment = Appointment.objects.create(unit=unit, external_id="1", kind="exam", patient="Teste", procedure="Teste", scheduled_at=now, arrival_time="", revision=2)
     checkin = CheckIn.objects.create(unit=unit, appointment=appointment, source_revision=1, scheduled_at=now, response="sent", response_deadline=now - timedelta(seconds=1))
@@ -59,7 +59,7 @@ def test_tick_creates_review_for_stale_revision():
 @override_settings(CHECKIN_SCHEDULER_ENABLED=True)
 def test_tick_discovers_one_cycle_per_eligible_appointment():
     now = timezone.now()
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     Configuration.objects.create(unit=unit, enabled=True, appointment_enabled=True)
     appointment = Appointment.objects.create(unit=unit, external_id="new", kind="exam", patient="Teste", procedure="Teste", scheduled_at=now + timedelta(days=7), arrival_time="")
     tick()

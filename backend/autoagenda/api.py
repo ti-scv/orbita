@@ -16,6 +16,7 @@ from rest_framework.permissions import AllowAny
 from drf_spectacular.utils import extend_schema,extend_schema_view
 from drf_spectacular.types import OpenApiTypes
 from rest_framework.throttling import AnonRateThrottle
+from core.features import unit_feature_enabled
 from core.permissions import get_unit
 from core.models import Audit
 from operations.services import Conflict
@@ -27,7 +28,7 @@ from .oracle import Oracle, SourceError, error_code
 
 def unit_for(request):
     unit=get_unit(request)
-    if unit.slug!='sansaude':raise PermissionDenied('Autoagendamento disponível somente para Sansaúde.')
+    if not unit_feature_enabled(unit, 'autoagenda'):raise PermissionDenied('Autoagendamento desabilitado para esta unidade.')
     return unit
 
 
@@ -59,8 +60,9 @@ class ConfigInput(serializers.Serializer):
 @extend_schema_view(get=extend_schema(responses=OpenApiTypes.OBJECT, tags=['Autoagendamento']), put=extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT, tags=['Autoagendamento']))
 class ConfigurationView(APIView):
     def get(self,request):
-        c=Configuration.objects.filter(unit=unit_for(request)).first()
-        return Response(configuration_data(c) if c else {'configured':False})
+        unit=unit_for(request)
+        c=Configuration.objects.filter(unit=unit).first()
+        return Response(configuration_data(c) if c else {**configuration_data(Configuration(unit=unit)), 'configured':False})
     def put(self,request):
         unit=unit_for(request);serializer=ConfigInput(data=request.data);serializer.is_valid(raise_exception=True);data=serializer.validated_data
         password=data.pop('oracle_password','');admin_password=data.pop('admin_password','')
@@ -72,8 +74,10 @@ class ConfigurationView(APIView):
             if url.port==8080 or url.path not in ['', '/'] or url.query or url.fragment:raise ValidationError('Informe a origem do serviço público, sem caminho e fora da porta 8080.')
         if data.get('redirect_phone'):data['redirect_phone']=phone(data['redirect_phone'])
         with transaction.atomic():
+            unit=type(unit).objects.select_for_update().get(pk=unit.pk)
+            if not unit_feature_enabled(unit, 'autoagenda'):raise PermissionDenied('Autoagendamento desabilitado para esta unidade.')
             c=Configuration.objects.select_for_update().filter(unit=unit).first()
-            if not c:raise ValidationError('Inicialize a configuração da unidade.')
+            if not c:c=Configuration(unit=unit)
             if data.pop('version')!=c.version:raise Conflict('Configuração alterada. Recarregue a tela.')
             changed=any(k in data and data[k]!=getattr(c,k) for k in ['oracle_host','oracle_port','oracle_sid','oracle_user']) or bool(password)
             for k,v in data.items():setattr(c,k,v)
@@ -202,7 +206,7 @@ class PublicThrottle(AnonRateThrottle):
 
 
 def public_view(c,session_token=None):
-    data={**c.view,'events':list(c.events.order_by('-id').values('id','actor','text','step')[:200])[::-1],'version':c.version,'state':c.state,'step':c.step,'redirect_phone':c.configuration.redirect_phone,'environment':c.configuration.environment}
+    data={**c.view,'events':list(c.events.order_by('-id').values('id','actor','text','step')[:200])[::-1],'version':c.version,'state':c.state,'step':c.step,'redirect_phone':c.configuration.redirect_phone,'environment':c.configuration.environment,'unit_name':c.unit.name,'unit_logo':c.unit.logo}
     if session_token:data['session_token']=session_token;data['conversation_id']=str(c.pk)
     return data
 
@@ -254,14 +258,14 @@ class PublicView(APIView):
             except signing.BadSignature:raise PermissionDenied('Link inválido ou expirado.') from None
             with transaction.atomic():
                 c=Conversation.objects.select_for_update().filter(pk=data.get('id'),token_hash=digest(data.get('token','')),redeemed=False).select_related('configuration').first()
-                if not c or c.expires_at<timezone.now() or not c.configuration.enabled or c.unit.slug!='sansaude':raise PermissionDenied('Link indisponível.')
+                if not c or c.expires_at<timezone.now() or not c.configuration.enabled or not unit_feature_enabled(c.unit, 'autoagenda'):raise PermissionDenied('Link indisponível.')
                 token=secrets.token_urlsafe(40);c.token_hash=digest(token);c.redeemed=True;c.state='active'
                 flow=Flow(c,{},Oracle(c.configuration));flow.show('cpf',flow.text('cpf'),input_kind='cpf');save(c,flow.s)
                 return Response(public_view(c,token))
         if not token or len(token)>150:raise PermissionDenied('Sessão não autorizada.')
         with transaction.atomic():
             c=Conversation.objects.select_for_update().filter(token_hash=digest(token),redeemed=True).select_related('configuration').first()
-            if not c or c.unit.slug!='sansaude':raise PermissionDenied('Sessão não autorizada.')
+            if not c or not unit_feature_enabled(c.unit, 'autoagenda'):raise PermissionDenied('Sessão não autorizada.')
             if not c.configuration.enabled:raise PermissionDenied('Agendamento temporariamente desativado.')
             if not c.configuration.validated:raise PermissionDenied('Conexão pendente de validação.')
             if c.last_activity<timezone.now()-timedelta(minutes=c.configuration.session_minutes):raise PermissionDenied('Sessão expirada. Solicite um novo link.')

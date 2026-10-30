@@ -12,7 +12,7 @@ from scheduling.models import Appointment
 
 @pytest.fixture
 def setup(db):
-    unit = Unit.objects.create(slug="sansaude", name="Sansaúde")
+    unit = Unit.objects.create(slug="sansaude", checkin_enabled=True, autoagenda_enabled=True, name="Sansaúde")
     other = Unit.objects.create(slug="outra", name="Outra")
     config = Configuration.objects.create(unit=unit)
     records = []

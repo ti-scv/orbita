@@ -17,6 +17,9 @@ export type PageName =
 export type SectionLevel = "none" | "read" | "write";
 export type SectionPermissions = Record<string, SectionLevel>;
 export interface Unit {
+  checkin_enabled?: boolean;
+  autoagenda_enabled?: boolean;
+  feature_warnings?: string[];
   version?: number;
   authorized_recipients?: string[] | null;
   effective_recipients?: string[];

@@ -1,4 +1,6 @@
 """Transactional transition boundary shared by future API and adapters."""
+
+from core.features import unit_feature_enabled
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -22,8 +24,8 @@ RESPONSE_TRANSITIONS = {
 @transaction.atomic
 def transition(*, unit, checkin_id, version, idempotency_key, origin, response=None,
                attendance=None, actor=None, reason="", evidence=None, occurred_at=None):
-    if unit.slug != "sansaude":
-        raise ValidationError("Check-in disponível apenas para Sansaúde.")
+    if not unit_feature_enabled(unit, "checkin"):
+        raise ValidationError("Check-in desabilitado para esta unidade.")
     record = CheckIn.objects.select_for_update().get(pk=checkin_id, unit=unit)
     if not idempotency_key or len(idempotency_key) > 128:
         raise ValidationError("Chave de idempotência obrigatória.")

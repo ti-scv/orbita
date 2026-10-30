@@ -1,3 +1,5 @@
+
+from core.features import unit_feature_enabled
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -130,7 +132,7 @@ class ConfigurationView(APIView):
 
 def source_label(source, request):
     from core.access import LEVELS, effective_permissions
-    if source.unit.slug != "sansaude" or LEVELS[effective_permissions(request, source.unit).get("checkin", "none")] < 1:
+    if not unit_feature_enabled(source.unit, "checkin") or LEVELS[effective_permissions(request, source.unit).get("checkin", "none")] < 1:
         return None
     filters = {"appointment": source, "source_revision": source.revision} if hasattr(source, "revision") else {"booking": source, "source_revision": 1}
     row = CheckIn.objects.filter(unit=source.unit, **filters).order_by("-cycle").first()
