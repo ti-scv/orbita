@@ -70,8 +70,17 @@ def test_table_layout_respects_margins_without_scaling():
     pages = PdfReader(io.BytesIO(apply(original, design, title="", unit="", user="", parameters={}, already_laid_out=True))).pages
     assert len(pages) > 1
     assert all("Coluna" in page.extract_text() for page in pages)
+    mm = 72 / 25.4
     for page in pages:
         assert b"1 0.0 0.0 1 0.0 0.0 cm" in page.get_contents().get_data() or b"1 0 0 1 0.0 0.0 cm" in page.get_contents().get_data()
+        positions = []
+        def collect_text(text, cm, tm, font, size):
+            if text.strip():
+                positions.append((tm[4] * cm[0] + tm[5] * cm[2] + cm[4], tm[4] * cm[1] + tm[5] * cm[3] + cm[5], size))
+        page.extract_text(visitor_text=collect_text)
+        assert positions
+        assert all(margins["left"] * mm <= x <= float(page.mediabox.width) - margins["right"] * mm and margins["bottom"] * mm <= y <= float(page.mediabox.height) - margins["top"] * mm for x, y, _ in positions)
+        assert any(size == 7 for _, _, size in positions)
 
 
 def test_stock_report_can_paginate_with_letterhead_margins():

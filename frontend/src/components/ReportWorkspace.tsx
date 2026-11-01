@@ -1543,7 +1543,7 @@ export default function ReportWorkspace({
                         </Select>
                       </Field>
                     </div>
-                    <Field label="Timbrado"><Select value={form.letterhead ?? ""} onChange={e => update("letterhead", e.target.value)}><option value="">Sem timbrado</option>{letterheads.filter(r => r.active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</Select></Field>
+                    <Field label="Timbrado"><Select value={form.letterhead ?? ""} onChange={e => update("letterhead", e.target.value)}><option value="">Sem timbrado</option>{letterheads.filter(r => r.active || r.id === Number(form.letterhead)).map(r => <option key={r.id} value={r.id} disabled={!r.active}>{r.name}{r.active ? "" : " (inativo)"}</option>)}</Select></Field>
                     {form.engine !== "sqlite" && (
                       <div className="report-form-grid report-form-grid-host">
                         {input("host", "Host", "text", true)}

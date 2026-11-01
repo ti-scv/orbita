@@ -112,3 +112,25 @@ it("agrupa unidades e adiciona relatórios de mesmo código por ID", async () =>
   const saved = vi.mocked(request).mock.calls.find(call => call[0] === "reports/1/configure")![2] as any;
   expect(saved.components).toEqual([{code: "vendas", report_id: 3}, {code: "vendas"}]);
 });
+
+it("vincula um timbrado à conexão", async () => {
+  const connection = {id: 10, name: "Banco teste", engine: "sqlite", database: "/app/report_sources/example.sqlite", port: 1521, version: 1, enabled: false, timeout_seconds: 30, max_rows: 1000, letterhead: null};
+  vi.mocked(request).mockImplementation(async (path: string, method?: string) => {
+    if (path === "reports/inventory") return {};
+    if (path === "report-connections/10/configure" && method === "POST") return {id: 10};
+    if (path.endsWith("/users")) return [];
+    return {results: path === "report-connections" ? [connection] : path === "letterheads" ? [{id: 4, name: "Papel A", active: true}, {id: 5, name: "Papel B", active: true}] : [], next: null};
+  });
+  render(<ReportWorkspace unit="ame" admin operate />);
+  fireEvent.click(screen.getByRole("tab", {name: "Conexões"}));
+  fireEvent.click(await screen.findByRole("button", {name: "Editar Banco teste"}));
+  const dialog = screen.getByRole("dialog", {name: /Editar · Conexões/});
+  await vi.waitFor(() => expect(Array.from(dialog.querySelectorAll("select")).some(select => Array.from(select.options).some(option => option.text === "Papel B"))).toBe(true));
+  const selector = Array.from(dialog.querySelectorAll("select")).find(select => Array.from(select.options).some(option => option.text === "Papel B"))!;
+  fireEvent.change(selector, {target: {value: "5"}});
+  fireEvent.change(within(dialog).getByLabelText("Senha do administrador"), {target: {value: String(Math.random())}});
+  fireEvent.click(within(dialog).getByRole("button", {name: "Salvar"}));
+  await vi.waitFor(() => expect(vi.mocked(request).mock.calls.some(call => call[0] === "report-connections/10/configure")).toBe(true));
+  const saved = vi.mocked(request).mock.calls.find(call => call[0] === "report-connections/10/configure")![2] as any;
+  expect(saved.letterhead).toBe(5);
+});

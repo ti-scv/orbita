@@ -193,7 +193,9 @@ export default function Letterheads({ unit }: { unit: string }) {
             </>
           }
         >
-          <p>Remover {remove.name}?</p>
+          <p>
+            Remover {remove.name}? As conexões vinculadas ficarão sem timbrado.
+          </p>
           {error && (
             <div className="inline-error" role="alert">
               {error}

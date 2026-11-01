@@ -76,7 +76,12 @@ def test_connection_letterhead_must_be_active_and_in_unit(setup):
     foreign_unit = Unit.objects.create(slug="other-paper-unit", name="Outra")
     foreign = Letterhead.objects.create(unit=foreign_unit, name="Outro")
     context = {"unit": unit, "request": SimpleNamespace(user=setup["user"])}
-    base = {"name": "Conexão", "engine": "sqlite", "admin_password": "Test-Password-2026!"}
+    from secrets import token_urlsafe
+
+    password = token_urlsafe(24)
+    setup["user"].set_password(password)
+    setup["user"].save()
+    base = {"name": "Conexão", "engine": "sqlite", "admin_password": password}
     for value, valid in [(paper.pk, True), (foreign.pk, False)]:
         serializer = ConnectionSerializer(data={**base, "letterhead": value}, context=context)
         assert serializer.is_valid() is valid
@@ -84,6 +89,11 @@ def test_connection_letterhead_must_be_active_and_in_unit(setup):
     paper.save()
     serializer = ConnectionSerializer(data={**base, "letterhead": paper.pk}, context=context)
     assert not serializer.is_valid()
+    from operations.models import ReportConnection
+
+    connection = ReportConnection.objects.create(unit=unit, name="Existente", engine="sqlite", letterhead=paper)
+    serializer = ConnectionSerializer(connection, data={"admin_password": base["admin_password"], "letterhead": paper.pk}, partial=True, context=context)
+    assert serializer.is_valid(), serializer.errors
 
 @pytest.mark.django_db
 def test_svg_and_single_page_pdf_are_flattened_and_unsafe_inputs_rejected(setup):
@@ -105,6 +115,8 @@ def test_svg_and_single_page_pdf_are_flattened_and_unsafe_inputs_rejected(setup)
     c.showPage()
     c.showPage()
     c.save()
-    for content in (unsafe, multi.getvalue()):
+    external = b'<svg xmlns="http://www.w3.org/2000/svg" width="210" height="297"><image href="https://example.invalid/a.png"/></svg>'
+    handler = b'<svg xmlns="http://www.w3.org/2000/svg" width="210" height="297" onload="alert(1)"/>'
+    for content in (unsafe, external, handler, multi.getvalue()):
         result = client.post("/api/v1/letterheads/", {**payload(), "background": base64.b64encode(content).decode()}, format="json")
         assert result.status_code == 400

@@ -133,7 +133,10 @@ class ConnectionSerializer(
         ):
             raise ValidationError("Host inválido.")
         letterhead = attrs.get("letterhead")
-        if letterhead and (letterhead.unit_id != self.context["unit"].pk or not letterhead.active):
+        if letterhead and (
+            letterhead.unit_id != self.context["unit"].pk
+            or (not letterhead.active and (not self.instance or self.instance.letterhead_id != letterhead.pk))
+        ):
             raise ValidationError("Timbrado indisponível nesta unidade.")
         name = attrs.get("name", self.instance.name if self.instance else "")
         duplicate = m.ReportConnection.objects.filter(
