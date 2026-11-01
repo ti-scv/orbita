@@ -395,8 +395,8 @@ def make_execution(
         from operations.report_canvas.engine import definition_snapshot
         job.snapshot["canvas"] = definition_snapshot(report)
     if report.output_format == "pdf" and letterhead_id is not None:
-        from operations.models import Letterhead
         from operations.letterhead_pdf import snapshot as letterhead_snapshot
+        from operations.models import Letterhead
         candidates = Letterhead.objects.filter(unit=report.unit, active=True)
         letterhead = candidates.filter(is_default=True).first() if letterhead_id == "default" else candidates.filter(pk=letterhead_id).first()
         if letterhead_id != "default" and letterhead is None:

@@ -1,11 +1,10 @@
 import base64
 import io
 
-from pypdf import PdfReader
-from reportlab.pdfgen import canvas
-
 from operations.letterhead_pdf import apply
 from operations.report_engine import render
+from pypdf import PdfReader
+from reportlab.pdfgen import canvas
 
 
 def test_letterhead_on_each_page_and_preserves_content():

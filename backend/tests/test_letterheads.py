@@ -2,12 +2,11 @@ import base64
 import io
 
 import pytest
-from PIL import Image
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
-
 from core.models import Membership, Unit
+from django.contrib.auth import get_user_model
 from operations.models import Letterhead
+from PIL import Image
+from rest_framework.test import APIClient
 
 
 def payload(name="Timbrado"):
@@ -47,9 +46,10 @@ def test_permissions_and_validation(setup):
 @pytest.mark.django_db
 def test_execution_freezes_choice_and_rejects_foreign_unit(setup):
     from unittest.mock import patch
-    from rest_framework.exceptions import ValidationError
+
     from operations.models import ReportDefinition
     from operations.reporting import make_execution
+    from rest_framework.exceptions import ValidationError
     report = ReportDefinition.objects.create(unit=setup["unit"], code="letterhead-test", name="Teste", source="local")
     paper = Letterhead.objects.create(unit=setup["unit"], name="Padrão", is_default=True, background=b"original", margins=payload()["margins"])
     foreign_unit = Unit.objects.create(slug="foreign-letterhead", name="Outra")
