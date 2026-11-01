@@ -547,6 +547,14 @@ def execute_report(job_id):
             raise ValidationError("Resultado excede 10 MB.")
         job.refresh_from_db()
         execution_access(job)
+        if job.report.source == "external_file" and job.snapshot.get("letterhead"):
+            import hashlib
+
+            rendered = base64.b64decode(result)
+            job.snapshot["external_pdf"]["rendered"] = {
+                "size_bytes": len(rendered), "sha256": hashlib.sha256(rendered).hexdigest()
+            }
+            job.save(update_fields=["snapshot"])
         if no_data:
             job.snapshot["no_data"] = True
             job.save(update_fields=["snapshot"])

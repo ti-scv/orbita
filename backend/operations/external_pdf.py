@@ -91,8 +91,9 @@ def check_snapshot(job):
             content = base64.b64decode(job.result, validate=True)
         except (ValueError, TypeError):
             raise PermissionDenied("Resultado do PDF inválido.") from None
-        if (not content or len(content) != manifest.get("size_bytes")
-                or hashlib.sha256(content).hexdigest() != manifest["sha256"]):
+        result_manifest = manifest.get("rendered") if job.snapshot.get("letterhead") else manifest
+        if (not result_manifest or not content or len(content) != result_manifest.get("size_bytes")
+                or hashlib.sha256(content).hexdigest() != result_manifest.get("sha256")):
             raise PermissionDenied("Resultado do PDF alterado.")
     else:
         current = definition_snapshot(job.report)
