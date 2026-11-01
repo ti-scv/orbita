@@ -475,11 +475,13 @@ def execute_report(job_id):
         elif job.report.source == "local":
             from operations.models import ReportRequest
             from operations.reports import generate
+            margins = job.snapshot.get("letterhead", {}).get("margins") if job.format == "pdf" else None
+            already_laid_out = bool(margins)
 
             if job.recipient_id and job.snapshot.get("transport") == "baileys":
                 from operations.reports import local_report_content
 
-                result, count = local_report_content(job)
+                result, count = local_report_content(job, margins=margins) if margins else local_report_content(job)
             else:
                 if not job.requester:
                     raise ValidationError(
@@ -493,7 +495,7 @@ def execute_report(job_id):
                     format=job.format,
                     definition_version=job.definition_version,
                 )
-                generate(original.pk)
+                generate(original.pk, margins=margins) if margins else generate(original.pk)
                 original.refresh_from_db()
                 if original.state != "ready":
                     raise ValidationError("Falha no relatório operacional.")

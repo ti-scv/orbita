@@ -97,6 +97,27 @@ def test_stock_report_can_paginate_with_letterhead_margins():
     assert all("Fornecedor" in page.extract_text() for page in pages)
 
 
+def test_operational_report_paginates_inside_letterhead_margins(monkeypatch):
+    from types import SimpleNamespace
+    from operations.reports import local_report_content
+
+    monkeypatch.setattr("operations.reports.local_report_data", lambda *_: (
+        ["Paciente", "Telefone", "Finalidade", "Data", "Resposta", "Resultado", "Atendimento", "Responsável"],
+        [["Paciente fictício", "123", "Consulta", "2026-01-01", "Sim", "OK", "Aberto", "Usuário"] for _ in range(150)],
+    ))
+    job = SimpleNamespace(report=SimpleNamespace(source="local", handler="contacts", name="Relatório"), parameters={}, format="pdf")
+    margins = {"top": 35, "bottom": 30, "left": 25, "right": 25}
+    encoded, _ = local_report_content(job, margins=margins)
+    pages = PdfReader(io.BytesIO(base64.b64decode(encoded))).pages
+    assert len(pages) > 1
+    assert all("Paciente" in page.extract_text() for page in pages)
+    positions = []
+    for page in pages:
+        page.extract_text(visitor_text=lambda text, cm, tm, font, size: positions.append((text, tm[4] * cm[0] + tm[5] * cm[2] + cm[4], tm[4] * cm[1] + tm[5] * cm[3] + cm[5], size)) if text.strip() else None)
+        assert all(margins["left"] * 72 / 25.4 <= x <= float(page.mediabox.width) - margins["right"] * 72 / 25.4 and margins["bottom"] * 72 / 25.4 <= y <= float(page.mediabox.height) - margins["top"] * 72 / 25.4 for _, x, y, _ in positions)
+    assert any(size == 7 for _, _, _, size in positions)
+
+
 def test_canvas_layout_uses_work_area_without_reducing_font():
     from operations.report_canvas.pdf import PDFExporter
     from pypdf import PdfReader

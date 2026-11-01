@@ -68,13 +68,13 @@ def validate_parameters(values):
     return values
 
 
-def local_report_content(job):
+def local_report_content(job, *, margins=None):
     """Render unit-scoped data after the caller has verified report access."""
     from operations.operational_sql import is_internal
     if job.report.source == "sql" and is_internal(job.report.connection):
         if job.format == "pdf":
             from operations.report_canvas.engine import export
-            return export(job.report, job.report.canvas_layout, job.parameters, job.report.monthly_goals, "pdf")
+            return export(job.report, job.report.canvas_layout, job.parameters, job.report.monthly_goals, "pdf", margins=margins)
         from operations.report_engine import run_query
         headers, rows = run_query(job.report, job.parameters)
     else:
@@ -94,13 +94,21 @@ def local_report_content(job):
         output = io.BytesIO()
         style = getSampleStyleSheet()["BodyText"]
         style.fontSize, style.leading = 7, 9
+        widths = [140, 80, 100, 115, 70, 70, 80, 65]
+        document_options = {"leftMargin": 10, "rightMargin": 10}
+        if margins:
+            from reportlab.lib.units import mm
+            document_options = {f"{side}Margin": margins[side] * mm for side in ("left", "right", "top", "bottom")}
+            available = landscape(A4)[0] - document_options["leftMargin"] - document_options["rightMargin"]
+            factor = min(1, available / sum(widths))
+            widths = [width * factor for width in widths]
         table = Table(
             [
                 [Paragraph(escape(str(v)), style) for v in row]
                 for row in [headers, *rows]
             ],
             repeatRows=1,
-            colWidths=[140, 80, 100, 115, 70, 70, 80, 65],
+            colWidths=widths,
         )
         table.setStyle(
             TableStyle(
@@ -112,7 +120,7 @@ def local_report_content(job):
             )
         )
         SimpleDocTemplate(
-            output, pagesize=landscape(A4), leftMargin=10, rightMargin=10
+            output, pagesize=landscape(A4), **document_options
         ).build(
             [Paragraph(escape(job.report.name), getSampleStyleSheet()["Title"]), table]
         )
@@ -136,7 +144,7 @@ def local_report_content(job):
 
 
 @transaction.atomic
-def generate(job_id):
+def generate(job_id, *, margins=None):
     job = (
         ReportRequest.objects.select_for_update(of=("self",))
         .select_related("report", "requester", "unit", "access")
@@ -146,7 +154,7 @@ def generate(job_id):
         return
     try:
         check_access(job)
-        result, _ = local_report_content(job)
+        result, _ = local_report_content(job, margins=margins) if margins else local_report_content(job)
         job.result, job.state = result, "ready"
     except PermissionDenied:
         job.state, job.error_code = "blocked", "access_revoked"
