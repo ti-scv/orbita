@@ -67,8 +67,9 @@ def test_execution_freezes_choice_and_rejects_foreign_unit(setup):
 
 @pytest.mark.django_db
 def test_connection_letterhead_must_be_active_and_in_unit(setup):
-    from operations.report_api import ConnectionSerializer
     from types import SimpleNamespace
+
+    from operations.report_api import ConnectionSerializer
 
     unit = setup["unit"]
     paper = Letterhead.objects.create(unit=unit, name="Um")
@@ -83,3 +84,27 @@ def test_connection_letterhead_must_be_active_and_in_unit(setup):
     paper.save()
     serializer = ConnectionSerializer(data={**base, "letterhead": paper.pk}, context=context)
     assert not serializer.is_valid()
+
+@pytest.mark.django_db
+def test_svg_and_single_page_pdf_are_flattened_and_unsafe_inputs_rejected(setup):
+    from reportlab.pdfgen import canvas
+
+    client = setup["client"]
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="210" height="297"><rect width="210" height="297" fill="white"/></svg>'
+    pdf = io.BytesIO()
+    c = canvas.Canvas(pdf)
+    c.drawString(30, 30, "Fundo")
+    c.save()
+    for content in (svg, pdf.getvalue()):
+        result = client.post("/api/v1/letterheads/", {**payload(), "background": base64.b64encode(content).decode()}, format="json")
+        assert result.status_code == 201
+        assert base64.b64decode(result.data["background"]).startswith(b"\x89PNG")
+    unsafe = b'<svg xmlns="http://www.w3.org/2000/svg" width="210" height="297"><script>alert(1)</script></svg>'
+    multi = io.BytesIO()
+    c = canvas.Canvas(multi)
+    c.showPage()
+    c.showPage()
+    c.save()
+    for content in (unsafe, multi.getvalue()):
+        result = client.post("/api/v1/letterheads/", {**payload(), "background": base64.b64encode(content).decode()}, format="json")
+        assert result.status_code == 400

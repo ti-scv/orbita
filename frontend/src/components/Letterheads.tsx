@@ -40,6 +40,7 @@ const labels: Record<string, string> = {
 };
 
 export default function Letterheads({ unit }: { unit: string }) {
+  const [landscape, setLandscape] = useState(false);
   const [rows, setRows] = useState<Letterhead[]>([]),
     [edit, setEdit] = useState<Letterhead | null>(null),
     [remove, setRemove] = useState<Letterhead | null>(null),
@@ -243,7 +244,7 @@ export default function Letterheads({ unit }: { unit: string }) {
               Imagem de fundo (PNG ou JPEG)
               <input
                 type="file"
-                accept="image/png,image/jpeg"
+                accept="image/png,image/jpeg,image/svg+xml,application/pdf"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -262,7 +263,7 @@ export default function Letterheads({ unit }: { unit: string }) {
               />
             </label>
             <label>Fundo em paisagem (opcional)
-              <input type="file" accept="image/png,image/jpeg" onChange={(e) => {
+              <input type="file" accept="image/png,image/jpeg,image/svg+xml,application/pdf" onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 const reader = new FileReader();
@@ -315,11 +316,14 @@ export default function Letterheads({ unit }: { unit: string }) {
                 ))}
               </div>
             </fieldset>
+            <label>Visualização <select value={landscape ? "landscape" : "portrait"} onChange={e => setLandscape(e.target.value === "landscape")}><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
+            <p>Arquivos SVG e PDF são exibidos após salvar e validar.</p>
             <div
               className="letterhead-preview"
               style={{
-                backgroundImage: edit.background
-                  ? `url(data:image/png;base64,${edit.background})`
+                aspectRatio: landscape ? "297 / 210" : "210 / 297",
+                backgroundImage: ((landscape ? edit.background_landscape : edit.background) || "").match(/^(iVBOR|\/9j\/)/)
+                  ? `url(data:image/png;base64,${landscape ? edit.background_landscape : edit.background})`
                   : undefined,
               }}
             >

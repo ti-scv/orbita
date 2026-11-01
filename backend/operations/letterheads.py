@@ -14,6 +14,45 @@ from rest_framework.exceptions import ValidationError
 from operations.models import Letterhead
 
 
+def _validate_svg(raw):
+    """Accept only static SVG shapes; reject active content and references."""
+    from defusedxml import ElementTree
+
+    allowed = {"svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "text", "tspan", "defs", "linearGradient", "radialGradient", "stop", "clipPath"}
+    try:
+        root = ElementTree.fromstring(raw, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+        if root.tag != "{http://www.w3.org/2000/svg}svg":
+            raise ValueError()
+        for node in root.iter():
+            if not node.tag.startswith("{http://www.w3.org/2000/svg}") or node.tag.split("}", 1)[-1] not in allowed:
+                raise ValueError()
+            for key, value in node.attrib.items():
+                name = key.split("}")[-1].lower()
+                if name.startswith("on") or name in {"href", "src", "style"} or "url(" in value.lower() or "@import" in value.lower():
+                    raise ValueError()
+    except Exception as exc:
+        raise ValueError("SVG inválido ou inseguro") from exc
+
+
+def _flatten_document(raw, kind):
+    """Rasterize a single bounded page, removing PDF actions and SVG markup."""
+    import pymupdf
+
+    try:
+        with pymupdf.open(stream=raw, filetype=kind) as doc:
+            if doc.is_encrypted or len(doc) != 1:
+                raise ValueError()
+            page = doc[0]
+            width, height = page.rect.width, page.rect.height
+            if not (72 <= width <= 3000 and 72 <= height <= 3000):
+                raise ValueError()
+            scale = min(2, (16_000_000 / (width * height)) ** 0.5)
+            pix = page.get_pixmap(matrix=pymupdf.Matrix(scale, scale), alpha=False)
+            return pix.tobytes("png")
+    except Exception as exc:
+        raise ValueError("Documento inválido") from exc
+
+
 class LetterheadSerializer(serializers.ModelSerializer):
     background = serializers.CharField(required=False, allow_blank=True)
     background_landscape = serializers.CharField(required=False, allow_blank=True)
@@ -39,14 +78,20 @@ class LetterheadSerializer(serializers.ModelSerializer):
             raw = base64.b64decode(value, validate=True)
             if len(raw) > 2 * 1024 * 1024:
                 raise ValueError()
-            with Image.open(io.BytesIO(raw)) as image:
-                if image.format not in {"PNG", "JPEG"} or image.width * image.height > 16_000_000:
-                    raise ValueError()
-                image.load()
-                if image.width < 100 or image.height < 100:
-                    raise ValueError()
+            if raw.startswith(b"%PDF-"):
+                raw = _flatten_document(raw, "pdf")
+            elif raw.lstrip().startswith(b"<"):
+                _validate_svg(raw)
+                raw = _flatten_document(raw, "svg")
+            else:
+                with Image.open(io.BytesIO(raw)) as image:
+                    if image.format not in {"PNG", "JPEG"} or image.width * image.height > 16_000_000:
+                        raise ValueError()
+                    image.load()
+                    if image.width < 100 or image.height < 100:
+                        raise ValueError()
         except (ValueError, binascii.Error, OSError, UnidentifiedImageError, Image.DecompressionBombError):
-            raise ValidationError("Use PNG ou JPEG válido, de até 2 MB e 16 megapixels.") from None
+            raise ValidationError("Use PNG, JPEG, SVG seguro ou PDF de uma página válido, de até 2 MB.") from None
         return raw
 
     def validate_background_landscape(self, value):
