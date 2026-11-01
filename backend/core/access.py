@@ -43,6 +43,7 @@ RESOURCES = {
     "campaigns": ["campaigns"],
     "sheet-imports": ["campaigns"],
     "reports": ["reports"],
+    "letterheads": ["reports"],
     "report-requests": ["reports"],
     "report-access": ["reports"],
     "report-connections": ["reports"],

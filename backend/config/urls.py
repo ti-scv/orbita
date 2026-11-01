@@ -23,6 +23,7 @@ from messaging.costs import MetaCostView
 from messaging.groups import AppointmentGroupViewSet
 from messaging.meta_config import MetaConfigurationViewSet
 from operations import snapshot_api
+from operations.letterheads import LetterheadViewSet
 from operations import report_api
 from operations import views as operations
 from operations.members import MemberViewSet
@@ -63,6 +64,7 @@ for prefix, view in [
     ("sheet-imports", operations.SheetViewSet),
     ("campaigns", operations.CampaignViewSet),
     ("reports", report_api.CatalogViewSet),
+    ("letterheads", LetterheadViewSet),
     ("report-access", operations.ReportAccessViewSet),
     ("report-connections", report_api.ConnectionViewSet),
     ("report-app-connections", AppConnectionViewSet),
