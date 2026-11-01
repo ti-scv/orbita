@@ -21,6 +21,9 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
     total = len(reader.pages)
     mm = 72 / 25.4
     today = timezone.localtime(generated_at or timezone.now()).strftime("%d/%m/%Y")
+    start = next((parameters.get(k) for k in ("start", "start_date", "data_inicial") if parameters.get(k)), "")
+    end = next((parameters.get(k) for k in ("end", "end_date", "data_final") if parameters.get(k)), "")
+    period = " — ".join(str(v) for v in (start, end) if v)
     for index, page in enumerate(reader.pages, 1):
         width, height = float(page.mediabox.width), float(page.mediabox.height)
         margins = design["margins"]
@@ -37,7 +40,7 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
         background = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
         overlay = io.BytesIO()
         c = canvas.Canvas(overlay, pagesize=(width, height))
-        values = {"title": title, "date": today, "period": " — ".join(str(parameters.get(k) or "") for k in ("start", "end")).strip(" —"), "unit": unit, "user": user, "page": f"Página {index} de {total}"}
+        values = {"title": title, "date": today, "period": period, "unit": unit, "user": user, "page": f"Página {index} de {total}"}
         for field in design["fields"]:
             text = field["text"] if field["type"] == "text" else values[field["type"]]
             c.setFont(field.get("font", "Helvetica"), field["font_size"])
@@ -49,9 +52,10 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
         scale = min(available_w / width, available_h / height)
         tx = left + (available_w-width*scale)/2
         ty = bottom + (available_h-height*scale)/2
-        background.merge_transformed_page(page, Transformation().scale(scale).translate(tx, ty))
-        background.merge_page(foreground)
         writer.add_page(background)
+        target = writer.pages[-1]
+        target.merge_transformed_page(page, Transformation().scale(scale).translate(tx, ty))
+        target.merge_page(foreground)
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()
