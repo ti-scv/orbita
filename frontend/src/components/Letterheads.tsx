@@ -241,7 +241,7 @@ export default function Letterheads({ unit }: { unit: string }) {
               />
             </label>
             <label className="op-field">
-              Imagem de fundo (PNG ou JPEG)
+              Imagem de fundo (PNG, JPEG, SVG ou PDF)
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/svg+xml,application/pdf"
@@ -330,10 +330,10 @@ export default function Letterheads({ unit }: { unit: string }) {
               <div
                 className="letterhead-workarea"
                 style={{
-                  top: `${(edit.margins.top / 297) * 100}%`,
-                  bottom: `${(edit.margins.bottom / 297) * 100}%`,
-                  left: `${(edit.margins.left / 210) * 100}%`,
-                  right: `${(edit.margins.right / 210) * 100}%`,
+                  top: `${(edit.margins.top / (landscape ? 210 : 297)) * 100}%`,
+                  bottom: `${(edit.margins.bottom / (landscape ? 210 : 297)) * 100}%`,
+                  left: `${(edit.margins.left / (landscape ? 297 : 210)) * 100}%`,
+                  right: `${(edit.margins.right / (landscape ? 297 : 210)) * 100}%`,
                 }}
               />
               {edit.fields.map((f, i) => (

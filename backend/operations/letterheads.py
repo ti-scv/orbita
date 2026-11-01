@@ -92,6 +92,8 @@ class LetterheadSerializer(serializers.ModelSerializer):
                         raise ValueError()
         except (ValueError, binascii.Error, OSError, UnidentifiedImageError, Image.DecompressionBombError):
             raise ValidationError("Use PNG, JPEG, SVG seguro ou PDF de uma página válido, de até 2 MB.") from None
+        if len(raw) > 2 * 1024 * 1024:
+            raise ValidationError("O fundo convertido deve ter até 2 MB.")
         return raw
 
     def validate_background_landscape(self, value):
