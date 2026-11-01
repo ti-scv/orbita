@@ -16,7 +16,6 @@ type Letterhead = {
   id?: number;
   name: string;
   active: boolean;
-  is_default: boolean;
   background: string;
   margins: Record<string, number>;
   fields: Field[];
@@ -24,7 +23,6 @@ type Letterhead = {
 const empty = (): Letterhead => ({
   name: "",
   active: true,
-  is_default: false,
   background: "",
   margins: { top: 25, bottom: 20, left: 15, right: 15 },
   fields: [],
@@ -142,7 +140,6 @@ export default function Letterheads({ unit }: { unit: string }) {
                 <td>{r.name}</td>
                 <td>
                   {r.active ? "Ativo" : "Inativo"}
-                  {r.is_default ? " · Padrão" : ""}
                 </td>
                 <td>
                   <button
@@ -270,25 +267,10 @@ export default function Letterheads({ unit }: { unit: string }) {
                   setEdit({
                     ...edit,
                     active: e.target.checked,
-                    is_default: e.target.checked && edit.is_default,
                   })
                 }
               />{" "}
               Ativo
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={edit.is_default}
-                onChange={(e) =>
-                  setEdit({
-                    ...edit,
-                    is_default: e.target.checked,
-                    active: e.target.checked || edit.active,
-                  })
-                }
-              />{" "}
-              Padrão da unidade
             </label>
             <fieldset>
               <legend>Margens (mm)</legend>

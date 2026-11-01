@@ -20,7 +20,6 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=150)),
                 ('active', models.BooleanField(default=True)),
-                ('is_default', models.BooleanField(default=False)),
                 ('background', models.BinaryField(blank=True, default=bytes)),
                 ('margins', models.JSONField(default=dict)),
                 ('fields', models.JSONField(default=list)),
@@ -29,8 +28,9 @@ class Migration(migrations.Migration):
                 ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
                 ('unit', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='core.unit')),
             ],
-            options={
-                'constraints': [models.UniqueConstraint(condition=models.Q(('is_default', True)), fields=('unit',), name='letterhead_unit_default')],
-            },
+        ),
+        migrations.AddField(
+            model_name="reportconnection", name="letterhead",
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to="operations.letterhead"),
         ),
     ]

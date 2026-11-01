@@ -398,7 +398,7 @@ def make_execution(
         from operations.letterhead_pdf import snapshot as letterhead_snapshot
         from operations.models import Letterhead
         candidates = Letterhead.objects.filter(unit=report.unit, active=True)
-        letterhead = candidates.filter(is_default=True).first() if letterhead_id == "default" else candidates.filter(pk=letterhead_id).first()
+        letterhead = candidates.filter(pk=report.connection.letterhead_id).first() if letterhead_id == "default" and report.connection_id else (candidates.filter(pk=letterhead_id).first() if letterhead_id != "default" else None)
         if letterhead_id != "default" and letterhead is None:
             raise ValidationError("Timbrado indisponível nesta unidade.")
         if letterhead:

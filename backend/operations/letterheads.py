@@ -20,7 +20,7 @@ class LetterheadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Letterhead
-        fields = ("id", "name", "active", "is_default", "background", "margins", "fields", "created_by", "created_at", "updated_at")
+        fields = ("id", "name", "active", "background", "margins", "fields", "created_by", "created_at", "updated_at")
         read_only_fields = ("id", "created_by", "created_at", "updated_at")
 
     def to_representation(self, instance):
@@ -74,12 +74,6 @@ class LetterheadSerializer(serializers.ModelSerializer):
                     raise ValidationError("Posição ou tamanho inválido.")
         return value
 
-    def validate(self, attrs):
-        active = attrs.get("active", self.instance.active if self.instance else True)
-        default = attrs.get("is_default", self.instance.is_default if self.instance else False)
-        if default and not active:
-            raise ValidationError("O timbrado padrão deve estar ativo.")
-        return attrs
 
 
 class LetterheadViewSet(viewsets.ModelViewSet):
@@ -93,8 +87,6 @@ class LetterheadViewSet(viewsets.ModelViewSet):
         unit = get_unit(self.request, ["admin"])
         with transaction.atomic():
             Unit.objects.select_for_update().get(pk=unit.pk)
-            if serializer.validated_data.get("is_default"):
-                Letterhead.objects.filter(unit=unit, is_default=True).exclude(pk=getattr(serializer.instance, "pk", None)).update(is_default=False)
             obj = serializer.save(**({"unit": unit, "created_by": self.request.user} if create else {}))
             Audit.objects.create(unit=unit, actor=self.request.user, action="letterhead.created" if create else "letterhead.updated", object_id=str(obj.pk))
 

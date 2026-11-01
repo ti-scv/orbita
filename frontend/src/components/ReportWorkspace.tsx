@@ -637,6 +637,7 @@ export default function ReportWorkspace({
           "options",
           "enabled",
           "admin_password",
+          "letterhead",
         ],
         recipients: [
           "name",
@@ -671,7 +672,7 @@ export default function ReportWorkspace({
         data.keyword = data.keywords[0]?.slice(0, 80) || "";
       }
       if (t === "recipients" && !Array.isArray(form.manual_reports)) throw new Error("Aguarde o carregamento das permissões de relatórios.");
-      if (t === "connections" && form.password) data.password = form.password;
+      if (t === "connections") { data.letterhead = form.letterhead ? Number(form.letterhead) : null; if (form.password) data.password = form.password; }
       if (t === "grants" && form._grant_loaded_key !== `${unit}:${form.recipient}:${form.report}`) throw new Error("Aguarde o carregamento da permissão selecionada.");
       if (t === "grants" || t === "automations") {
         data.parameters = JSON.parse(json);
@@ -1239,7 +1240,7 @@ export default function ReportWorkspace({
                   }
                 >
                   {reportSelect}
-                  {modal.kind === "run" && <Field label="Timbrado"><Select value={form.letterhead ?? "default"} onChange={e => update("letterhead", e.target.value)}><option value="default">Padrão da unidade</option><option value="none">Sem timbrado</option>{letterheads.filter(r => r.active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</Select></Field>}
+                  {modal.kind === "run" && <Field label="Timbrado"><Select value={form.letterhead ?? "default"} onChange={e => update("letterhead", e.target.value)}><option value="default">Timbrado da conexão</option><option value="none">Sem timbrado</option>{letterheads.filter(r => r.active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</Select></Field>}
                   {admin && (
                     <Field label="Destinatário (opcional)">
                       <Select
@@ -1542,6 +1543,7 @@ export default function ReportWorkspace({
                         </Select>
                       </Field>
                     </div>
+                    <Field label="Timbrado"><Select value={form.letterhead ?? ""} onChange={e => update("letterhead", e.target.value)}><option value="">Sem timbrado</option>{letterheads.filter(r => r.active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</Select></Field>
                     {form.engine !== "sqlite" && (
                       <div className="report-form-grid report-form-grid-host">
                         {input("host", "Host", "text", true)}

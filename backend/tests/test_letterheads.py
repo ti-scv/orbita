@@ -16,14 +16,14 @@ def payload(name="Timbrado"):
 
 
 @pytest.mark.django_db
-def test_crud_and_default_are_scoped(setup):
+def test_crud_is_scoped(setup):
     client = setup["client"]
-    data = {**payload(), "is_default": True}
+    data = payload()
     first = client.post("/api/v1/letterheads/", data, format="json")
     assert first.status_code == 201
     second = client.post("/api/v1/letterheads/", {**data, "name": "Outro"}, format="json")
     assert second.status_code == 201
-    assert not Letterhead.objects.get(pk=first.data["id"]).is_default
+    assert Letterhead.objects.filter(unit=setup["unit"]).count() == 2
     assert client.patch(f'/api/v1/letterheads/{second.data["id"]}/', {"name": "Alterado"}, format="json").status_code == 200
     other = Unit.objects.create(slug="other-letterhead", name="Outra")
     foreign = Letterhead.objects.create(unit=other, name="Externo")
@@ -47,11 +47,12 @@ def test_permissions_and_validation(setup):
 def test_execution_freezes_choice_and_rejects_foreign_unit(setup):
     from unittest.mock import patch
 
-    from operations.models import ReportDefinition
+    from operations.models import ReportConnection, ReportDefinition
     from operations.reporting import make_execution
     from rest_framework.exceptions import ValidationError
-    report = ReportDefinition.objects.create(unit=setup["unit"], code="letterhead-test", name="Teste", source="local")
-    paper = Letterhead.objects.create(unit=setup["unit"], name="Padrão", is_default=True, background=b"original", margins=payload()["margins"])
+    paper = Letterhead.objects.create(unit=setup["unit"], name="Papel", background=b"original", margins=payload()["margins"])
+    connection = ReportConnection.objects.create(unit=setup["unit"], name="Conexão", engine="sqlite", letterhead=paper)
+    report = ReportDefinition.objects.create(unit=setup["unit"], code="letterhead-test", name="Teste", source="local", connection=connection)
     foreign_unit = Unit.objects.create(slug="foreign-letterhead", name="Outra")
     foreign = Letterhead.objects.create(unit=foreign_unit, name="Outro")
     with patch("operations.reporting.execution_access"):
@@ -63,3 +64,22 @@ def test_execution_freezes_choice_and_rejects_foreign_unit(setup):
     paper.save()
     assert base64.b64decode(job.snapshot["letterhead"]["background"]) == b"original"
     assert "letterhead" not in plain.snapshot
+
+@pytest.mark.django_db
+def test_connection_letterhead_must_be_active_and_in_unit(setup):
+    from operations.report_api import ConnectionSerializer
+    from types import SimpleNamespace
+
+    unit = setup["unit"]
+    paper = Letterhead.objects.create(unit=unit, name="Um")
+    foreign_unit = Unit.objects.create(slug="other-paper-unit", name="Outra")
+    foreign = Letterhead.objects.create(unit=foreign_unit, name="Outro")
+    context = {"unit": unit, "request": SimpleNamespace(user=setup["user"])}
+    base = {"name": "Conexão", "engine": "sqlite", "admin_password": "Test-Password-2026!"}
+    for value, valid in [(paper.pk, True), (foreign.pk, False)]:
+        serializer = ConnectionSerializer(data={**base, "letterhead": value}, context=context)
+        assert serializer.is_valid() is valid
+    paper.active = False
+    paper.save()
+    serializer = ConnectionSerializer(data={**base, "letterhead": paper.pk}, context=context)
+    assert not serializer.is_valid()

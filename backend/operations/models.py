@@ -298,6 +298,7 @@ class ReportConnection(models.Model):
         removed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
         removed_was_enabled = models.BooleanField(null=True, blank=True)
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
+    letterhead = models.ForeignKey("Letterhead", null=True, blank=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=150)
     engine = models.CharField(
         max_length=20,
@@ -745,13 +746,9 @@ class Letterhead(models.Model):
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
     name = models.CharField(max_length=150)
     active = models.BooleanField(default=True)
-    is_default = models.BooleanField(default=False)
     background = models.BinaryField(blank=True, default=bytes)
     margins = models.JSONField(default=dict)
     fields = models.JSONField(default=list)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        constraints = [models.UniqueConstraint(fields=["unit"], condition=models.Q(is_default=True), name="letterhead_unit_default")]
