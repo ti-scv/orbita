@@ -141,9 +141,7 @@ export default function Letterheads({ unit }: { unit: string }) {
             {rows.map((r) => (
               <tr key={r.id}>
                 <td>{r.name}</td>
-                <td>
-                  {r.active ? "Ativo" : "Inativo"}
-                </td>
+                <td>{r.active ? "Ativo" : "Inativo"}</td>
                 <td>
                   <button
                     className="button"
@@ -262,17 +260,43 @@ export default function Letterheads({ unit }: { unit: string }) {
                 }}
               />
             </label>
-            <label>Fundo em paisagem (opcional)
-              <input type="file" accept="image/png,image/jpeg,image/svg+xml,application/pdf" onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => setEdit(v => v ? {...v, background_landscape: String(reader.result).split(",")[1]} : v);
-                reader.readAsDataURL(file);
-              }} />
-              {edit.background_landscape && <button type="button" onClick={() => setEdit({...edit, background_landscape: ""})}>Remover fundo em paisagem</button>}
+            <label>
+              Fundo em paisagem (opcional)
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () =>
+                    setEdit((v) =>
+                      v
+                        ? {
+                            ...v,
+                            background_landscape: String(reader.result).split(
+                              ",",
+                            )[1],
+                          }
+                        : v,
+                    );
+                  reader.readAsDataURL(file);
+                }}
+              />
             </label>
-            <p>Sem fundo em paisagem, páginas em paisagem serão geradas sem fundo.</p>
+            {edit.background_landscape && (
+              <button
+                className="button"
+                type="button"
+                onClick={() => setEdit({ ...edit, background_landscape: "" })}
+              >
+                Remover fundo em paisagem
+              </button>
+            )}
+            <p>
+              Sem fundo em paisagem, páginas em paisagem serão geradas sem
+              fundo.
+            </p>
             <label>
               <input
                 type="checkbox"
@@ -316,13 +340,25 @@ export default function Letterheads({ unit }: { unit: string }) {
                 ))}
               </div>
             </fieldset>
-            <label>Visualização <select value={landscape ? "landscape" : "portrait"} onChange={e => setLandscape(e.target.value === "landscape")}><option value="portrait">Retrato</option><option value="landscape">Paisagem</option></select></label>
+            <label>
+              Visualização{" "}
+              <select
+                value={landscape ? "landscape" : "portrait"}
+                onChange={(e) => setLandscape(e.target.value === "landscape")}
+              >
+                <option value="portrait">Retrato</option>
+                <option value="landscape">Paisagem</option>
+              </select>
+            </label>
             <p>Arquivos SVG e PDF são exibidos após salvar e validar.</p>
             <div
               className="letterhead-preview"
               style={{
                 aspectRatio: landscape ? "297 / 210" : "210 / 297",
-                backgroundImage: ((landscape ? edit.background_landscape : edit.background) || "").match(/^(iVBOR|\/9j\/)/)
+                backgroundImage: (
+                  (landscape ? edit.background_landscape : edit.background) ||
+                  ""
+                ).match(/^(iVBOR|\/9j\/)/)
                   ? `url(data:image/png;base64,${landscape ? edit.background_landscape : edit.background})`
                   : undefined,
               }}

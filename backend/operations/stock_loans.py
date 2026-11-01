@@ -125,7 +125,7 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None, m
              Spacer(1, 6), para(period), para("Ambiente: " + env, bold), Spacer(1, 8),
              para("Estoque atual: posição no momento da consulta; não representa o saldo no fim do período.", small), Spacer(1, 10)]
     column_labels = [para(x, bold) for x in ("Tipo", "Data", "Código", "Produto", "Unidade", "Qtde.", "Est. atual", "Localização")]
-    weights = [72,48,42,135,44,48,55,95]
+    weights = [72,70,42,120,44,48,55,95] if margins else [72,48,42,135,44,48,55,95]
     widths = [width*v/sum(weights) for v in weights]
     base_styles = [("BACKGROUND", (0,1),(-1,1), colors.HexColor("#ededed")), ("VALIGN", (0,0),(-1,-1), "TOP"),
               ("LEFTPADDING", (0,0),(-1,-1), 4), ("RIGHTPADDING", (0,0),(-1,-1), 4),

@@ -27,3 +27,41 @@ test("cadastro só fecha após salvar e mostra erros", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 });
+
+test("lista vários timbrados e permite alternar a prévia para paisagem", async () => {
+  mock.mockResolvedValueOnce({
+    results: [
+      {
+        id: 1,
+        name: "Modelo A",
+        active: true,
+        background: "",
+        background_landscape: "",
+        margins: { top: 25, bottom: 20, left: 15, right: 15 },
+        fields: [],
+      },
+      {
+        id: 2,
+        name: "Modelo B",
+        active: true,
+        background: "",
+        background_landscape: "",
+        margins: { top: 25, bottom: 20, left: 15, right: 15 },
+        fields: [],
+      },
+    ],
+    next: null,
+  });
+  const { container } = render(<Letterheads unit="ame" />);
+  expect(await screen.findByText("Modelo A")).toBeTruthy();
+  expect(screen.getByText("Modelo B")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Editar Modelo A" }));
+  fireEvent.change(screen.getByLabelText("Visualização"), {
+    target: { value: "landscape" },
+  });
+  expect(
+    (container.querySelector(".letterhead-preview") as HTMLElement).style
+      .aspectRatio,
+  ).toBe("297 / 210");
+  expect(screen.queryByLabelText("Padrão da unidade")).toBeNull();
+});
