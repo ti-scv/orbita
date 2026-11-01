@@ -452,6 +452,7 @@ def execute_report(job_id):
         job.save(update_fields=["state"])
     try:
         execution_access(job)
+        already_laid_out = False
         if job.report.canvas_enabled:
             from operations.report_canvas.engine import generate as generate_canvas
             result, count = generate_canvas(job)
@@ -497,6 +498,8 @@ def execute_report(job_id):
                 result, count = original.result, 0
         else:
             sections = collect(job.report, job.parameters)
+            already_laid_out = True
+            margins = job.snapshot.get("letterhead", {}).get("margins") if job.format == "pdf" else None
             count = sum(len(x[2]) for x in sections)
             if job.format == "pdf" and len(sections) > 1:
                 import io
@@ -508,7 +511,7 @@ def execute_report(job_id):
                     writer.append(
                         PdfReader(
                             io.BytesIO(
-                                base64.b64decode(render(name, headers, rows, "pdf"))
+                                base64.b64decode(render(name, headers, rows, "pdf", margins=margins))
                             )
                         )
                     )
@@ -520,7 +523,7 @@ def execute_report(job_id):
                 result = render_workbook(sections)
             elif len(sections) == 1:
                 name, headers, rows = sections[0]
-                result = render(name, headers, rows, job.format)
+                result = render(name, headers, rows, job.format, margins=margins)
             else:
                 result = "\n\n".join(
                     name + "\n" + render(name, headers, rows, job.format)
@@ -533,6 +536,7 @@ def execute_report(job_id):
                 title=job.snapshot["name"], unit=job.unit.name,
                 user=job.requester.get_username() if job.requester else "",
                 parameters=job.parameters, generated_at=job.created_at,
+                already_laid_out=already_laid_out,
             )).decode()
         no_data = count == 0 and job.snapshot.get("transport") == "baileys"
         if no_data:

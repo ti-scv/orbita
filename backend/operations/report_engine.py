@@ -430,7 +430,7 @@ def render_workbook(sections):
     return base64.b64encode(out.getvalue()).decode()
 
 
-def render(name, headers, rows, output_format):
+def render(name, headers, rows, output_format, *, margins=None):
     if output_format == "xlsx":
         return render_workbook([(name, headers, rows)])
     if output_format == "pdf":
@@ -463,8 +463,12 @@ def render(name, headers, rows, output_format):
                 ]
             )
         )
+        options = {"leftMargin": 18, "rightMargin": 18}
+        if margins is not None:
+            from reportlab.lib.units import mm
+            options = {f"{side}Margin": margins[side] * mm for side in ("left", "right", "top", "bottom")}
         SimpleDocTemplate(
-            out, pagesize=landscape(A4), leftMargin=18, rightMargin=18
+            out, pagesize=landscape(A4), **options
         ).build([Paragraph(escape(name), styles["Title"]), table])
         return base64.b64encode(out.getvalue()).decode()
     if output_format == "text":

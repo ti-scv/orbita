@@ -61,3 +61,14 @@ def test_landscape_uses_only_its_own_background():
     design["background_landscape"] = encoded
     page = PdfReader(io.BytesIO(apply(source.getvalue(), design, title="", unit="", user="", parameters={}))).pages[0]
     assert any(obj.get_object().get("/Subtype") == "/Image" for obj in page["/Resources"]["/XObject"].get_object().values())
+
+
+def test_table_layout_respects_margins_without_scaling():
+    margins = {"top": 35, "bottom": 30, "left": 25, "right": 25}
+    original = base64.b64decode(render("Relatório", ["Coluna"], [[str(i)] for i in range(150)], "pdf", margins=margins))
+    design = {"background": "", "margins": margins, "fields": []}
+    pages = PdfReader(io.BytesIO(apply(original, design, title="", unit="", user="", parameters={}, already_laid_out=True))).pages
+    assert len(pages) > 1
+    assert all("Coluna" in page.extract_text() for page in pages)
+    for page in pages:
+        assert b"1 0.0 0.0 1 0.0 0.0 cm" in page.get_contents().get_data() or b"1 0 0 1 0.0 0.0 cm" in page.get_contents().get_data()

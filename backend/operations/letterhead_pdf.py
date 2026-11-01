@@ -15,7 +15,7 @@ def snapshot(letterhead):
             "margins": letterhead.margins, "fields": letterhead.fields}
 
 
-def apply(content, design, *, title, unit, user, parameters, generated_at=None):
+def apply(content, design, *, title, unit, user, parameters, generated_at=None, already_laid_out=False):
     """Keep page size and place existing content inside the configured work area."""
     reader = PdfReader(io.BytesIO(content))
     writer = PdfWriter()
@@ -51,9 +51,9 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
         c.showPage()
         c.save()
         foreground = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
-        scale = min(available_w / width, available_h / height)
-        tx = left + (available_w-width*scale)/2
-        ty = bottom + (available_h-height*scale)/2
+        scale = 1 if already_laid_out else min(available_w / width, available_h / height)
+        tx = 0 if already_laid_out else left + (available_w-width*scale)/2
+        ty = 0 if already_laid_out else bottom + (available_h-height*scale)/2
         writer.add_page(background)
         target = writer.pages[-1]
         target.merge_transformed_page(page, Transformation().scale(scale).translate(tx, ty))
