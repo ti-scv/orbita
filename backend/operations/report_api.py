@@ -59,6 +59,7 @@ class PreviewOutput(serializers.Serializer):
 class ExecutionInput(PreviewInput):
     report = serializers.IntegerField(min_value=1)
     recipient = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    letterhead = serializers.IntegerField(required=False, allow_null=True, min_value=1)
 
 
 class VerifyInput(ReportCatalogVersionInput):
@@ -1130,6 +1131,7 @@ class ExecutionViewSet(ScopedRead):
                 request.data.get("parameters", {}),
                 user=request.user,
                 recipient=recipient,
+                letterhead_id=form.validated_data.get("letterhead", "default"),
             )
             enqueue(job)
             Audit.objects.create(

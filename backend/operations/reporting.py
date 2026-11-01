@@ -280,6 +280,7 @@ def make_execution(
     origin="panel",
     run_date=None,
     transport=None,
+    letterhead_id="default",
 ):
     if getattr(report, "removed_at", None) is not None:
         raise ValidationError("Relatório removido.")
@@ -393,6 +394,15 @@ def make_execution(
     if report.canvas_enabled:
         from operations.report_canvas.engine import definition_snapshot
         job.snapshot["canvas"] = definition_snapshot(report)
+    if report.output_format == "pdf" and letterhead_id is not None:
+        from operations.models import Letterhead
+        from operations.letterhead_pdf import snapshot as letterhead_snapshot
+        candidates = Letterhead.objects.filter(unit=report.unit, active=True)
+        letterhead = candidates.filter(is_default=True).first() if letterhead_id == "default" else candidates.filter(pk=letterhead_id).first()
+        if letterhead_id != "default" and letterhead is None:
+            raise ValidationError("Timbrado indisponível nesta unidade.")
+        if letterhead:
+            job.snapshot["letterhead"] = letterhead_snapshot(letterhead)
     execution_access(job)
     job.save()
     return job
@@ -516,6 +526,14 @@ def execute_report(job_id):
                     name + "\n" + render(name, headers, rows, job.format)
                     for name, headers, rows in sections
                 )
+        if job.format == "pdf" and job.snapshot.get("letterhead"):
+            from operations.letterhead_pdf import apply as apply_letterhead
+            result = base64.b64encode(apply_letterhead(
+                base64.b64decode(result), job.snapshot["letterhead"],
+                title=job.snapshot["name"], unit=job.unit.name,
+                user=job.requester.get_username() if job.requester else "",
+                parameters=job.parameters, generated_at=job.created_at,
+            )).decode()
         no_data = count == 0 and job.snapshot.get("transport") == "baileys"
         if no_data:
             result = ""
