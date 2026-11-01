@@ -71,9 +71,12 @@ def key_role(key):
     return limited_role(role, key.role)
 
 
-def allowed_resource(path):
+def allowed_resource(path, method="GET"):
     if not re.fullmatch(r"[a-zA-Z0-9_/-]+/", path) or "//" in path:
         return False
+    # Link issuance only. Configuration, console and conversations stay on a user session.
+    if path == "autoagenda/links/" and method == "POST":
+        return True
     return path.split("/")[0] in RESOURCES
 
 
@@ -105,7 +108,7 @@ class InstanceKeyAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Chave de instância revogada ou expirada.")
         path = request.path_info.removeprefix("/api/v1/")
         if not request.path_info.startswith("/api/v1/") or not (
-            allowed_resource(path) or path == "federation/manifest/"
+            allowed_resource(path, request.method) or path == "federation/manifest/"
         ):
             raise PermissionDenied(
                 "Este recurso não está disponível para chaves de instância."
