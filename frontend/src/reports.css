@@ -1036,3 +1036,7 @@
 .report-composition-list li > span { min-width: 0; overflow-wrap: anywhere; }
 .report-composition-list small { opacity: .75; }
 .report-composition-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+.letterhead-preview { position: relative; width: min(100%, 320px); aspect-ratio: 210 / 297; margin: 16px auto; background: white center / 100% 100% no-repeat; border: 1px solid #888; color: #111; overflow: hidden; }
+.letterhead-workarea { position: absolute; border: 1px dashed #555; }
+.letterhead-preview span { position: absolute; white-space: nowrap; }

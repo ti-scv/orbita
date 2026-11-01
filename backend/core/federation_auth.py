@@ -35,6 +35,7 @@ RESOURCES = {
     "sheet-imports",
     "campaigns",
     "reports",
+    "letterheads",
     "report-access",
     "report-requests",
     "report-schedules",

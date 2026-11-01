@@ -1,3 +1,4 @@
+import Letterheads from "./Letterheads";
 import PtBrDateInput from "./PtBrDateInput";
 import { friendlyDatabaseName } from "../reportLabels";
 import ReportDataPreview from "./ReportDataPreview";
@@ -40,6 +41,7 @@ import type { ReportTechnicalDescription } from "../types";
 
 type Row = Record<string, any> & { technical_description?: ReportTechnicalDescription };
 type Tab =
+  | "letterheads"
   | "whatsapp"
   | "components"
   | "reports"
@@ -51,6 +53,7 @@ type Tab =
   | "automations"
   | "executions";
 const names: Record<Tab, string> = {
+  letterheads: "Timbrados",
   whatsapp: "WhatsApp · QR Code",
   reports: "Relatórios",
   components: "Componentes",
@@ -63,11 +66,12 @@ const names: Record<Tab, string> = {
   executions: "Execuções",
 };
 const tabIcons = {
-  whatsapp: QrCode, reports: FileOutput, components: Boxes, connections: Database, appSources: Database,
+  letterheads: FileOutput, whatsapp: QrCode, reports: FileOutput, components: Boxes, connections: Database, appSources: Database,
   snapshots: DatabaseBackup, recipients: Users, grants: ShieldCheck,
   automations: CalendarClock, executions: History,
 };
 const resources: Record<Tab, string> = {
+  letterheads: "letterheads",
   whatsapp: "report-whatsapp",
   reports: "reports",
   components: "reports",
@@ -363,6 +367,8 @@ export default function ReportWorkspace({
   const loadedQuery = useRef("");
   const allowedTab = tab === "whatsapp" ? whatsappRead : reportAccess;
   const isReports = tab === "reports" || tab === "components";
+  const [letterheads, setLetterheads] = useState<Row[]>([]);
+  useEffect(() => { let alive = true; if (reportAccess) all("letterheads", unit).then(r => { if (alive) setLetterheads(r); }).catch(() => { if (alive) setLetterheads([]); }); return () => { alive = false; }; }, [unit, reportAccess, tab]);
   const [sourceFilter, setSourceFilter] = useState("");
   const [appConnections,setAppConnections]=useState<Row[]>([]);
   useEffect(()=>{let alive=true;if(admin)all("report-app-connections",unit).then(r=>{if(alive)setAppConnections(r);}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;};},[unit,admin,tab]);
@@ -409,7 +415,7 @@ export default function ReportWorkspace({
   useEffect(() => {
     let alive = true;
     setError("");
-    if (!allowedTab || tab === "whatsapp" || tab === "snapshots" || tab === "appSources") { setLoading(false); return () => {alive = false;}; }
+    if (!allowedTab || tab === "whatsapp" || tab === "snapshots" || tab === "appSources" || tab === "letterheads") { setLoading(false); return () => {alive = false;}; }
     const listUrl = query(tab === "grants" ? "report-recipients" : resources[tab], {
         unit,
         page: String(page),
@@ -587,6 +593,7 @@ export default function ReportWorkspace({
         const data = {
           report: report.id,
           parameters: form.parameters,
+          ...(modal.kind === "run" && form.letterhead !== undefined && form.letterhead !== "default" ? {letterhead: form.letterhead === "none" ? null : Number(form.letterhead)} : {}),
           ...(form.recipient ? { recipient: Number(form.recipient) } : {}),
         };
         if (modal.kind === "preview") {
@@ -812,7 +819,7 @@ export default function ReportWorkspace({
           {error}
         </div>
       )}
-      {!allowedTab ? <p role="alert">Você não tem permissão para acessar esta área</p> : tab === "whatsapp" ? <ReportWhatsApp unit={unit} editable={whatsappWrite} configurable={whatsappWrite && whatsappConfigure} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
+      {!allowedTab ? <p role="alert">Você não tem permissão para acessar esta área</p> : tab === "whatsapp" ? <ReportWhatsApp unit={unit} editable={whatsappWrite} configurable={whatsappWrite && whatsappConfigure} /> : tab === "letterheads" ? <Letterheads key={unit} unit={unit} /> : tab === "snapshots" ? (admin ? <ReportSnapshots key={unit} unit={unit} /> : <Empty text="Sem acesso às coletas."/>) : <>
       {admin && inventory?.legacy_import?.issues?.length > 0 && (
         <details className="report-inventory">
           <summary>
@@ -1232,6 +1239,7 @@ export default function ReportWorkspace({
                   }
                 >
                   {reportSelect}
+                  {modal.kind === "run" && <Field label="Timbrado"><Select value={form.letterhead ?? "default"} onChange={e => update("letterhead", e.target.value)}><option value="default">Padrão da unidade</option><option value="none">Sem timbrado</option>{letterheads.filter(r => r.active).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</Select></Field>}
                   {admin && (
                     <Field label="Destinatário (opcional)">
                       <Select
