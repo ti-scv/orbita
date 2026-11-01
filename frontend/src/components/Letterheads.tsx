@@ -17,6 +17,7 @@ type Letterhead = {
   name: string;
   active: boolean;
   background: string;
+  background_landscape: string;
   margins: Record<string, number>;
   fields: Field[];
 };
@@ -24,6 +25,7 @@ const empty = (): Letterhead => ({
   name: "",
   active: true,
   background: "",
+  background_landscape: "",
   margins: { top: 25, bottom: 20, left: 15, right: 15 },
   fields: [],
 });
@@ -259,6 +261,17 @@ export default function Letterheads({ unit }: { unit: string }) {
                 }}
               />
             </label>
+            <label>Fundo em paisagem (opcional)
+              <input type="file" accept="image/png,image/jpeg" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => setEdit(v => v ? {...v, background_landscape: String(reader.result).split(",")[1]} : v);
+                reader.readAsDataURL(file);
+              }} />
+              {edit.background_landscape && <button type="button" onClick={() => setEdit({...edit, background_landscape: ""})}>Remover fundo em paisagem</button>}
+            </label>
+            <p>Sem fundo em paisagem, páginas em paisagem serão geradas sem fundo.</p>
             <label>
               <input
                 type="checkbox"

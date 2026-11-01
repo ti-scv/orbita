@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=150)),
                 ('active', models.BooleanField(default=True)),
                 ('background', models.BinaryField(blank=True, default=bytes)),
+                ('background_landscape', models.BinaryField(blank=True, default=bytes)),
                 ('margins', models.JSONField(default=dict)),
                 ('fields', models.JSONField(default=list)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),

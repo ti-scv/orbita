@@ -747,6 +747,7 @@ class Letterhead(models.Model):
     name = models.CharField(max_length=150)
     active = models.BooleanField(default=True)
     background = models.BinaryField(blank=True, default=bytes)
+    background_landscape = models.BinaryField(blank=True, default=bytes)
     margins = models.JSONField(default=dict)
     fields = models.JSONField(default=list)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT)

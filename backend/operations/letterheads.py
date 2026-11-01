@@ -16,16 +16,18 @@ from operations.models import Letterhead
 
 class LetterheadSerializer(serializers.ModelSerializer):
     background = serializers.CharField(required=False, allow_blank=True)
+    background_landscape = serializers.CharField(required=False, allow_blank=True)
     margins = serializers.JSONField(required=True)
 
     class Meta:
         model = Letterhead
-        fields = ("id", "name", "active", "background", "margins", "fields", "created_by", "created_at", "updated_at")
+        fields = ("id", "name", "active", "background", "background_landscape", "margins", "fields", "created_by", "created_at", "updated_at")
         read_only_fields = ("id", "created_by", "created_at", "updated_at")
 
     def to_representation(self, instance):
         result = super().to_representation(instance)
         result["background"] = base64.b64encode(bytes(instance.background)).decode("ascii")
+        result["background_landscape"] = base64.b64encode(bytes(instance.background_landscape)).decode("ascii")
         return result
 
     def validate_background(self, value):
@@ -46,6 +48,9 @@ class LetterheadSerializer(serializers.ModelSerializer):
         except (ValueError, binascii.Error, OSError, UnidentifiedImageError, Image.DecompressionBombError):
             raise ValidationError("Use PNG ou JPEG válido, de até 2 MB e 16 megapixels.") from None
         return raw
+
+    def validate_background_landscape(self, value):
+        return self.validate_background(value)
 
     def validate_margins(self, value):
         if not isinstance(value, dict) or set(value) != {"top", "bottom", "left", "right"}:

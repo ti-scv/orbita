@@ -43,3 +43,21 @@ def test_background_is_embedded_and_content_is_scaled_into_margins():
     assert any(obj.get_object().get("/Subtype") == "/Image" for obj in objects.values())
     assert b" cm" in page.get_contents().get_data()
     assert "Conteúdo" in page.extract_text()
+
+
+def test_landscape_uses_only_its_own_background():
+    from PIL import Image
+
+    image = io.BytesIO()
+    Image.new("RGB", (142, 100), "white").save(image, format="PNG")
+    encoded = base64.b64encode(image.getvalue()).decode()
+    source = io.BytesIO()
+    pdf = canvas.Canvas(source, pagesize=(842, 595))
+    pdf.drawString(100, 400, "Conteúdo")
+    pdf.save()
+    design = {"background": encoded, "margins": {"top": 20, "bottom": 20, "left": 20, "right": 20}, "fields": []}
+    plain = PdfReader(io.BytesIO(apply(source.getvalue(), design, title="", unit="", user="", parameters={}))).pages[0]
+    assert "/XObject" not in plain["/Resources"]
+    design["background_landscape"] = encoded
+    page = PdfReader(io.BytesIO(apply(source.getvalue(), design, title="", unit="", user="", parameters={}))).pages[0]
+    assert any(obj.get_object().get("/Subtype") == "/Image" for obj in page["/Resources"]["/XObject"].get_object().values())

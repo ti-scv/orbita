@@ -11,6 +11,7 @@ from reportlab.pdfgen import canvas
 def snapshot(letterhead):
     return {"id": letterhead.pk, "name": letterhead.name,
             "background": base64.b64encode(bytes(letterhead.background)).decode("ascii"),
+            "background_landscape": base64.b64encode(bytes(letterhead.background_landscape)).decode("ascii"),
             "margins": letterhead.margins, "fields": letterhead.fields}
 
 
@@ -33,8 +34,9 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
             raise ValueError("Margens excedem o tamanho da página.")
         overlay = io.BytesIO()
         c = canvas.Canvas(overlay, pagesize=(width, height))
-        if design["background"]:
-            c.drawImage(ImageReader(io.BytesIO(base64.b64decode(design["background"]))), 0, 0, width=width, height=height, mask="auto")
+        image = design.get("background_landscape", "") if width > height else design.get("background", "")
+        if image:
+            c.drawImage(ImageReader(io.BytesIO(base64.b64decode(image))), 0, 0, width=width, height=height, mask="auto")
         c.showPage()
         c.save()
         background = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
