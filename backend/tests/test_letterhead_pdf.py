@@ -72,3 +72,17 @@ def test_table_layout_respects_margins_without_scaling():
     assert all("Coluna" in page.extract_text() for page in pages)
     for page in pages:
         assert b"1 0.0 0.0 1 0.0 0.0 cm" in page.get_contents().get_data() or b"1 0 0 1 0.0 0.0 cm" in page.get_contents().get_data()
+
+
+def test_stock_report_can_paginate_with_letterhead_margins():
+    from operations.stock_loans import COLUMNS, DATE_KEYS, render_stock_pdf
+
+    headers = [*COLUMNS, "DS_FORNECEDOR"]
+    rows = [["Entrada", "2026-01-01", "123", "Produto", "UN", 1, 1, "Local", "Fornecedor"] for _ in range(120)]
+    values = {DATE_KEYS[0]: "2026-01-01", DATE_KEYS[1]: "2026-01-31"}
+    margins = {"top": 35, "bottom": 30, "left": 25, "right": 25}
+    content = render_stock_pdf(headers, rows, values, environment="homologacao", margins=margins)
+    result = apply(content, {"background": "", "margins": margins, "fields": []}, title="", unit="", user="", parameters={}, already_laid_out=True)
+    pages = PdfReader(io.BytesIO(result)).pages
+    assert len(pages) > 1
+    assert all("Fornecedor" in page.extract_text() for page in pages)

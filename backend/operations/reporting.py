@@ -462,6 +462,7 @@ def execute_report(job_id):
         elif job.report.handler == "stock_loans_v1":
             from operations.stock_loans import generate as generate_stock_loans
             result, count = generate_stock_loans(job)
+            already_laid_out = True
         elif job.report.handler == "medical_indicators_v1":
             if job.format != "pdf":
                 raise ValidationError("Indicadores Médicos exigem formato PDF.")
