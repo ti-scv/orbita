@@ -52,7 +52,7 @@ test("lista vários timbrados e permite alternar a prévia para paisagem", async
     ],
     next: null,
   });
-  const { container } = render(<Letterheads unit="ame" />);
+  render(<Letterheads unit="ame" />);
   expect(await screen.findByText("Modelo A")).toBeTruthy();
   expect(screen.getByText("Modelo B")).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Editar Modelo A" }));
@@ -60,7 +60,7 @@ test("lista vários timbrados e permite alternar a prévia para paisagem", async
     target: { value: "landscape" },
   });
   expect(
-    (container.querySelector(".letterhead-preview") as HTMLElement).style
+    (document.querySelector(".letterhead-preview") as HTMLElement).style
       .aspectRatio,
   ).toBe("297 / 210");
   expect(screen.queryByLabelText("Padrão da unidade")).toBeNull();
