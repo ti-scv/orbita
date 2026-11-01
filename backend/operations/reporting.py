@@ -456,6 +456,7 @@ def execute_report(job_id):
         if job.report.canvas_enabled:
             from operations.report_canvas.engine import generate as generate_canvas
             result, count = generate_canvas(job)
+            already_laid_out = True
         elif job.report.handler == "bed_snapshots_v1":
             from operations.bed_snapshots import generate as generate_bed_history
             result, count = generate_bed_history(job)

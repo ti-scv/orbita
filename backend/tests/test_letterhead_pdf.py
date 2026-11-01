@@ -95,3 +95,24 @@ def test_stock_report_can_paginate_with_letterhead_margins():
     pages = PdfReader(io.BytesIO(result)).pages
     assert len(pages) > 1
     assert all("Fornecedor" in page.extract_text() for page in pages)
+
+
+def test_canvas_layout_uses_work_area_without_reducing_font():
+    from operations.report_canvas.pdf import PDFExporter
+    from pypdf import PdfReader
+
+    block = {"id": "text", "type": "text", "title": "", "text": "Conteúdo",
+             "x": 0, "y": 0, "width": 400, "height": 200,
+             "options": {"font_size": 16}}
+    document = {"name": "Teste", "page": {"width": 400, "height": 600, "background": "#ffffff"},
+                "pages": [{"blocks": [block]}]}
+    margins = {"left": 20, "right": 20, "top": 20, "bottom": 20}
+    content = PDFExporter().render(document, margins=margins)
+    page = PdfReader(io.BytesIO(content)).pages[0]
+    seen = []
+    page.extract_text(visitor_text=lambda text, cm, tm, font, size: seen.append((text, cm, tm, size)))
+    text, matrix, position, size = next(item for item in seen if "Conteúdo" in item[0])
+    assert size == 12
+    assert matrix[4] >= 20 * 72 / 25.4 - .01
+    assert matrix[5] + position[5] >= 20 * 72 / 25.4
+    assert block["width"] == 400  # The stored design is not changed.

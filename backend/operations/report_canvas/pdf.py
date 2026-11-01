@@ -164,8 +164,27 @@ def table_parts(b,w,h):
 
 
 class PDFExporter:
-    def render(self,document):
+    def render(self,document, *, margins=None):
         w=document["page"]["width"]*.75;h=document["page"]["height"]*.75
+        if margins:
+            # Fit the editable block geometry into the work area, then lay out
+            # its text and tables there at their original font sizes.
+            mm=72/25.4
+            left,right,top,bottom=(margins[k]*mm for k in ("left","right","top","bottom"))
+            useful_w,useful_h=w-left-right,h-top-bottom
+            if useful_w <= 0 or useful_h <= 0:fail("Margens excedem o tamanho da página.")
+            pages=[]
+            for page in document["pages"]:
+                blocks=[]
+                for block in page["blocks"]:
+                    b=dict(block)
+                    b["x"]=(left+block["x"]*.75*useful_w/w)/.75
+                    b["y"]=(top+block["y"]*.75*useful_h/h)/.75
+                    b["width"]=block["width"]*useful_w/w
+                    b["height"]=block["height"]*useful_h/h
+                    blocks.append(b)
+                pages.append({**page,"blocks":blocks})
+            document={**document,"pages":pages}
         out=io.BytesIO();c=canvas.Canvas(out,pagesize=(w,h),pageCompression=1);c.setTitle(document["name"])
         total_pages=0
         for page in document["pages"]:
@@ -188,7 +207,7 @@ class PDFExporter:
             for index in range(continuation):
                 total_pages+=1
                 if total_pages>200:fail("Relatório excede 200 páginas.")
-                c.setFillColor(colors.HexColor(document["page"]["background"]));c.rect(0,0,w,h,fill=1,stroke=0)
+                c.setFillColor(colors.HexColor(document["page"]["background"]));c.rect(left if margins else 0,bottom if margins else 0,useful_w if margins else w,useful_h if margins else h,fill=1,stroke=0)
                 for b in page["blocks"]:
                     bw=b["width"]*.75;bh=b["height"]*.75
                     c.saveState();c.translate(b["x"]*.75,h-(b["y"]+b["height"])*.75)

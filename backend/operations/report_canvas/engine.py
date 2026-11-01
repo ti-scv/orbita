@@ -73,15 +73,15 @@ def build(report,layout,parameters,goals):
         return {"name":report.name,"page":layout["page"],"pages":pages,"xlsx_mode":layout.get("xlsx_mode","layout")},count
 
 
-def export(report,layout,parameters,goals,output_format):
+def export(report,layout,parameters,goals,output_format, *, margins=None):
     from . import pdf, xlsx  # Registers built-in strategies. No I/O during registration.
     if output_format not in EXPORTERS:fail("Formato não suportado pelo relatório.")
     document,count=build(report,layout,parameters,goals)
-    result=EXPORTERS[output_format].render(document)
+    result=EXPORTERS[output_format].render(document, margins=margins) if output_format == "pdf" and margins else EXPORTERS[output_format].render(document)
     if len(result)>7*1024*1024:fail("Arquivo excede 7 MB.")
     return base64.b64encode(result).decode(),count
 
 
 def generate(job):
     check_snapshot(job)
-    return export(job.report,job.snapshot["canvas"]["layout"],job.parameters,job.snapshot.get("monthly_goals",[]),job.format)
+    return export(job.report,job.snapshot["canvas"]["layout"],job.parameters,job.snapshot.get("monthly_goals",[]),job.format, margins=job.snapshot.get("letterhead", {}).get("margins"))
