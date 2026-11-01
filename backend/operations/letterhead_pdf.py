@@ -32,18 +32,25 @@ def apply(content, design, *, title, unit, user, parameters, generated_at=None):
         c = canvas.Canvas(overlay, pagesize=(width, height))
         if design["background"]:
             c.drawImage(ImageReader(io.BytesIO(base64.b64decode(design["background"]))), 0, 0, width=width, height=height, mask="auto")
+        c.showPage()
+        c.save()
+        background = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
+        overlay = io.BytesIO()
+        c = canvas.Canvas(overlay, pagesize=(width, height))
         values = {"title": title, "date": today, "period": " — ".join(str(parameters.get(k) or "") for k in ("start", "end")).strip(" —"), "unit": unit, "user": user, "page": f"Página {index} de {total}"}
         for field in design["fields"]:
             text = field["text"] if field["type"] == "text" else values[field["type"]]
-            c.setFont("Helvetica", field["font_size"])
+            c.setFont(field.get("font", "Helvetica"), field["font_size"])
             x, y = field["x"] / 210 * width, height - field["y"] / 297 * height
             {"left": c.drawString, "center": c.drawCentredString, "right": c.drawRightString}[field["align"]](x, y, str(text))
+        c.showPage()
         c.save()
-        background = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
+        foreground = PdfReader(io.BytesIO(overlay.getvalue())).pages[0]
         scale = min(available_w / width, available_h / height)
         tx = left + (available_w-width*scale)/2
         ty = bottom + (available_h-height*scale)/2
         background.merge_transformed_page(page, Transformation().scale(scale).translate(tx, ty))
+        background.merge_page(foreground)
         writer.add_page(background)
     out = io.BytesIO()
     writer.write(out)

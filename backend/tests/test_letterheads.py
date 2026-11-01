@@ -42,3 +42,24 @@ def test_permissions_and_validation(setup):
     client = setup["client"]
     assert client.post("/api/v1/letterheads/", {**payload(), "background": "not-base64"}, format="json").status_code == 400
     assert client.post("/api/v1/letterheads/", {**payload(), "margins": {"top": 300, "bottom": 0, "left": 0, "right": 0}}, format="json").status_code == 400
+
+
+@pytest.mark.django_db
+def test_execution_freezes_choice_and_rejects_foreign_unit(setup):
+    from unittest.mock import patch
+    from rest_framework.exceptions import ValidationError
+    from operations.models import ReportDefinition
+    from operations.reporting import make_execution
+    report = ReportDefinition.objects.create(unit=setup["unit"], code="letterhead-test", name="Teste", source="local")
+    paper = Letterhead.objects.create(unit=setup["unit"], name="Padrão", is_default=True, background=b"original", margins=payload()["margins"])
+    foreign_unit = Unit.objects.create(slug="foreign-letterhead", name="Outra")
+    foreign = Letterhead.objects.create(unit=foreign_unit, name="Outro")
+    with patch("operations.reporting.execution_access"):
+        job = make_execution(report, {}, user=setup["user"])
+        plain = make_execution(report, {}, user=setup["user"], letterhead_id=None)
+        with pytest.raises(ValidationError):
+            make_execution(report, {}, user=setup["user"], letterhead_id=foreign.pk)
+    paper.background = b"changed"
+    paper.save()
+    assert base64.b64decode(job.snapshot["letterhead"]["background"]) == b"original"
+    assert "letterhead" not in plain.snapshot

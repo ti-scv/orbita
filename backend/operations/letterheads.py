@@ -60,10 +60,12 @@ class LetterheadSerializer(serializers.ModelSerializer):
         if not isinstance(value, list) or len(value) > 30:
             raise ValidationError("Informe até 30 campos.")
         for item in value:
-            if not isinstance(item, dict) or set(item) != {"type", "text", "x", "y", "font_size", "align"}:
+            if not isinstance(item, dict) or not {"type", "text", "x", "y", "font_size", "align"} <= set(item) or set(item) - {"type", "text", "x", "y", "font_size", "align", "font"}:
                 raise ValidationError("Campo inválido.")
             if item["type"] not in {"title", "date", "period", "unit", "user", "page", "text"} or item["align"] not in {"left", "center", "right"}:
                 raise ValidationError("Tipo ou alinhamento inválido.")
+            if item.get("font", "Helvetica") not in {"Helvetica", "Helvetica-Bold", "Times-Roman", "Courier"}:
+                raise ValidationError("Fonte inválida.")
             if not isinstance(item["text"], str) or len(item["text"]) > 500:
                 raise ValidationError("Texto inválido.")
             for key, low, high in (("x", 0, 210), ("y", 0, 297), ("font_size", 4, 72)):
