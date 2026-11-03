@@ -1,3 +1,4 @@
+import { reportWorkspaceAccess } from "./permissions";
 import { describe, it, expect } from "vitest";
 import { canAccess, canUseReportWhatsApp, permissionsFor, reconcileSession } from "./permissions";
 import type { Session } from "./types";
@@ -98,4 +99,13 @@ it("mostra cada recurso somente quando a unidade está habilitada", () => {
   const disabled = {...enabled, units: enabled.units.map(u => ({...u, checkin_enabled:false, autoagenda_enabled:false}))};
   expect(canAccess(disabled, "ame", "checkin")).toBe(false);
   expect(canAccess(disabled, "ame", "autoagenda")).toBe(false);
+});
+
+
+it("repassa ao workspace acesso independente ao WhatsApp", () => {
+  const granted = {...session, roles: {...session.roles, ame: "admin" as const}, permissions: {ame: {reports: "write" as const, reportWhatsApp: "write" as const}}};
+  expect(reportWorkspaceAccess(granted, "ame")).toEqual({reportAccess: true, whatsappRead: true, whatsappWrite: true, reportAdmin: true});
+  const readOnly = {...granted, permissions: {ame: {reports: "none" as const, reportWhatsApp: "read" as const}}};
+  expect(reportWorkspaceAccess(readOnly, "ame")).toEqual({reportAccess: false, whatsappRead: true, whatsappWrite: false, reportAdmin: false});
+  expect(reportWorkspaceAccess({...granted, units: []}, "ame")).toEqual({reportAccess: false, whatsappRead: false, whatsappWrite: false, reportAdmin: false});
 });

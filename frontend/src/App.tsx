@@ -15,7 +15,7 @@ import OracleConfiguration from "./components/OracleConfiguration";
 import OracleAgendaConfiguration from "./components/OracleAgendaConfiguration";
 import UnitDirectory from "./components/UnitDirectory";
 import UserDirectory from "./components/UserDirectory";
-import { canAccess, permissionsFor, reconcileSession } from "./permissions";
+import { canAccess, permissionsFor, reconcileSession, reportWorkspaceAccess } from "./permissions";
 import InlineDialog from "./components/InlineDialog";
 import RemoteInstances from "./components/RemoteInstances";
 import UnitSelector from "./components/UnitSelector";
@@ -716,7 +716,7 @@ function Workspace({
           )}
           {["care", "campaigns", "reports"].includes(page) && (
             <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
-              username={session.username} userAccess={false} />
+              username={session.username} userAccess={false} {...reportWorkspaceAccess(session, unit)} />
           )}
           {page === "messages" && (
             <div className="filters">

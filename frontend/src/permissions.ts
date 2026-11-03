@@ -39,3 +39,13 @@ export function pageSection(page: PageName): string {
 export function reconcileSession(current: Session, incoming: Session): Session {
   return JSON.stringify(current) === JSON.stringify(incoming) ? current : incoming;
 }
+
+export function reportWorkspaceAccess(session: Session, unit: string) {
+  const policy = permissionsFor(session, unit);
+  return {
+    reportAccess: !!policy.reports && policy.reports !== "none",
+    whatsappRead: canUseReportWhatsApp(session, unit),
+    whatsappWrite: canUseReportWhatsApp(session, unit, true),
+    reportAdmin: session.roles[unit] === "admin" && policy.reports === "write",
+  };
+}
