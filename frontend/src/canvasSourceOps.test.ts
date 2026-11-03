@@ -128,6 +128,7 @@ describe("Aplicação de fonte salva e remoção no layout", () => {
     expect(createdState.ok).toBe(true);
     if (!createdState.ok) return;
 
+    createdState.state.reportId = String(catalog[0].id);
     createdState.state.label = "Atendimentos Revisados";
     createdState.state.id = "atend_rev";
 

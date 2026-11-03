@@ -22,3 +22,8 @@ describe("Report parameter registration",()=>{
   expect(suggestedParameter("mes",2)).toMatchObject({type:"integer",minimum:1,maximum:12});
  });
 });
+
+import { collectTestParameters as collectFriendly } from "./components/report-canvas/parameters";
+it("envia o código da unidade quando o nome amigável foi editado", () => {
+  expect(collectFriendly([{name:"unidade",label:"Unidade",type:"string"}], {unidade:"AME Votuporanga"})).toEqual({unidade:"ame"});
+});

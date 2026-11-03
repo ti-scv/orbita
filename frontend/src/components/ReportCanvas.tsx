@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { AlertTriangle, PanelRightOpen } from "lucide-react";
+import { RemovalButton } from "./ReportRemoval";
+import { AlertTriangle, PanelRightOpen, MoreHorizontal } from "lucide-react";
 import { PreviewCacheScope, clearSourcePreviewCache } from "./report-canvas/api/useSourcePreview";
+import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
+import { OriginContext } from "./report-canvas/data/ColumnOrigin";
+import JsonEditorDialog from "./report-canvas/dialogs/JsonEditorDialog";
+import { validateCanvasRequest } from "./report-canvas/api/useCanvasApi";
+import ParameterEditor from "./report-canvas/data/ParameterEditor";
 import DataPanel from "./report-canvas/data/DataPanel";
 import SourceDialog from "./report-canvas/data/SourceDialog";
 import PreviewDialog from "./report-canvas/dialogs/PreviewDialog";
@@ -33,11 +39,11 @@ import ProblemsPanel from "./report-canvas/problems/ProblemsPanel";
 import {
   clearDraftFromStorage,
   formatDraftTime,
-  isDraftDifferent,
-  loadDraftFromStorage,
+  recoverDifferentDraft,
   saveDraftToStorage,
 } from "./report-canvas/state/draftRecovery";
 import {
+  applyBlockRemove,
   applyBlockUpdate,
   createBlockInLayout,
   renamePageInLayout,
@@ -60,23 +66,57 @@ import "./report-canvas/data.css";
 import "./report-canvas/stage.css";
 import "./report-canvas/dialogs.css";
 
-export default function ReportCanvas(props: ReportCanvasProps) {
+type LoadedCanvasProps = ReportCanvasProps & { initialCanvas?: import("./report-canvas/model").CanvasGetResponse };
+
+export default function ReportCanvas(props: LoadedCanvasProps) {
   useEffect(() => () => clearSourcePreviewCache(), []);
   return <PreviewCacheScope.Provider value={`${props.unit}:${props.report.id}`}><ReportCanvasEditor {...props} /></PreviewCacheScope.Provider>;
 }
 
-function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProps) {
+function ReportCanvasEditor({ unit, report, onClose, onSaved, initialCanvas }: LoadedCanvasProps) {
   const store = useCanvasStore();
   const { layout } = store;
 
   const [activePageId, setActivePageId] = useState("p1");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [extraSelectedIds, setExtraSelectedIds] = useState<string[]>([]);
+  useEffect(() => { setExtraSelectedIds([]); }, [selectedBlockId]);
   const [showGrid] = useState(false);
-  const [showSampleData, setShowSampleData] = useState(true);
+  const [showSampleData, setShowSampleData] = useState(initialCanvas?.default_data_mode !== "preview");
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("content");
   const [displayVersion, setDisplayVersion] = useState<number>(report.version || 1);
   const [hiddenAssetIds, setHiddenAssetIds] = useState<string[]>([]);
+  const [jsonOpen, setJsonOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [removalNotice, setRemovalNotice] = useState<{ revision: number; hasSource: boolean; count: number } | null>(null);
+  const [readOnlyNotice, setReadOnlyNotice] = useState(false);
+  useEffect(() => {
+    if (!readOnlyNotice) return;
+    const timer = window.setTimeout(() => setReadOnlyNotice(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [readOnlyNotice]);
+  const removalUndoRef = useRef<HTMLButtonElement>(null);
+  const reportActionsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      const menu = reportActionsRef.current;
+      if (menu?.open && !menu.contains(event.target as Node)) {
+        menu.open = false;
+        menu.querySelector<HTMLElement>("summary")?.focus();
+        // Restore after the clicked control performs its native focus action.
+        requestAnimationFrame(() => menu.querySelector<HTMLElement>("summary")?.focus());
+      }
+    };
+    const escape = (event: KeyboardEvent) => {
+      const menu = reportActionsRef.current;
+      if (event.key === "Escape" && menu?.open) {
+        event.preventDefault(); menu.open = false; menu.querySelector<HTMLElement>("summary")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside, true);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", closeOutside, true); document.removeEventListener("keydown", escape); };
+  }, []);
   const [problemsPanelOpen, setProblemsPanelOpen] = useState(false);
   const [draftBanner, setDraftBanner] = useState<{
     text: string;
@@ -102,6 +142,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
   const selectPage = useCallback((id: string) => {
     setActivePageId(id);
     setSelectedBlockId(null);
+    setExtraSelectedIds([]);
   }, []);
 
   const fitRef = useRef<(w?: number) => void>(() => {});
@@ -126,6 +167,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
   const session = useCanvasSession({
     unit,
     report,
+    initialCanvas,
     onSaved: handleSessionSaved,
     store,
     activePage,
@@ -143,15 +185,13 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
     if (session.loading) return;
     if (draftCheckedRef.current) return;
     draftCheckedRef.current = true;
-    const draft = loadDraftFromStorage(unit, report.id, displayVersion);
-    if (
-      draft &&
-      isDraftDifferent(draft, {
-        layout,
-        enabled: session.enabled,
-        outputFormat: session.outputFormat,
-      })
-    ) {
+    requestAnimationFrame(() => performance.mark("canvas-primeira-renderizacao"));
+    const draft = recoverDifferentDraft(unit, report.id, displayVersion, {
+      layout,
+      enabled: session.enabled,
+      outputFormat: session.outputFormat,
+    });
+    if (draft) {
       setDraftBanner({
         text: `Há alterações não salvas deste navegador (${formatDraftTime(draft.timestamp)}).`,
         onRestore: () => {
@@ -219,6 +259,37 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
     setBanner: session.setBanner,
   });
 
+  const routePreviewOpened = useRef(false);
+  const { loading: routePreviewLoading, openPreviewDialog: openRoutePreview } = session;
+  useEffect(() => {
+    if (!routePreviewLoading && /\/previa\/?$/.test(window.location.pathname) && !routePreviewOpened.current) {
+      routePreviewOpened.current = true;
+      openRoutePreview();
+    }
+  }, [routePreviewLoading, openRoutePreview]);
+
+  const removeBlock = useCallback((blockId: string, removeSelection = true) => {
+    if (report.enabled) { setReadOnlyNotice(true); return; }
+    const block = layout.pages.flatMap((page) => page.blocks).find((item) => item.id === blockId);
+    if (!block) return;
+    const ids = removeSelection && selectedBlockId && (blockId === selectedBlockId || extraSelectedIds.includes(blockId)) ? [selectedBlockId, ...extraSelectedIds] : [blockId];
+    const removed = layout.pages.flatMap((page) => page.blocks).filter((item) => ids.includes(item.id));
+    store.apply("Remover componentes", (prev) => ids.reduce((next, id) => applyBlockRemove(next, id), prev));
+    setSelectedBlockId(null);
+    setExtraSelectedIds([]);
+    setRemovalNotice({ revision: store.state.nextRevision, hasSource: removed.some((item) => Boolean(item.source_id)), count: removed.length });
+    requestAnimationFrame(() => removalUndoRef.current?.focus());
+  }, [extraSelectedIds, layout.pages, selectedBlockId, store, report.enabled]);
+
+  useEffect(() => {
+    if (!removalNotice) return;
+    const timer = window.setTimeout(() => {
+      if (document.activeElement === removalUndoRef.current) stageRef.current?.focus();
+      setRemovalNotice(null);
+    }, 8000);
+    return () => window.clearTimeout(timer);
+  }, [removalNotice, stageRef]);
+
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => {
@@ -261,7 +332,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
     pageHeight: layout.page.height,
     columns: layout.page.columns,
     blocks: activePage?.blocks || [],
-    onSelectBlock: setSelectedBlockId,
+    onSelectBlock: (id) => { setSelectedBlockId(id); setExtraSelectedIds([]); },
     onApplyBlockDrag: (id, label, key, upd) => actions.updateBlock(id, label, upd, key),
   });
 
@@ -271,7 +342,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
     modalOpen: Boolean(session.sourceModal || session.previewModal || shortcutsOpen),
     onClearSelection: () => setSelectedBlockId(null),
     onSelectBlock: setSelectedBlockId,
-    onDeleteBlock: actions.removeBlock,
+    onDeleteBlock: removeBlock,
     onNudgeBlock: actions.nudgeBlock,
     onDuplicateBlock: actions.duplicateSelectedBlock,
     onReorderBlock: handleReorderBlock,
@@ -395,17 +466,21 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
   } as CSSProperties;
 
   return (
-    <>
+    <OriginContext.Provider value={{reportId: report.id, unit, sources: session.availableSources, lastReads: Object.fromEntries(Object.entries(stagePreviews.states).map(([id, state]) => [id, state.loadedAt]))}}><CanvasErrorBoundary preservesEditor dirty={dirty || Boolean(session.sourceModal)} onBack={onClose}>
       <EditorShell
         canSave={!session.loading && !session.busy}
         onSave={() => void session.handleSaveCanvas()}
         onToggleLeftPanel={prefs.toggleLeftPanel}
       >
         <input ref={session.fileInputRef} type="file" accept="image/png,image/jpeg" hidden onChange={(e) => void session.handleFileChange(e)} />
+        {jsonOpen && <JsonEditorDialog layout={layout} canUndo={store.canUndo} onUndo={store.undo} onClose={() => setJsonOpen(false)} onApply={next => store.apply("Aplicar código do relatório", () => next)} validate={text => validateCanvasRequest(report.id, unit, text, session.enabled, session.outputFormat, session.parameterEdits)} /> }
         <TopBar
+          onOpenJson={() => setJsonOpen(true)}
           reportName={report.name}
+          reportActions={<details ref={reportActionsRef} className="cv-report-actions"><summary role="button" aria-haspopup="menu" aria-label="Ações do relatório" title="Ações do relatório"><MoreHorizontal size={18} /></summary><div role="menu" aria-label="Ações do relatório" className="cv-report-actions-menu"><RemovalButton unit={unit} resource="reports" kind="relatório" active={!!report.enabled} row={{id: report.id, name: report.name, version: displayVersion}} dirty={dirty} menuItem showLabel onOpened={() => { if (reportActionsRef.current) reportActionsRef.current.open = false; }} onDismiss={() => requestAnimationFrame(() => reportActionsRef.current?.querySelector<HTMLElement>("summary")?.focus())} onChanged={onClose}/></div></details>}
           version={displayVersion}
           enabled={session.enabled}
+          reportActive={Boolean(report.enabled)}
           outputFormat={session.outputFormat}
           dirty={dirty}
           loading={session.loading}
@@ -465,6 +540,13 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
             </div>
           </div>
         )}
+        {readOnlyNotice && <div className="cv-removal-toast" role="status" aria-label="Aviso de edição">Relatório ativo: crie uma nova versão para editar.</div>}
+        {removalNotice && store.state.revision === removalNotice.revision && (
+          <div className="cv-removal-toast" role="status" aria-live="polite">
+            <span>{removalNotice.count === 1 ? "Componente removido." : `${removalNotice.count} componentes removidos.`}{removalNotice.hasSource ? " As fontes continuam disponíveis." : ""}</span>
+            <button ref={removalUndoRef} type="button" className="cv-btn" onClick={() => { store.undo(); setRemovalNotice(null); stageRef.current?.focus(); }}>Desfazer</button>
+          </div>
+        )}
         <Banner
           banner={session.banner}
           disabled={session.loading || session.busy}
@@ -473,7 +555,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
           onDismiss={() => session.setBanner(null)}
         />
         {session.loading ? (
-          <WorkspaceSkeleton />
+          <WorkspaceSkeleton label="Montando a página…" />
         ) : (
           <div className="cv-workspace" style={workspaceStyle}>
             <LeftRail
@@ -515,7 +597,10 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
                 onClosePanel={prefs.closeLeftPanel}
               />
               <div className="cv-panel-slot" hidden={prefs.libraryTab !== "data"}>
+                <ParameterEditor changedParameters={Object.values(stagePreviews.states).flatMap(state => state.changedParameters || [])} layout={layout} items={session.parameterDeclarations} edits={session.parameterEdits} onChange={session.setParameterEdits} />
                 <DataPanel
+                  stagePreviewStates={stagePreviews.states}
+                  onLoadStagePreview={(id) => stagePreviews.load(id, true)}
                   active={prefs.libraryTab === "data"}
                   sources={layout.sources}
                   availableSources={session.availableSources}
@@ -570,6 +655,13 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
               onChangeZoom={setZoom}
               showGrid={showGrid}
               selectedBlockId={selectedBlockId}
+              extraSelectedIds={extraSelectedIds}
+              onToggleBlock={(id) => {
+                if (!selectedBlockId) { setSelectedBlockId(id); return; }
+                if (id === selectedBlockId) return;
+                setExtraSelectedIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id]);
+              }}
+              onRemoveBlock={report.enabled ? undefined : removeBlock}
               draggingBlockId={dragState?.blockId || null}
               onKeyboardResize={(id, dx, dy) => actions.updateBlock(id, "Redimensionar bloco pelo teclado", b => ({...b, width: Math.max(20, b.width + dx), height: Math.max(20, b.height + dy)}))}
               tempGeometries={activeDrag ? { [activeDrag.blockId]: activeDrag } : undefined}
@@ -586,8 +678,8 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
               reportName={report.name}
               showSampleData={showSampleData}
               onAddBlock={() => prefs.openLeftPanel("components")}
-              onClearSelection={() => setSelectedBlockId(null)}
-              onSelectBlock={setSelectedBlockId}
+              onClearSelection={() => { setSelectedBlockId(null); setExtraSelectedIds([]); }}
+              onSelectBlock={(id) => { setSelectedBlockId(id); setExtraSelectedIds([]); }}
               onStartDrag={startBlockDrag}
               onStartResize={startBlockResize}
             />
@@ -608,7 +700,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
                 <PanelRightOpen size={16} aria-hidden="true" />
               </button>
             )}
-            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={actions.removeBlock} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
+            <Inspector rightOpen={prefs.rightOpen} selectedBlock={selectedBlock} activePage={activePage} inspectorTab={inspectorTab} pageConfig={layout.page} sources={layout.sources} availableSources={session.availableSources} sourcePreviews={sourcePreviews} previewState={selectedBlock?.source_id ? stagePreviews.states[selectedBlock.source_id] : undefined} onLoadSourcePreview={(id) => void stagePreviews.load(id, true)} monthlyGoals={session.monthlyGoals} layout={layout} assetUrls={session.assetUrls} reportId={report.id} unit={unit} reportName={report.name} parameterSchema={report.parameter_schema} assets={visibleAssets} uploadingAsset={session.uploadingAsset} knownColumns={selectedKnownColumns} resolveKnownColumns={resolveKnownColumns} onSelectBlock={setSelectedBlockId} onChangeTab={setInspectorTab} onReorderLayer={actions.reorderBlockLayer} onDuplicateBlock={actions.duplicateSelectedBlock} onRemoveBlock={(id) => removeBlock(id, false)} removalDisabled={Boolean(report.enabled)} onUpdatePageConfig={report.enabled ? undefined : actions.updatePageConfig} onTriggerImageUpload={(blockId) => session.triggerImageUpload(blockId)} onOpenCreateSource={session.openCreateSourceModal} onColumnWidthsValidation={session.handleColumnWidthsValidation} onUpdateBlock={actions.updateBlock} />
           </div>
         )}
         <ProblemsPanel
@@ -647,6 +739,7 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
       <SourceDialog
         sourceModal={session.sourceModal}
         availableSources={session.availableSources}
+        sourceEstablishment={session.sourceEstablishment}
         reportId={report.id}
         unit={unit}
         currentReportParameters={report.parameter_schema}
@@ -669,6 +762,6 @@ function ReportCanvasEditor({ unit, report, onClose, onSaved }: ReportCanvasProp
         }}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-    </>
+    </CanvasErrorBoundary></OriginContext.Provider>
   );
 }

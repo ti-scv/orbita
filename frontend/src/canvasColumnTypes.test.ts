@@ -72,7 +72,7 @@ describe("Formatação de células (formatCellValue)", () => {
   });
 
   it("formata data/hora ISO em DD/MM/AAAA HH:mm:ss", () => {
-    expect(formatCellValue("2026-10-27T14:30:15", "datetime")).toBe("27/10/2026 14:30:15");
+    expect(formatCellValue("2026-10-27T14:30:15", "datetime")).toBe("27/10/2026 14:30");
     expect(formatCellValue("2026-10-27 09:15", "datetime")).toBe("27/10/2026 09:15");
   });
 

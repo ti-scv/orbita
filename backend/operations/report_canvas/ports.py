@@ -7,7 +7,7 @@ from .native import datasets
 VERSION=1
 
 def block(id,type,x,y,w,h,title="",source=None,**options):
- b={"id":id,"type":type,"x":x,"y":y,"width":w,"height":h,"title":title,"options":{"font_size":14,"color":"#17638f",**options}}
+ b={"id":id,"type":type,"x":x,"y":y,"width":w,"height":h,"title":title,"options":{"font_size":14,"color":"#17638f" if type in {"line","bar","pie"} else "#262626",**options}}
  if source:b["source_id"]=source
  return b
 

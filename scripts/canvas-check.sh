@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# canvas-check.sh — verificação do front (typecheck + testes + build) em container descartável.
+# canvas-check.sh — verificação do front (hooks + typecheck + testes + build) em container descartável.
 #
 # O Node do host (v18) não atende ao projeto; por isso o front é verificado dentro do
 # Docker usando a imagem local node:24-bookworm-slim. O script:
 #   1. copia frontend/ (sem node_modules, dist e tsbuildinfo) para um diretório temporário;
-#   2. roda `npm ci && npx tsc -b && npx vitest run && npx vite build` em
+#   2. roda npm ci, ESLint de hooks, TypeScript, Vitest e build em
 #      `docker run --rm node:24-bookworm-slim`;
 #   3. imprime um resumo por etapa e sai com código != 0 se alguma etapa falhar.
 #
@@ -48,6 +48,7 @@ docker run --rm \
     }
     step "npm ci" npm ci --no-progress --loglevel=error
     if [ $status -eq 0 ]; then
+      step "canvas hooks" npx eslint -c eslint.canvas.config.mjs src/components/report-canvas src/components/ReportCanvas.tsx src/components/ReportCanvasPage.tsx src/components/CanvasShell.tsx
       step "tsc -b" npx tsc -b
       step "vitest run" npx vitest run $VITEST_DEFAULT_ARGS $VITEST_ARGS
       if [ "$ONLY_TESTS" != "1" ]; then step "vite build" npx vite build; else summary+="  --    vite build (ONLY_TESTS=1)\n"; fi

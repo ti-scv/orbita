@@ -116,7 +116,16 @@ class TableBlock:
         if widths and len(widths) != len(columns):
             fail_at(f'Bloco "{block_label(b)}": informe uma largura para cada coluna da tabela.', block_id=b["id"], code="table_widths_mismatch")
         indices = [field(d, c, b) for c in columns]
-        return {**b, "columns": columns, "rows": [[r[i] for i in indices] for r in d.rows]}
+        headers=[]
+        for name in columns:
+            title_field=b["options"].get("header_fields",{}).get(name)
+            if title_field:
+                index=field(d,title_field,b)
+                values={str(r[index]).strip() for r in d.rows if r[index] is not None and str(r[index]).strip()}
+                if len(values)>1:fail_at(f'Cabeçalho inconsistente para a coluna "{name}".',block_id=b["id"],code="table_header_conflict")
+                headers.append(next(iter(values),name))
+            else:headers.append(name)
+        return {**b, "columns": headers, "rows": [[r[i] for i in indices] for r in d.rows]}
 
 
 class KPIBlock:

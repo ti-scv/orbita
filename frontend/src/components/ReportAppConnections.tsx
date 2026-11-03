@@ -1,4 +1,5 @@
 import RemoteInstances from "./RemoteInstances";
+import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import {useEffect,useState} from "react";
 import {Plus,Pencil,Cloud,Database} from "lucide-react";
 import InlineDialog from "./InlineDialog";
@@ -27,7 +28,8 @@ export default function ReportAppConnections({unit}:{unit:string}) {
  return <section>
   <div className="report-toolbar"><button className="button primary" onClick={()=>{setError("");setForm({name:"",mode:"local",local_unit:null,remote_instance:null,enabled:false});}}><Plus size={16}/>Adicionar conexão</button></div>
   {error&&!form&&<div className="inline-error" role="alert">{error}</div>}
-  {rows.length?<div className="report-table-scroll"><table className="report-table"><thead><tr><th>Nome</th><th>Instância</th><th>Origem</th><th>Situação</th><th/></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td>{r.name}</td><td>{r.mode==="remote"?<Cloud size={15}/>:<Database size={15}/>} {r.mode==="remote"?"Remota":"Local"}</td><td>{r.source_name}</td><td>{r.enabled?r.state==="connected"||r.state==="local"?"Ativa":"Pendente":"Desativada"}</td><td><button className="button" onClick={()=>{setError("");setForm({...r});}}><Pencil size={14}/>Editar</button></td></tr>)}</tbody></table></div>:<Empty text="Nenhuma conexão do app."/>}
+  {rows.length?<div className="report-table-scroll"><table className="report-table"><thead><tr><th>Nome</th><th>Instância</th><th>Origem</th><th>Situação</th><th/></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td>{r.name}</td><td>{r.mode==="remote"?<Cloud size={15}/>:<Database size={15}/>} {r.mode==="remote"?"Remota":"Local"}</td><td>{r.source_name}</td><td>{r.enabled?r.state==="connected"||r.state==="local"?"Ativa":"Pendente":"Desativada"}</td><td><button className="button" onClick={()=>{setError("");setForm({...r});}}><Pencil size={14}/>Editar</button><RemovalButton unit={unit} resource="report-app-connections" kind="conexão" row={r} onChanged={()=>setRevision(n=>n+1)}/></td></tr>)}</tbody></table></div>:<Empty text="Nenhuma conexão do app."/>}
+  <RemovedRecords key={`${unit}:${revision}`} unit={unit} resource="report-app-connections" kind="conexão" revision={revision} onChanged={()=>setRevision(n=>n+1)}/>
   {form&&<InlineDialog subtitle="" busy={busy} title={form.id?"Editar conexão do app":"Adicionar conexão do app"} onClose={()=>setForm(null)} footer={<><button className="button" onClick={()=>setForm(null)}>Cancelar</button><button className="button primary" disabled={busy} type="submit" form="report-app-source">Salvar</button></>}>
    <form id="report-app-source" onSubmit={save} className="report-form">
     {error&&<div className="inline-error" role="alert">{error}</div>}

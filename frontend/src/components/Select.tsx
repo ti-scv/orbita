@@ -64,7 +64,7 @@ export default function Select({children,label,...props}:SelectHTMLAttributes<HT
    <div id={`${auto}-list`} role="listbox" aria-label={accessibleLabel} aria-activedescendant={shown[active]?`${auto}-option-${active}`:undefined} className="scv-select-list">
     {shown.map((o,i)=><div key={`${o.value}-${i}`}>
       {o.group && shown[i-1]?.group!==o.group && <div className="scv-select-group">{o.group}</div>}
-      <button type="button" role="option" id={`${auto}-option-${i}`} disabled={o.disabled} aria-selected={o.value===value} tabIndex={-1} className={`scv-select-option ${active===i?"is-active":""}`} onMouseEnter={()=>!o.disabled&&setActive(i)} onMouseDown={e=>e.preventDefault()} onClick={()=>choose(o)}><span>{o.label}</span>{o.value===value&&<Check size={15} aria-hidden="true"/>}</button>
+      <button type="button" role="option" id={`${auto}-option-${i}`} disabled={o.disabled} aria-selected={o.value===value} tabIndex={-1} className={`scv-select-option ${active===i?"is-active":""}`} title={o.label} onMouseEnter={()=>!o.disabled&&setActive(i)} onMouseDown={e=>e.preventDefault()} onClick={()=>choose(o)}><span>{o.label}</span>{o.value===value&&<Check size={15} aria-hidden="true"/>}</button>
     </div>)}
     {!shown.length&&<p className="scv-select-empty">Nenhuma opção encontrada.</p>}
    </div>

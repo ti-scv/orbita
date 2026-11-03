@@ -233,3 +233,96 @@ def test_snapshot_asset_metadata_does_not_load_image_bytes(env):
     report.canvas_layout["pages"][0]["blocks"].append({"id":"image","type":"image","x":1,"y":1,"width":20,"height":20,"asset_id":str(image.pk)})
     assert "data" in assets_for(report,report.canvas_layout,metadata_only=True)[str(image.pk)].get_deferred_fields()
     assert "data" not in assets_for(report,report.canvas_layout)[str(image.pk)].get_deferred_fields()
+
+
+def test_list_reuses_canvas_source_index_without_n_plus_one(env):
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    from operations.reporting import readiness
+
+    e, report, child = env
+    report.canvas_layout["sources"] = [
+        {"id": f"source{i}", "type": "report", "report_id": child.pk}
+        for i in range(8)
+    ]
+    report.canvas_layout["pages"][0]["blocks"] = [
+        {"id": "table", "type": "table", "x": 40, "y": 40,
+         "width": 600, "height": 200, "source_id": "source0"}
+    ]
+    report.save()
+    expected = readiness(report)
+    with CaptureQueriesContext(connection) as queries:
+        response = e["client"].get("/api/v1/reports/?unit=ame&section=reports")
+    assert response.status_code == 200
+    row = next(r for r in response.data["results"] if r["id"] == report.pk)
+    assert row["pending_items"] == expected
+    report_queries = [q for q in queries if 'FROM "operations_reportdefinition"' in q["sql"]]
+    # Count + page + parent map + description index; never one per source.
+    assert len(report_queries) <= 4
+
+
+@pytest.mark.parametrize("restriction", ["other_unit", "unreviewed", "review_queue", "disabled", "missing"])
+def test_canvas_cached_sources_keep_availability_and_unit_checks(env, restriction):
+    from operations.report_canvas.sources import resolve_report
+
+    _, report, child = env
+    spec = {"id": "data", "type": "report", "report_id": child.pk}
+    if restriction == "other_unit":
+        child.unit = Unit.objects.create(slug="task14-other", name="Outra unidade")
+    elif restriction == "unreviewed":
+        child.reviewed = False
+    elif restriction == "review_queue":
+        child.review_queue = True
+    elif restriction == "disabled":
+        child.enabled = False
+    child.save()
+    index = {} if restriction == "missing" else {child.pk: child}
+    with pytest.raises(ValidationError, match="Fonte indisponível"):
+        resolve_report(report, spec, reports_by_id=index)
+
+
+def test_canvas_cached_source_has_same_snapshot_without_queries_or_mutation(env):
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    _, report, child = env
+    report.canvas_layout["sources"] = [{"id": "data", "type": "report", "report_id": child.pk}]
+    report.canvas_layout["pages"][0]["blocks"] = [
+        {"id": "table", "type": "table", "x": 40, "y": 40,
+         "width": 600, "height": 200, "source_id": "data"}
+    ]
+    expected = definition_snapshot(report)
+    child = ReportDefinition.objects.select_related("connection", "unit").get(pk=child.pk)
+    original = copy.deepcopy(child.parameter_schema)
+    with CaptureQueriesContext(connection) as queries:
+        actual = definition_snapshot(report, reports_by_id={child.pk: child})
+    assert actual == expected
+    assert len(queries) == 0
+    assert child.parameter_schema == original
+
+
+def test_source_preview_reports_effective_values_and_defaults(env):
+    e, report, child = env
+    child.query_sql = "SELECT label,total FROM totals WHERE total >= :minimum"
+    child.parameter_schema = {"minimum": {"type": "integer", "label": "Mínimo", "default": 15}}
+    child.save()
+    source = {"id": "dados", "type": "report", "report_id": child.pk}
+    response = post(e, report, "canvas-source-preview", {"source": source})
+    assert response.status_code == 200, response.data
+    assert response.data["effective_parameters"] == [{"name": "minimum", "label": "Mínimo", "value": 15, "default": True}]
+    assert response.data["rows"] == [["Fev", 20]]
+    source["parameters"] = {"minimum": {"parameter": "limite"}}
+    response = post(e, report, "canvas-source-preview", {"source": source, "parameters": {"limite": 5}})
+    assert response.status_code == 200, response.data
+    assert response.data["effective_parameters"][0]["value"] == 5
+    assert response.data["effective_parameters"][0]["default"] is False
+    assert len(response.data["rows"]) == 2
+
+
+def test_wrong_unit_returns_friendly_404(env):
+    e, report, _ = env
+    other = Unit.objects.create(slug="outra", name="Outra")
+    Membership.objects.create(unit=other, user=e["user"], role="admin")
+    for suffix in ("", "canvas/"):
+        response = e["client"].get(f"/api/v1/reports/{report.pk}/{suffix}?unit=outra")
+        assert response.status_code == 404
+        assert str(response.data["detail"]) == "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista."

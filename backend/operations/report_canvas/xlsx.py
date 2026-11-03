@@ -7,6 +7,7 @@ from openpyxl.chart import BarChart, LineChart, PieChart, Reference
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 from .registry import EXPORTERS, Registry
+from .formatting import export_cell
 
 RENDERERS=Registry()
 
@@ -25,9 +26,9 @@ def dataset_sheet(book,b,prefix):
     name=f"{prefix}{len(book.worksheets)} {title}"[:31]
     sheet=book.create_sheet(name)
     for ri,row in enumerate([b["columns"],*b["rows"]],1):
-        for ci,value in enumerate(row,1):cell(sheet,ri,ci,value)
+        for ci,value in enumerate(row,1):cell(sheet,ri,ci,export_cell(value, b["columns"][ci-1]) if ri > 1 else value)
     sheet.freeze_panes="A2";sheet.auto_filter.ref=sheet.dimensions
-    for c in sheet[1]:c.font=Font(bold=True,color="FFFFFF");c.fill=PatternFill("solid",fgColor="123C57")
+    for c in sheet[1]:c.font=Font(bold=True,color="262626");c.fill=PatternFill("solid",fgColor="EDEDED")
     weights=b["options"].get("column_widths")
     for col in range(1,len(b["columns"])+1):sheet.column_dimensions[get_column_letter(col)].width=min(80,max(8,weights[col-1]/8)) if weights else 22
     return sheet
@@ -35,14 +36,14 @@ def dataset_sheet(book,b,prefix):
 
 def text(ctx,b,row,col,width,height):
     cell(ctx.sheet,row,col,(b.get("title","")+"\n"+b.get("text","")).strip()).alignment=Alignment(wrap_text=True,vertical="top")
-    target=ctx.sheet.cell(row,col);target.font=Font(size=b["options"].get("font_size",14),color=b["options"].get("color","#075b94")[1:])
+    target=ctx.sheet.cell(row,col);target.font=Font(size=b["options"].get("font_size",14),color=b["options"].get("color","#262626")[1:])
     if width>1:ctx.sheet.merge_cells(start_row=row,start_column=col,end_row=row,end_column=col+width-1)
     ctx.sheet.row_dimensions[row].height=max(20,min(300,b["height"]*.75))
 
 
 def kpi(ctx,b,row,col,width,height):
     cell(ctx.sheet,row,col,b.get("title","")).font=Font(bold=True,size=11)
-    c=cell(ctx.sheet,row+1,col,b["value"] if b["value"] is not None else "Sem dados");c.font=Font(bold=True,size=24,color=b["options"].get("color","#075b94")[1:]);c.number_format="#,##0"+("."+"0"*b["options"].get("precision",0) if b["options"].get("precision",0) else "")
+    c=cell(ctx.sheet,row+1,col,b["value"] if b["value"] is not None else "Sem dados");c.font=Font(bold=True,size=24,color=b["options"].get("color","#262626")[1:]);c.number_format="#,##0"+("."+"0"*b["options"].get("precision",0) if b["options"].get("precision",0) else "")
 
 
 def image(ctx,b,row,col,width,height):
@@ -59,11 +60,11 @@ def table(ctx,b,row,col,width,height):
     visible_columns=max(1,width)
     for ri,line in enumerate([b["columns"][:visible_columns],*[r[:visible_columns] for r in b["rows"][:available]]]):
         for ci,value in enumerate(line):
-            c=cell(ctx.sheet,start+ri,col+ci,value);c.alignment=Alignment(wrap_text=True,vertical="top")
-            if ri==0:c.font=Font(bold=True,color="FFFFFF");c.fill=PatternFill("solid",fgColor="123C57")
+            c=cell(ctx.sheet,start+ri,col+ci,export_cell(value, b["columns"][ci]) if ri > 0 else value);c.alignment=Alignment(wrap_text=True,vertical="top")
+            if ri==0:c.font=Font(bold=True,color="262626");c.fill=PatternFill("solid",fgColor="EDEDED")
     if len(b["rows"])>available or len(b["columns"])>visible_columns:
         data=dataset_sheet(ctx.book,b,"Dados ")
-        c=cell(ctx.sheet,start+available+1,col,"Dados completos");c.hyperlink=f"#'{data.title}'!A1";c.style="Hyperlink"
+        c=cell(ctx.sheet,start+available+1,col,"Dados completos");c.hyperlink=f"#'{data.title}'!A1";c.font=Font(color="595959",underline="single")
 
 
 def chart(ctx,b,row,col,width,height):
@@ -90,9 +91,9 @@ class XLSXExporter:
                 changed=key!=previous
                 if changed:band=not band
                 for c in sheet[ri]:
-                    c.fill=PatternFill("solid",fgColor="EDF5FA" if band else "FFFFFF")
+                    c.fill=PatternFill("solid",fgColor="F5F5F5" if band else "FFFFFF")
                     c.alignment=Alignment(vertical="center")
-                    if changed:c.border=Border(top=Side(style="thin",color="9BB7CA"))
+                    if changed:c.border=Border(top=Side(style="thin",color="BDBDBD"))
                 previous=key
             out=io.BytesIO();book.save(out);return out.getvalue()
         page=document["page"];unit=page["width"]/page["columns"]

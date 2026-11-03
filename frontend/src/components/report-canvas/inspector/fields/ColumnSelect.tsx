@@ -3,6 +3,7 @@ import type { DragEvent, KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Check, ChevronDown, Search } from "lucide-react";
 import ColumnBadge from "../../data/ColumnBadge";
+import { formatCellValue } from "../../data/columnTypes";
 import type { ColumnDataType, ColumnInfo } from "../../model";
 
 export function isNumericColumnAllowed(col: ColumnInfo): boolean {
@@ -345,7 +346,7 @@ export default function ColumnSelect({
                       ) : selected ? (
                         <Check size={13} aria-hidden="true" />
                       ) : it.col?.sample?.[0] ? (
-                        <span className="cv-col-option-reason">{it.col.sample[0]}</span>
+                        <span className="cv-col-option-reason" title={formatCellValue(it.col.sample[0], it.col.type)}>{formatCellValue(it.col.sample[0], it.col.type)}</span>
                       ) : null}
                     </button>
                   );

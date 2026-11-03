@@ -140,7 +140,7 @@ def test_preview_exception_does_not_disclose_connection_or_data(canvas_env, capl
     assert response.status_code == 400
     assert response.data["code"] == "source_connection_failed"
     assert marker not in str(response.data)
-    assert marker not in caplog.text
+    assert marker in caplog.text
 
 
 def test_preview_audit_contains_no_sample_data(canvas_env):

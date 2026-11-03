@@ -1,8 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { query, request } from "../api";
-const ReportCanvas = lazy(() => import("./ReportCanvas"));
+const loadReportCanvas = () => import("./ReportCanvas");
+const ReportCanvas = lazy(loadReportCanvas);
+import type { CanvasGetResponse } from "./report-canvas/model";
 import type { ReportSummary } from "./report-canvas/model";
+import CanvasErrorBoundary from "./report-canvas/shell/CanvasErrorBoundary";
 import ShellSkeleton from "./report-canvas/shell/ShellSkeleton";
 import "./report-canvas/tokens.css";
 import "./report-canvas/layout.css";
@@ -16,6 +19,8 @@ export interface ReportCanvasPageProps {
 
 export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPageProps) {
   const [report, setReport] = useState<ReportSummary | null>(null);
+  const [initialCanvas, setInitialCanvas] = useState<CanvasGetResponse | undefined>();
+  const [loadingStep, setLoadingStep] = useState("Carregando relatório…");
   const [error, setError] = useState("");
   const [reloadTick, setReloadTick] = useState(0);
 
@@ -33,27 +38,37 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
   useEffect(() => {
     let alive = true;
     setReport(null);
+    setInitialCanvas(undefined);
     setError("");
+    setLoadingStep("Carregando relatório…");
+    const timer = window.setTimeout(() => { if (alive) { alive = false; setError("Não foi possível carregar o relatório. Confira a conexão e tente de novo."); } }, 20000);
     if (admin) {
-      request<ReportSummary>(query(`reports/${id}`, { unit }))
-        .then((res) => {
-          if (alive) setReport(res);
+      performance.mark("canvas-abertura-inicio");
+      void loadReportCanvas().catch(() => {});
+      Promise.all([
+        request<ReportSummary>(query(`reports/${id}`, { unit })).then(value => { performance.mark("canvas-definicao-pronta"); if (alive) setLoadingStep("Carregando fontes…"); return value; }),
+        request<CanvasGetResponse>(query(`reports/${id}/canvas`, { unit })).then(value => { performance.mark("canvas-fontes-prontas"); return value; }),
+      ])
+        .then(([res, canvas]) => {
+          if (alive) { window.clearTimeout(timer); setInitialCanvas(canvas); setReport(res); }
         })
         .catch((err: unknown) => {
           if (alive) {
-            setError((err as Error).message || "Não foi possível carregar os dados do relatório.");
+            window.clearTimeout(timer);
+            setError((err as {status?: number}).status === 404 || /No ReportDefinition matches/i.test((err as Error).message) ? "Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista." : (err as Error).message || "Não foi possível carregar os dados do relatório.");
           }
         });
     }
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
   }, [id, unit, admin, reloadTick]);
 
   useEffect(() => {
     if (!report) return;
     const previous = document.title;
-    document.title = `${report.name} · Canvas · SCV Messenger`;
+    document.title = `${report.name} · Desenho do relatório · SCV Messenger`;
     return () => {
       document.title = previous;
     };
@@ -85,7 +100,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
               {specificMessage}
             </p>
             <div className="cv-route-error-actions">
-              <button
+              {error.startsWith("Este relatório não existe") ? <button type="button" className="cv-btn cv-btn-primary" onClick={back}>Trocar unidade</button> : <button
                 type="button"
                 className="cv-btn cv-btn-primary"
                 aria-label="Tentar novamente"
@@ -93,7 +108,7 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
               >
                 <RefreshCw size={14} aria-hidden="true" />
                 <span>Tentar novamente</span>
-              </button>
+              </button>}
               <button
                 type="button"
                 className="cv-btn"
@@ -111,8 +126,8 @@ export default function ReportCanvasPage({ id, unit, admin }: ReportCanvasPagePr
   }
 
   if (!report) {
-    return <ShellSkeleton label="Carregando relatório…" />;
+    return <ShellSkeleton label={loadingStep} />;
   }
 
-  return <Suspense fallback={<ShellSkeleton label="Carregando editor…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} onClose={back} /></Suspense>;
+  return <CanvasErrorBoundary key={`${unit}:${id}`} onBack={back}><Suspense fallback={<ShellSkeleton label="Montando a página…" />}><ReportCanvas key={`${unit}:${id}`} unit={unit} report={report} initialCanvas={initialCanvas} onClose={back} /></Suspense></CanvasErrorBoundary>;
 }

@@ -1,9 +1,11 @@
 import { useId } from "react";
+import { maskFixedDate } from "../data/fixedDate";
 import type { FormEvent } from "react";
 import { AlertCircle, Check, Clock, Download } from "lucide-react";
 import InlineDialog from "../../InlineDialog";
 import Select from "../../Select";
 import type { OutputFormat } from "../model";
+import { friendlyParameterValue } from "../parameters";
 import type { TestParameter } from "../parameters";
 import "../dialogs.css";
 
@@ -16,6 +18,7 @@ export interface PreviewServerError {
 export interface PreviewModalState {
   format: OutputFormat;
   values: Record<string, string>;
+  defaultPeriod?: string;
   resultUrl?: string;
   resultName?: string;
   resultFormat?: string;
@@ -86,6 +89,7 @@ export default function PreviewDialog({
       <div className="cv-test-layout">
         <form id={previewFormId} className="cv-subform cv-test-fields" onSubmit={onSubmit}>
           <strong>{reportName}</strong>
+          {previewModal.defaultPeriod && <p className="cv-help">Padrão: {previewModal.defaultPeriod}</p>}
 
           {previewModal.error && (
             <div className="cv-dialog-alert is-error" role="alert">
@@ -109,7 +113,7 @@ export default function PreviewDialog({
                           onClose();
                         }}
                       >
-                        Bloco <code>{err.blockId}</code>: {err.message}
+                        Ver bloco: {err.message}
                       </button>
                     ) : (
                       <span>{err.message}</span>
@@ -168,7 +172,7 @@ export default function PreviewDialog({
                     <option value="">Selecionar</option>
                     {field.options.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        {option.label === option.value ? friendlyParameterValue(field.name, option.value) : option.label}
                       </option>
                     ))}
                   </Select>
@@ -198,7 +202,7 @@ export default function PreviewDialog({
                     onChange={(e) =>
                       onChange({
                         ...previewModal,
-                        values: { ...previewModal.values, [field.name]: e.target.value },
+                        values: { ...previewModal.values, [field.name]: field.type === "date" ? maskFixedDate(e.target.value) : e.target.value },
                         error: "",
                       })
                     }

@@ -6,18 +6,19 @@ export interface ColumnBadgeProps {
   type?: ColumnDataType;
   looksLike?: string;
   className?: string;
+  estimated?: boolean;
 }
 
-export default function ColumnBadge({ type = "unknown", looksLike, className = "" }: ColumnBadgeProps) {
+export default function ColumnBadge({ type = "unknown", looksLike, className = "", estimated = false }: ColumnBadgeProps) {
   const ariaLabel = getColumnTypeAriaLabel(type, looksLike);
-  const title = formatColumnTypeLabel(type, looksLike);
+  const title = formatColumnTypeLabel(type, looksLike) + (estimated ? " (estimado pelo esquema)" : "");
   const modClass = `is-${type}`;
 
   return (
     <span
       className={`cv-type-badge ${modClass} ${className}`.trim()}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={ariaLabel + (estimated ? " (estimado pelo esquema)" : "")}
       title={title}
     >
       {type === "number" && (

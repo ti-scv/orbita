@@ -45,6 +45,9 @@ class UnitSerializer(serializers.ModelSerializer):
             "authorized_recipients",
             "effective_recipients",
             "logo",
+            "checkin_enabled",
+            "autoagenda_enabled",
+            "surveys_enabled",
         ]
         read_only_fields = ["version"]
 

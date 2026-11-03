@@ -471,7 +471,7 @@ export function computeProblems(
             message: formatProblemMessage(
               blockName,
               pageName,
-              `a fonte "${block.source_id}" não existe no relatório`,
+              `a fonte selecionada não existe no relatório`,
               "Remova o vínculo ou escolha outra fonte",
             ),
             fix: {
@@ -561,7 +561,7 @@ export function computeProblems(
           message: formatProblemMessage(
             blockName,
             pageName,
-            `a fonte "${block.source_id}" não foi encontrada`,
+            `a fonte selecionada não foi encontrada`,
             "Selecione uma fonte disponível na aba Dados",
           ),
           fix: {

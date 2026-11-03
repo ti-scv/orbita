@@ -62,7 +62,7 @@ export function createCoverPageInLayout(
           width: imgW,
           height: 96,
           asset_id: assets[0].id,
-          options: { color: "#075b94", font_size: 14 },
+          options: { color: "#262626", font_size: 14 },
         },
         prev.page.width,
         prev.page.height,
@@ -84,7 +84,7 @@ export function createCoverPageInLayout(
         height: 110,
         title: "",
         text: "{{report_name}}",
-        options: { color: "#075b94", font_size: 26 },
+        options: { color: "#262626", font_size: 26 },
       },
       prev.page.width,
       prev.page.height,
@@ -153,7 +153,7 @@ export function validateLayoutBeforeSend(
   const clean = sanitizeLayoutForApi(layout);
   const totalBlocks = clean.pages.reduce((acc, p) => acc + p.blocks.length, 0);
   if (requireAtLeastOneBlock && totalBlocks === 0) {
-    return { ok: false, error: "Adicione ao menos um bloco ao Canvas." };
+    return { ok: false, error: "Adicione ao menos um bloco ao relatório." };
   }
   const sourceIds = new Set(clean.sources.map((s) => s.id));
   for (const p of clean.pages) {

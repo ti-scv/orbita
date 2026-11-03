@@ -146,7 +146,7 @@ export default function OperationsAdministration({
 
       {tab === "team" && (userAccess ? <UserDirectory unit={unit} editable={editable} /> : <Panel title="Equipe da unidade"><div className="table-scroll"><table className="directory-table"><thead><tr><th>Usuário</th><th>Perfil</th></tr></thead><tbody>{members.map(m=><tr key={m.id}><td>{m.username}</td><td>{m.role}</td></tr>)}</tbody></table></div></Panel>)}
 
-      {tab === "units" && <UnitDirectory unit={unit} editable={editable} />}
+      {tab === "units" && <UnitDirectory unit={unit} editable={editable} onChanged={async () => { window.dispatchEvent(new Event("session-refresh")); }} />}
 
       {tab === "sources" && (
         <>
@@ -186,7 +186,7 @@ export default function OperationsAdministration({
                       required
                       value={view}
                       onChange={(e) => setView(e.target.value)}
-                      placeholder="SCHEMA.VIEW"
+                      placeholder="MINHA_VISAO"
                     />
                   </Field>
                   <Field label="Evidência da validação">

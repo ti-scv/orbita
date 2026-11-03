@@ -1,3 +1,5 @@
+import { friendlySourceName } from "../data/sourceName";
+import { formatTableCell } from "../data/columnTypes";
 import type { CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
 import ColumnBadge from "../data/ColumnBadge";
 import { inferColumnType } from "../data/columnTypes";
@@ -26,23 +28,28 @@ export default function TablePreview({
   showSampleData,
 }: TablePreviewProps) {
   const opt = block.options || {};
+  const sourceLabel = friendlySourceName(source, catalog);
+  const columnTitle = (column: string) => {
+    const field=opt.header_fields?.[column];
+    if (!field) return column;
+    const index=dataset.columns.indexOf(field);
+    const values=[...new Set(dataset.rows.map(row => row[index]).filter(v => v!=null && String(v).trim()).map(v => String(v).trim()))];
+    return values.length>1 ? "Conflito de cabeçalho" : values[0] || column;
+  };
 
   if (source.type === "report" && !showSampleData && !dataset.columns.length) {
-    const sourceLabel = catalog
-      ? `${catalog.name} (${catalog.code})`
-      : `Relatório #${source.report_id}`;
     const known = sourceColumns(source, catalog);
     const headers = opt.columns?.length ? opt.columns : known.length ? known : [];
     return (
       <div className="cv-block-inner">
         {block.title && <div className="cv-block-title">{block.title}</div>}
-        <div className="cv-table-wrap">
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
           <table className="cv-table-preview">
             <thead>
               <tr>
                 {headers.map((c) => (
-                  <th key={c} style={{ borderBottomColor: primaryColor }}>
-                    <span>{c}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}
               </tr>
@@ -50,7 +57,7 @@ export default function TablePreview({
             <tbody>
               <tr>
                 <td colSpan={100} style={{ color: axisColor }}>
-                  Fonte ({source.id}): {sourceLabel} · consultada na geração/prévia
+                  Fonte: {sourceLabel} · consultada na geração/prévia
                 </td>
               </tr>
             </tbody>
@@ -75,11 +82,11 @@ export default function TablePreview({
       {chosenCols.length === 0 ? (
         <div className="cv-sql-placeholder">
           <span className="cv-sql-meta">
-            A fonte "{source.id}" não informou as colunas. Configure as colunas da tabela no inspetor.
+            A fonte "{sourceLabel}" não informou as colunas. Configure as colunas da tabela no inspetor.
           </span>
         </div>
       ) : (
-        <div className="cv-table-wrap">
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
           <table
             className="cv-table-preview"
             style={{ fontSize: `${fontSize}px`, tableLayout: "fixed" }}
@@ -94,8 +101,8 @@ export default function TablePreview({
             <thead>
               <tr>
                 {chosenCols.map((c) => (
-                  <th key={c} style={{ borderBottomColor: primaryColor }}>
-                    <span>{c}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
                   </th>
                 ))}
               </tr>
@@ -104,15 +111,15 @@ export default function TablePreview({
               {dataset.rows.length === 0 ? (
                 <tr>
                   <td colSpan={chosenCols.length} style={{ color: axisColor }}>
-                    Sem linhas em "{source.id}".
+                    Sem linhas em "{sourceLabel}".
                   </td>
                 </tr>
               ) : (
-                dataset.rows.slice(0, 14).map((r, ri) => (
+                dataset.rows.slice(0, showSampleData ? 14 : 50).map((r, ri) => (
                   <tr key={ri}>
                     {indices.map((ci, k) => (
                       <td key={k}>
-                        {r[ci] === null || r[ci] === undefined ? "" : String(r[ci])}
+                        {formatTableCell(r[ci], chosenCols[k])}
                       </td>
                     ))}
                   </tr>

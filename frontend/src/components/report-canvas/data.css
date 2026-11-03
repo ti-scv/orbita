@@ -13,12 +13,17 @@
 }
 
 .cv-data-head {
+  flex: 0 0 36px;
+  height: 36px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--cv-sp-3) var(--cv-sp-3);
+  gap: 4px;
+  padding: 0 6px 0 10px;
   border-bottom: 1px solid var(--cv-line);
   background: var(--cv-surface);
+  min-width: 0;
 }
 
 .cv-data-head-left {
@@ -150,9 +155,9 @@
   font-size: var(--cv-fs-sm);
   font-weight: var(--cv-fw-medium);
   color: var(--cv-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  text-align: left;
 }
 
 .cv-source-id {
@@ -279,6 +284,17 @@
   background: var(--cv-danger-bg);
   color: var(--cv-danger);
   border-color: var(--cv-danger-line);
+}
+
+.cv-icon-btn:focus-visible {
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
+}
+
+.cv-icon-btn:disabled {
+  color: var(--cv-text-disabled);
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Badges de tipo de dado (20x20) */
@@ -631,10 +647,12 @@
   border-radius: 2px;
 }
 
-.cv-grid-input:focus {
+.cv-grid-input:focus,
+.cv-grid-input:focus-visible {
   border-color: var(--cv-focus);
   background: var(--cv-surface);
-  outline: none;
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
 }
 
 /* Área de Prévia dentro do Diálogo */
@@ -716,9 +734,11 @@
   min-width: 180px;
 }
 
-.cv-search-input:focus {
+.cv-search-input:focus,
+.cv-search-input:focus-visible {
   border-color: var(--cv-focus);
-  outline: none;
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
 }
 
 .cv-drawer-body {
@@ -816,3 +836,89 @@
   max-height: 140px;
   overflow: auto;
 }
+
+/* The drawer is portaled to body, above the entire editor and its rail. */
+.cv-data-drawer .cv-drawer-head { flex-wrap: wrap; gap: var(--cv-sp-2); }
+.cv-data-drawer .cv-drawer-title-group { min-width: 0; flex-wrap: wrap; }
+.cv-data-drawer .cv-drawer-loading { padding: var(--cv-sp-5); color: var(--cv-text-2); }
+
+/* Lists must keep their intrinsic row height inside scrollable flex panels. */
+.cv-root .cv-source-item { flex: 0 0 auto; }
+.cv-root .cv-source-row { line-height: 16px; }
+.cv-root .cv-source-sub { display: block; line-height: 16px; }
+.cv-root .cv-column-row { height: auto; min-height: 32px; flex: 0 0 auto; gap: 6px; padding-block: 4px; line-height: 16px; }
+.cv-root .cv-column-sample { max-width: 100px; flex-shrink: 0; line-height: 16px; }
+.cv-root .cv-use-as-dropdown { flex: 0 0 auto; }
+.cv-root .cv-drawer-head { flex-shrink: 0; }
+.cv-root .cv-drawer-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 20px; }
+.cv-root .cv-preview-table :is(th, td) { line-height: 18px; }
+
+/* Source actions have their own compact row instead of covering the source name. */
+.cv-root .cv-source-row { flex-direction: column; gap: 6px; }
+.cv-root .cv-source-main { flex: 1 1 auto; width: 100%; }
+.cv-root .cv-source-actions {
+  position: static;
+  align-self: flex-end;
+  opacity: 1;
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.cv-root .cv-source-actions .cv-icon-btn { width: 24px; height: 24px; }
+
+/* Tarefa 26: parâmetros e rastreabilidade compactos nos dois temas. */
+.cv-parameter-body { margin-top:8px; padding:8px; border:1px solid var(--cv-line); border-radius:6px; }
+.cv-parameter-body > p { font-size:12px; color:var(--cv-text-2); }
+.cv-parameter-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--cv-line); }
+.cv-parameter-row label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; }
+.cv-parameter-row input[type=checkbox] { width:14px; height:14px; padding:0; }
+.cv-parameter-row p { flex:1 1 180px; margin:0; font-size:12px; color:var(--cv-text-2); overflow-wrap:anywhere; }
+.cv-column-origins { flex:none; max-height:150px; overflow:auto; padding:8px 12px; border-bottom:1px solid var(--cv-line); font-size:12px; }
+.cv-column-origins summary { cursor:pointer; font-weight:600; }
+.cv-column-origins > div { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:4px 0; }
+.cv-origin-text { font-size:11px; color:var(--cv-text-2); overflow-wrap:anywhere; }
+.cv-drawer-pagination { display:flex; align-items:center; gap:8px; padding:8px 12px; border-top:1px solid var(--cv-line); }
+.cv-column-metadata { width:100%; border-collapse:collapse; font-size:12px; }
+.cv-column-metadata th, .cv-column-metadata td { text-align:left; padding:4px 8px; border-bottom:1px solid var(--cv-line); }
+
+.cv-column-metadata td:last-child { white-space: normal; min-width: 180px; }
+.cv-column-metadata .cv-origin-text { display: block; margin-bottom: 4px; }
+
+/* Colunas permanecem legíveis no painel estreito. */
+.cv-root .cv-column-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; min-width: 0; }
+.cv-root .cv-column-left { min-width: 0; grid-column: 1 / -1; display: flex; gap: 5px; }
+.cv-root .cv-column-name, .cv-root .cv-column-sample, .cv-root .cv-origin-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-root .cv-column-sample { grid-column: 1 / -1; max-width: 100%; }
+.cv-root .cv-column-row .cv-origin-text { grid-column: 1; overflow-wrap: normal; }
+.cv-root .cv-column-type { font-size: 11px; color: var(--cv-text-2); flex-shrink: 0; }
+.cv-origin-details { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; }
+.cv-origin-details dd { margin: 0; overflow-wrap: anywhere; }
+
+.cv-origin-skeleton div { height: 1em; margin: .6em 0; border-radius: 4px; background: var(--cv-line); opacity: .6; }
+.cv-origin-skeleton div:nth-child(2) { width: 75%; }
+.cv-origin-skeleton div:nth-child(3) { width: 55%; }
+
+.cv-root .cv-column-left { flex-wrap: wrap; }
+.cv-root .cv-column-name, .cv-root .cv-column-row .cv-origin-text { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+
+.cv-count-help { position: relative; }
+.cv-count-help summary { cursor: pointer; list-style: none; }
+.cv-count-help summary::-webkit-details-marker { display: none; }
+.cv-count-help p { position: absolute; z-index: 30; top: 100%; left: 0; width: 240px; padding: 8px; margin: 4px 0; background: var(--cv-surface); color: var(--cv-text); border: 1px solid var(--cv-line); border-radius: 6px; }
+
+.cv-root .cv-source-tabs { height: auto; align-items: stretch; }
+.cv-root .cv-source-tabs .cv-segmented-btn { height: auto; min-height: var(--cv-h-control); min-width: 0; }
+.cv-root .cv-source-sub { white-space: normal; overflow-wrap: anywhere; }
+
+/* Ajustes do seletor e da gaveta de dados. */
+.cv-root .cv-source-tabs .cv-segmented-btn.active { background: #d3e7f5; color: #123f62; box-shadow: inset 0 0 0 2px #246795; }
+[data-theme="dark"] .cv-root .cv-source-tabs .cv-segmented-btn.active { background: #314c66; color: #fff; box-shadow: inset 0 0 0 2px #9bc9ed; }
+.cv-root .cv-report-select .scv-select-trigger > span { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.cv-data-drawer { height: 40vh; max-height: 40vh; overflow: auto; }
+.cv-data-drawer.is-expanded { height: 75vh; max-height: 75vh; }
+.cv-drawer-body { min-height: 0; overflow: scroll; }
+.cv-drawer-scroll-hint { margin: 0; padding: 0 16px; font-size: 11px; color: var(--cv-text-2); }
+
+.cv-root .cv-applied-parameters { font-size: var(--cv-fs-xs); color: var(--cv-text-2); }

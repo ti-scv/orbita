@@ -1,3 +1,4 @@
+import { previewPeriod } from "../hooks/useStagePreviews";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import {
@@ -9,7 +10,6 @@ import {
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
-import type { SourcePreviewState } from "../api/useSourcePreview";
 import { useSourcePreview } from "../api/useSourcePreview";
 import { COMPONENT_ICONS, COMPONENT_NAMES } from "../library/BlockLibrary";
 import type {
@@ -52,12 +52,13 @@ export interface BlockInspectorProps {
   parameterSchema?: Record<string, unknown>;
   sourcePreviews?: Record<string, SourcePreview | null | undefined>;
   forcePreviewUnavailable?: boolean;
-  previewState?: SourcePreviewState;
+  previewState?: import("../hooks/useStagePreviews").StagePreviewState;
   onLoadSourcePreview?: (sourceId: string) => void;
   onChangeTab: (tab: InspectorTab) => void;
   onReorderLayer: (dir: -1 | 1) => void;
   onDuplicateBlock: () => void;
   onRemoveBlock: (blockId: string) => void;
+  removalDisabled?: boolean;
   onTriggerImageUpload: (blockId: string) => void;
   onOpenCreateSource: () => void;
   onColumnWidthsValidation: (blockId: string | null, errorMessage?: string) => void;
@@ -102,6 +103,7 @@ export default function BlockInspector({
   onReorderLayer,
   onDuplicateBlock,
   onRemoveBlock,
+  removalDisabled = false,
   onTriggerImageUpload,
   onOpenCreateSource,
   onColumnWidthsValidation,
@@ -381,13 +383,16 @@ export default function BlockInspector({
                 type="button"
                 role="menuitem"
                 className="cv-insp-menu-item is-danger"
+                disabled={removalDisabled}
+                aria-label={`Remover ${block.title || COMPONENT_NAMES[block.type]}`}
+                title={removalDisabled ? "Relatório ativo: crie uma nova versão para editar." : `Remover ${block.title || COMPONENT_NAMES[block.type]}`}
                 onClick={() => {
                   setMenuOpen(false);
                   onRemoveBlock(block.id);
                 }}
               >
                 <Trash2 size={13} aria-hidden="true" />
-                <span>Excluir</span>
+                <span>Remover</span>
               </button>
             </div>
           )}
@@ -552,6 +557,7 @@ export default function BlockInspector({
           monthlyGoals={monthlyGoals}
           knownColumns={columnInfos.map((c) => c.name)}
           preview={activePreview}
+          previewPeriod={previewPeriod(previewState?.fields, previewState?.values) + (previewState?.assumed ? " (padrão)" : "")}
           previewLoading={onLoadSourcePreview ? previewState?.status === "loading" : previewHook.isLoading}
           previewError={onLoadSourcePreview ? previewState?.error : previewHook.error}
           previewUnavailable={isPreviewUnavailable}

@@ -1,7 +1,10 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { friendlySourceName } from "../../data/sourceName";
+import { OriginContext } from "../../data/ColumnOrigin";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent } from "react";
 import { ArrowDown, ArrowUp, Braces, Image as ImageIcon, Plus, Upload } from "lucide-react";
 import { estimateTableHeight } from "../../stage/geometry";
+import ColumnOrigin from "../../data/ColumnOrigin";
 import ColumnBadge from "../../data/ColumnBadge";
 import type {
   AggregateMode,
@@ -92,7 +95,6 @@ export default function ContentFields({
   block,
   hidden,
   layout,
-  sourceOrigin,
   sources,
   columnInfos,
   rows,
@@ -241,6 +243,7 @@ export default function ContentFields({
   );
 
   // Text variable insertion options
+  const { sources: sourceCatalog = [] } = useContext(OriginContext);
   const variableItems = useMemo(() => {
     if (block.type !== "text") return [];
     const items: Array<{ token: string; desc: string }> = [
@@ -266,12 +269,12 @@ export default function ContentFields({
       for (const col of cols.slice(0, 20)) {
         items.push({
           token: `{{${src.id}.${col}}}`,
-          desc: `${src.label || src.id} › ${col}`,
+          desc: `${friendlySourceName(src, src.type === "report" ? sourceCatalog.find(item => item.id === src.report_id) : undefined)} › ${col}`,
         });
       }
     }
     return items;
-  }, [block.source_id, block.type, columnInfos, parameterSchema, sources]);
+  }, [block.source_id, block.type, columnInfos, parameterSchema, sources, sourceCatalog]);
 
   const textHasInterpolation = Boolean(block.type === "text" && /\{\{.+?\}\}/.test(block.text || ""));
   const interpolatedPreview = useMemo(() => {
@@ -1047,12 +1050,13 @@ export default function ContentFields({
                           type={item.info?.type || "unknown"}
                           looksLike={item.info?.looks_like}
                         />
-                        <span className="cv-table-col-name" title={item.name}>
-                          {item.name}
-                        </span>
-                        <small className="cv-column-origin" title={`${sourceOrigin || block.source_id || "Sem fonte"} › ${item.name}`}>
-                          {sourceOrigin || block.source_id || "Sem fonte"} › {item.name}
-                        </small>
+                        <div className="cv-table-col-copy">
+                          <span className="cv-table-col-name" title={item.name}>
+                            {item.name}
+                          </span>
+
+                        </div>
+                        <div className="cv-table-col-origin"><ColumnOrigin source={sources.find(s => s.id === block.source_id)} column={item.name} type={item.info?.type} /></div>
                         {isMissing && <span className="cv-col-missing-tag">Ausente</span>}
                         {item.checked && selectedTableCols.length > 1 && (
                           <div className="cv-well-actions">
@@ -1090,7 +1094,7 @@ export default function ContentFields({
             )}
           </CollapsibleSection>
 
-          <div className="cv-field">
+          <div className="cv-insp-fit-content">
             <button type="button" className="cv-btn-compact" onClick={() => {
               const frame = Array.from(document.querySelectorAll<HTMLElement>(".cv-block")).find(el => el.dataset.blockId === block.id);
               const table = frame?.querySelector<HTMLElement>(".cv-table-preview");

@@ -621,7 +621,7 @@
 
 [data-theme="dark"] .cv-root .cv-seg-item:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.45;
+  opacity: 1;
   cursor: not-allowed;
   pointer-events: auto;
 }
@@ -1203,6 +1203,17 @@
   color: var(--cv-text);
 }
 
+.cv-root .cv-align-btn:focus-visible {
+  outline: 2px solid var(--cv-focus);
+  outline-offset: 1px;
+}
+
+.cv-root .cv-align-btn:disabled {
+  color: var(--cv-text-disabled);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .cv-root .cv-asset-card {
   display: flex;
   align-items: center;
@@ -1246,7 +1257,65 @@
 
 .cv-root .cv-lineage-text { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 .cv-root .cv-source-breadcrumb, .cv-root .cv-column-origin { color: var(--cv-text-2); white-space: normal; overflow-wrap: anywhere; font-size: var(--cv-fs-xs); }
-.cv-root .cv-table-col-item { flex-wrap: wrap; }
+/* Keep controls on one row; the copy owns its two text lines. */
+.cv-root .cv-table-col-item {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  min-height: 48px;
+  padding: 6px;
+  gap: 8px;
+  line-height: 16px;
+}
+.cv-root .cv-table-col-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  gap: 2px;
+}
+.cv-root .cv-table-col-copy > :is(.cv-table-col-name, .cv-column-origin) {
+  display: block;
+  min-width: 0;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+.cv-root .cv-table-col-item > :is(.cv-type-badge, .cv-well-actions) { flex-shrink: 0; }
+.cv-root .cv-table-col-item .cv-well-btn { flex: 0 0 24px; }
+.cv-root .cv-source-option { flex: 0 0 auto; min-height: 48px; line-height: 16px; }
+.cv-root .cv-source-option-title { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; }
+.cv-root .cv-source-option-title > svg { flex-shrink: 0; }
+.cv-root .cv-source-option :is(.cv-col-select-name, .cv-col-option-reason) {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 16px;
+}
 
 .cv-root input.cv-insp-title-input { color: var(--cv-text); opacity: 1; -webkit-text-fill-color: var(--cv-text); }
 .cv-root input.cv-insp-title-input::placeholder { color: var(--cv-text-2); opacity: 1; }
+
+.cv-root .cv-insp-fit-content { padding: 8px 12px; min-width: 0; }
+.cv-root .cv-insp-fit-content button { max-width: 100%; white-space: normal; text-align: left; }
+
+/* Os valores do relatório ativo continuam legíveis em modo somente leitura. */
+.cv-root .cv-page-readonly :is(input, select, textarea, button):disabled {
+  opacity: 1;
+  color: var(--cv-text);
+  -webkit-text-fill-color: var(--cv-text);
+}
+.cv-root .cv-page-readonly .cv-seg-group.is-disabled { opacity: 1; }
+
+/* Mantém o nome da coluna inteiro mesmo no inspetor estreito. */
+.cv-root .cv-table-col-list > .cv-table-col-item { display:grid; grid-template-columns:16px 22px minmax(0,1fr) auto; gap:4px; align-items:center; }
+.cv-root .cv-table-col-copy { grid-column:3 / -1; }
+.cv-root .cv-table-col-copy > .cv-table-col-name { flex:0 0 auto; white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+.cv-root .cv-table-col-origin { grid-column:1 / 4; display:flex; align-items:center; min-width:0; gap:4px; }
+.cv-root .cv-table-col-origin .cv-origin-text { flex:1; min-width:0; white-space:normal; overflow-wrap:anywhere; }
+.cv-root .cv-table-col-item > .cv-well-actions { grid-column:4; grid-row:2; }
+.cv-root .cv-table-col-item > .cv-col-missing-tag { grid-column:1 / -1; }

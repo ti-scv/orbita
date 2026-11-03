@@ -1,0 +1,42 @@
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+  client_max_body_size 4m;
+  # Compress code/styles and JSON reads; do not cache private API responses.
+  gzip on;
+  gzip_vary on;
+  gzip_min_length 1024;
+  gzip_comp_level 5;
+  gzip_types text/css application/javascript application/json font/ttf font/woff font/woff2;
+  # Content-addressed local fonts; stylesheet remains revalidated.
+  location ~ "^/fonts/[a-f0-9]{16}\.ttf$" {
+    types { font/ttf ttf; }
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    try_files $uri =404;
+  }
+  location /assets/ {
+    try_files $uri =404;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy same-origin always;
+  }
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy same-origin always;
+  location /api/ {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 120s;
+  }
+  location /webhooks/whatsapp/ {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_set_header Host $http_host;
+  }
+  location /health/ { proxy_pass http://${API_UPSTREAM}; proxy_set_header Host $host; }
+  location /static/ { proxy_pass http://${API_UPSTREAM}; }
+  location / { try_files $uri $uri/ /index.html; }
+}

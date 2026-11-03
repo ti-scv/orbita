@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { CanvasLayout, OutputFormat } from "../model";
-import { collectTestParameters, displayParameter, testParameters } from "../parameters";
+import { collectTestParameters, previewUrlError, displayParameter, friendlyParameterValue, testParameters } from "../parameters";
 import type { PreviewModalState, PreviewServerError } from "./PreviewDialog";
 
 export function usePreviewDialog({
@@ -32,17 +32,27 @@ export function usePreviewDialog({
   const openPreviewDialog = useCallback(() => {
     const clean = validateBeforeSend(true);
     if (!clean) return;
+    const values = Object.fromEntries(
+        previewFields.map((f) => {
+          let value = f.default;
+          if ((value == null || value === "") && f.type === "date" && /^(start|end|start_date|end_date|data_inicial|data_final)$/i.test(f.name)) {
+            const date = new Date();
+            if (/start|inicial/i.test(f.name)) date.setDate(date.getDate() - 30);
+            value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          }
+          return [f.name, /^(unidade|unit|tipo_envio)$/i.test(f.name) && !f.options && value != null && value !== "" ? friendlyParameterValue(f.name, value) : displayParameter(value, f.type)];
+        }),
+      );
     setPreviewModal({
       format: outputFormat,
-      values: Object.fromEntries(
-        previewFields.map((f) => [f.name, displayParameter(f.default, f.type)]),
-      ),
+      values,
+      defaultPeriod: previewFields.filter(f => f.type === "date").map(f => values[f.name]).filter(Boolean).join(" a "),
       busy: false,
-      error: "",
+      error: previewUrlError(parameterSchema || {}, window.location.search),
       info: "",
       serverErrors: [],
     });
-  }, [outputFormat, previewFields, validateBeforeSend]);
+  }, [outputFormat, parameterSchema, previewFields, validateBeforeSend]);
 
   const closePreviewDialog = useCallback(() => {
     if (previewModal?.busy) return;
@@ -54,6 +64,8 @@ export function usePreviewDialog({
     async (e: FormEvent) => {
       e.preventDefault();
       if (!previewModal) return;
+      const urlError = previewUrlError(parameterSchema || {}, window.location.search);
+      if (urlError) { setPreviewModal({...previewModal, error: urlError}); return; }
       const clean = validateBeforeSend(true);
       if (!clean) return;
       let parsedParams: Record<string, unknown>;
@@ -122,7 +134,7 @@ export function usePreviewDialog({
         );
       }
     },
-    [previewCanvas, previewFields, previewModal, revokeDownloadUrl, trackDownloadUrl, validateBeforeSend],
+    [previewCanvas, previewFields, previewModal, parameterSchema, revokeDownloadUrl, trackDownloadUrl, validateBeforeSend],
   );
 
   return {

@@ -136,10 +136,9 @@ export default function BlockLibrary({
             {filteredTypes.map((type) => {
               const Icon = COMPONENT_ICONS[type];
               return (
+                <div key={type} role="listitem">
                 <button
-                  key={type}
                   type="button"
-                  role="listitem"
                   draggable={!loading}
                   disabled={loading}
                   className="cv-type-row"
@@ -152,6 +151,7 @@ export default function BlockLibrary({
                   <span className="cv-type-name">{COMPONENT_NAMES[type]}</span>
                   <span className="cv-type-desc">{COMPONENT_DESCRIPTIONS[type]}</span>
                 </button>
+                </div>
               );
             })}
           </div>

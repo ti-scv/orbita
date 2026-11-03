@@ -1,3 +1,4 @@
+import { friendlySourceName } from "../data/sourceName";
 import type { CanvasBlock, CanvasLayout, CanvasSource, CatalogSqlSource } from "../model";
 import { BLOCK_LABELS, UUID_RE } from "../model";
 import { selectKnownColumns } from "../state/selectors";
@@ -55,21 +56,19 @@ export function describeBlockLineage(
     if (block.source_id) {
       const src = sources.find((s) => s.id === block.source_id);
       const srcName =
-        (src && "label" in src && typeof src.label === "string" && src.label.trim()) ||
-        block.source_id;
+        src ? friendlySourceName(src) : "Fonte indisponível";
       const match = block.text?.match(/\{\{\s*[A-Za-z0-9_-]+\.([A-Za-z0-9_-]+)\s*\}\}/);
       return match ? `${srcName} › ${match[1]}` : srcName;
     }
     const varMatch = block.text?.match(/\{\{\s*([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\s*\}\}/);
-    if (varMatch) return `${varMatch[1]} › ${varMatch[2]}`;
+    if (varMatch) { const linked = sources.find(source => source.id === varMatch[1]); return `${linked ? friendlySourceName(linked) : "Fonte indisponível"} › ${varMatch[2]}`; }
     return null;
   }
 
   if (!block.source_id) return null;
   const src = sources.find((s) => s.id === block.source_id);
   const srcName =
-    (src && "label" in src && typeof src.label === "string" && src.label.trim()) ||
-    block.source_id;
+    src ? friendlySourceName(src) : "Fonte indisponível";
 
   const opt = block.options;
   if (block.type === "kpi") {
@@ -163,7 +162,7 @@ export function computeCanvasProblems(params: {
           addProblem({
             id: `${block.id}:text-source`,
             severity: "warning",
-            message: `Bloco "${blockTitle}" (${page.name}): fonte "${block.source_id}" não existe.`,
+            message: `Bloco "${blockTitle}" (${page.name}): fonte selecionada não existe.`,
             ...base,
           });
         }
@@ -184,7 +183,7 @@ export function computeCanvasProblems(params: {
         addProblem({
           id: `${block.id}:source-not-found`,
           severity: "error",
-          message: `Bloco "${blockTitle}" (${page.name}): a fonte "${block.source_id}" não existe.`,
+          message: `Bloco "${blockTitle}" (${page.name}): a fonte selecionada não existe.`,
           ...base,
         });
         continue;
@@ -245,7 +244,7 @@ export function computeCanvasProblems(params: {
           addProblem({
             id: `${block.id}:unknown-col`,
             severity: "warning",
-            message: `Bloco "${blockTitle}" (${page.name}): coluna "${unknown}" não consta na fonte "${block.source_id}".`,
+            message: `Bloco "${blockTitle}" (${page.name}): coluna "${unknown}" não consta na fonte selecionada.`,
             ...base,
           });
         }

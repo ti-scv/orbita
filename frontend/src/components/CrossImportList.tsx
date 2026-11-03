@@ -426,6 +426,7 @@ export default function CrossImportList({
                     type="button"
                     className="cross-record-search-clear"
                     aria-label="Limpar busca"
+                    title="Limpar busca"
                     onClick={() => {
                       setSearch("");
                       setRecordPage(1);
@@ -611,8 +612,11 @@ export default function CrossImportList({
                         {operate && (
                           <td className="cross-col-action">
                             <button
+                              type="button"
                               className="button cross-row-toggle-btn"
                               disabled={busy || recordsLoading}
+                              aria-label={row.enabled ? "Desativar regra de importação" : "Ativar regra de importação"}
+                              title={row.enabled ? "Desativar regra de importação" : "Ativar regra de importação"}
                               onClick={() =>
                                 void toggleRecords([row.record_id], !row.enabled)
                               }

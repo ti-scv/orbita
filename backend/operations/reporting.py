@@ -30,7 +30,7 @@ def is_admin(user, unit):
     )
 
 
-def readiness(report, seen=None, *, check_external_file=True):
+def readiness(report, seen=None, *, check_external_file=True, canvas_reports=None):
     seen = set(seen or ())
     if report.pk in seen:
         return ["Composição circular"]
@@ -39,14 +39,14 @@ def readiness(report, seen=None, *, check_external_file=True):
     if report.review_queue:
         missing.append("Rotina legada pendente de validação")
     if not report.reviewed:
-        missing.append("Revisão da definição pendente")
+        missing.append("Abra o editor, confira as colunas e marque como revisado")
     if report.handler=="app_operational_v1":
         from operations.app_reporting import manifest
         try:manifest(report)
         except ValidationError as exc:return [str(x) for x in exc.detail]
     if report.canvas_enabled:
         from operations.report_canvas.engine import report_readiness
-        return list(dict.fromkeys(missing + report_readiness(report)))
+        return list(dict.fromkeys(missing + report_readiness(report,reports_by_id=canvas_reports)))
     if report.handler == "bed_snapshots_v1":
         from operations.bed_snapshots import report_readiness
         return list(dict.fromkeys(missing + report_readiness(report)))
@@ -242,6 +242,8 @@ def make_execution(
     run_date=None,
     transport=None,
 ):
+    if getattr(report, "removed_at", None) is not None:
+        raise ValidationError("Relatório removido.")
     if report.catalog_kind != "report":
         raise ValidationError("Componentes só podem ser executados pelo relatório principal ou em prévia técnica.")
     if report.handler == "occupancy_indicators_v1":

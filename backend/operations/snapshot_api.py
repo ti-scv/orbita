@@ -29,7 +29,10 @@ class SnapshotRunSerializer(serializers.ModelSerializer):
 
 class SnapshotConfigurationSerializer(serializers.ModelSerializer):
     source_name = serializers.CharField(source="source_report.name", read_only=True)
-    connection_name = serializers.CharField(source="source_report.connection.name", read_only=True)
+    connection_name = serializers.SerializerMethodField()
+
+    def get_connection_name(self, obj) -> str:
+        return obj.source_report.connection.name if obj.source_report.connection_id else "Importação legada"
     output_name = serializers.CharField(source="output_report.name", read_only=True)
     pending_items = serializers.SerializerMethodField()
     latest_run = serializers.SerializerMethodField()

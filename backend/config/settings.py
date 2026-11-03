@@ -10,7 +10,9 @@ DEBUG = os.getenv("DEBUG", "0") == "1"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "local-development-only-change-before-exposing")
 if not DEBUG and SECRET_KEY.startswith("local-development") and os.getenv("DATABASE_HOST"):
     raise RuntimeError("Configure DJANGO_SECRET_KEY antes de iniciar o ambiente Docker.")
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if h.strip()]
+if "testserver" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("testserver")
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -26,6 +28,8 @@ INSTALLED_APPS = [
     "messaging",
     "responses",
     "operations",
+    "autoagenda",
+    "surveys",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -139,11 +143,30 @@ CELERY_TASK_IGNORE_RESULT = True
 ASYNC_TASKS = bool(os.getenv("REDIS_URL"))
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_DEFAULT_QUEUE = "priority"
+CELERY_TASK_ROUTES = {
+    # Fila prioritária: disparo de WhatsApp, regras operacionais e crons de alta frequência
+    "messaging.dispatch_due": {"queue": "priority"},
+    "scheduling.tick": {"queue": "priority"},
+    "scheduling.run_rule": {"queue": "priority"},
+    "surveys.tick": {"queue": "priority"},
+    "operations.tick": {"queue": "priority"},
+    "core.sync_remote_users": {"queue": "priority"},
+
+    # Fila de relatórios: extrações demoradas do Oracle, snapshots de leitos e envios Baileys
+    "operations.report": {"queue": "reports"},
+    "operations.catalog_report": {"queue": "reports"},
+    "operations.tick_bed_snapshots": {"queue": "reports"},
+    "operations.collect_bed_snapshot": {"queue": "reports"},
+    "operations.deliver_report_baileys": {"queue": "reports"},
+    "scheduling.sync_oracle_agenda": {"queue": "reports"},
+}
 CELERY_BEAT_SCHEDULE = {
-    "bed-snapshots": {"task": "operations.tick_bed_snapshots", "schedule": 30.0},
-    "tick": {"task": "scheduling.tick", "schedule": 60.0},
-    "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0},
-    "operations": {"task": "operations.tick", "schedule": 60.0},
+    "bed-snapshots": {"task": "operations.tick_bed_snapshots", "schedule": 30.0, "options": {"queue": "reports"}},
+    "tick": {"task": "scheduling.tick", "schedule": 60.0, "options": {"queue": "priority"}},
+    "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0, "options": {"queue": "priority"}},
+    "operations": {"task": "operations.tick", "schedule": 60.0, "options": {"queue": "priority"}},
+    "surveys": {"task": "surveys.tick", "schedule": 60.0, "options": {"queue": "priority"}},
 }
 SEND_MODE = os.getenv("SEND_MODE", "simulated")
 META_REAL_ENABLED = os.getenv("META_REAL_ENABLED", "0") == "1"
@@ -182,3 +205,6 @@ ORBITA_INSTANCE_ID = os.getenv("ORBITA_INSTANCE_ID", "")
 REPORT_BAILEYS_URL = os.getenv("REPORT_BAILEYS_URL", "http://baileys:9322")
 REPORT_BAILEYS_TOKEN = os.getenv("REPORT_BAILEYS_TOKEN", "")
 REPORT_BAILEYS_ALLOW_SENDS = os.getenv("REPORT_BAILEYS_ALLOW_SENDS", "0") == "1"
+
+# Ative somente depois de aplicar a migração 0031 no banco correspondente.
+REPORT_REMOVAL_ENABLED = os.getenv("REPORT_REMOVAL_ENABLED", "0") == "1"

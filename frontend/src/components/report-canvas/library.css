@@ -154,7 +154,7 @@
 
 .cv-root .cv-panel-icon-btn:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
 }
 
@@ -315,7 +315,7 @@
   justify-content: space-between;
   gap: var(--cv-sp-1);
   min-height: 30px;
-  padding: 2px 4px 2px var(--cv-sp-2);
+  padding: 2px var(--cv-sp-2);
   border-radius: var(--cv-r-sm);
   background: transparent;
   min-width: 0;
@@ -623,3 +623,9 @@
   background: var(--cv-surface);
   flex: 0 0 28px;
 }
+
+.cv-root .cv-block-tree-item { flex: 0 0 auto; min-height: 44px; padding-block: 4px; }
+.cv-root .cv-block-tree-main { gap: 3px; }
+.cv-root :is(.cv-block-tree-title, .cv-block-tree-lineage) { line-height: 16px; }
+/* A linhagem permanece legível também no item selecionado. */
+.cv-root .cv-block-tree-lineage, .cv-root .cv-page-count { color:var(--cv-text-2); }

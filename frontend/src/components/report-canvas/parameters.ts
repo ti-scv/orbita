@@ -3,7 +3,7 @@ export interface TestParameter {
   default?: unknown; minimum?: number; maximum?: number; not_before?: string;
   order?: number; options?: Array<{value: string; label: string}>;
 }
-const labels: Record<string,string> = {start:"Data inicial",start_date:"Data inicial",data_inicial:"Data inicial",end:"Data final",end_date:"Data final",data_final:"Data final",reference_date:"Data de referência",as_of:"Data de referência",date:"Data",year:"Ano",month:"Mês",patient_name:"Nome do paciente"};
+const labels: Record<string,string> = {start:"Data inicial",start_date:"Data inicial",data_inicial:"Data inicial",end:"Data final",end_date:"Data final",data_final:"Data final",reference_date:"Data de referência",as_of:"Data de referência",date:"Data",year:"Ano",month:"Mês",patient_name:"Nome do paciente",unidade:"Unidade",unit:"Unidade",tipo_envio:"Tipo de envio",cd_paciente:"Código do paciente",cd_agenda:"Código da agenda",dta_agenda:"Data da agenda",data_atualizacao:"Data de atualização",referencia:"Referência",dias_reconstruidos:"Dias reconstruídos"};
 export function testParameters(schema: Record<string,unknown> = {}): TestParameter[] {
   return Object.entries(schema).map(([name,raw]) => {
     const spec = (typeof raw === "string" ? {type:raw} : raw || {}) as Record<string,any>;
@@ -13,7 +13,7 @@ export function testParameters(schema: Record<string,unknown> = {}): TestParamet
     const numeric=spec.type === "integer" || spec.type === "number";
     const prompt=String(spec.prompt || "");
     const numericLabel=numeric && /\bano\b/i.test(prompt) ? "Ano" : numeric && /mês|mes/i.test(prompt) ? "Mês" : undefined;
-    return {...spec,name,type:spec.type || "string",label:spec.label || numericLabel || labels[key] || fallback.charAt(0).toUpperCase()+fallback.slice(1),options:Array.isArray(choices)?choices.map((v:any)=>typeof v === "object"?{value:String(v.value),label:String(v.label ?? v.value)}:{value:String(v),label:String(v)}):undefined};
+    return {...spec,name,type:spec.type || "string",label:spec.label || numericLabel || labels[key] || fallback.charAt(0).toUpperCase()+fallback.slice(1),options:Array.isArray(choices)?Array.from(new Map(choices.map((v:any)=>{ const option = typeof v === "object" ? {value:String(v.value),label:String(v.label ?? v.value)} : {value:String(v),label:String(v)}; return [option.value, option]; })).values()) as Array<{value:string;label:string}>:undefined};
   }).sort((a,b) => {
     const rank=(f:TestParameter)=>f.order ?? (/inicial|start/i.test(f.name)?1:/final|end/i.test(f.name)?2:100);
     return rank(a)-rank(b);
@@ -41,11 +41,39 @@ export function collectTestParameters(fields: TestParameter[], values: Record<st
       if(!Number.isFinite(number) || (field.type === "integer" && !Number.isInteger(number)))throw new Error(`${field.label}: número inválido.`);
       if((field.minimum!=null && number<field.minimum)||(field.maximum!=null && number>field.maximum))throw new Error(`${field.label}: valor fora do intervalo permitido.`);
       result[field.name]=number;
-    }else result[field.name]=value;
-    if(field.options && !field.options.some(o=>o.value===value))throw new Error(`Selecione uma opção válida em ${field.label.toLowerCase()}.`);
+    }else result[field.name]=/^(unidade|unit)$/i.test(field.name) && value.toLocaleLowerCase("pt-BR") === "ame votuporanga" ? "ame" : field.name === "tipo_envio" && value === "Agendamento" ? "appointment" : value;
+    if(field.options && !field.options.some(o=>o.value===value || o.value===String(result[field.name])))throw new Error(`Escolha ${field.label.toLowerCase()} para ver a prévia.`);
   }
   for(const field of fields){
     if(field.not_before && result[field.name] && result[field.not_before] && String(result[field.name])<String(result[field.not_before]))throw new Error(`${field.label} deve ser igual ou posterior a ${fields.find(f=>f.name===field.not_before)?.label.toLowerCase() || field.not_before}.`);
   }
   return result;
+}
+
+export function friendlyParameterName(name: string): string {
+  return testParameters({[name]: {}})[0].label;
+}
+export function friendlyColumnName(name: string): string {
+  return /^(cd_paciente|cd_agenda|dta_agenda)$/i.test(name) ? friendlyParameterName(name) : name;
+}
+export function unitOptionLabel(name: string, value: string, fallback: string): string {
+  if (!/^(unidade|unit)$/i.test(name)) return fallback;
+  const units: Record<string, string> = {scv: "SCV", ame: "AME Votuporanga", "ame-jales": "AME Jales", "ame-santa-fe": "AME Santa Fé", sansaude: "Sansaúde", nas: "NAS"};
+  return units[value.toLowerCase()] || fallback;
+}
+export function friendlyParameterValue(name: string, value: unknown): string {
+  if (value == null || value === "") return /^(end|end_date|data_final)$/i.test(name) ? "sem limite" : "—";
+  const text = String(value);
+  if (/^(unidade|unit)$/i.test(name)) return unitOptionLabel(name, text, text);
+  if (/^(tipo_envio)$/i.test(name) && text.toLowerCase() === "appointment") return "Agendamento";
+  return displayParameter(value, /^\d{4}-\d{2}-\d{2}$/.test(text) ? "date" : "string");
+}
+
+
+export function previewUrlError(schema: Record<string, unknown>, search: string): string {
+  const known = new Set(["unit", ...Object.keys(schema)]);
+  for (const key of new URLSearchParams(search).keys()) {
+    if (!known.has(key)) return "Este parâmetro não existe neste relatório. Remova-o do endereço e tente novamente.";
+  }
+  return "";
 }

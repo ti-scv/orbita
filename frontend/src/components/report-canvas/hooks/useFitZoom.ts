@@ -11,14 +11,14 @@ export interface UseFitZoomParams {
 }
 
 export function useFitZoom({
-  loading,
-  pageWidth,
-  leftOpen,
-  rightOpen,
-  leftWidth,
-  rightWidth,
+  pageWidth, loading, leftOpen, rightOpen, leftWidth, rightWidth,
 }: UseFitZoomParams) {
-  const [zoom, setZoom] = useState(0.85);
+  const [zoom, setZoomValue] = useState(0.85);
+  const autoFit = useRef(true);
+  const setZoom = useCallback((value: number | ((previous: number) => number)) => {
+    autoFit.current = false;
+    setZoomValue(value);
+  }, []);
   const stageRef = useRef<HTMLDivElement>(null);
   const pageWidthRef = useRef(pageWidth);
   pageWidthRef.current = pageWidth;
@@ -29,29 +29,17 @@ export function useFitZoom({
     const pw = targetPageWidth ?? pageWidthRef.current;
     const available = Math.max(200, el.clientWidth - 64);
     const computed = clamp(Math.floor((available / pw) * 100) / 100, 0.25, 1.5);
-    setZoom(computed);
+    autoFit.current = true;
+    setZoomValue(computed);
   }, []);
 
   useEffect(() => {
-    if (loading) return;
-    const frame = requestAnimationFrame(() => fitToWidth());
-    return () => cancelAnimationFrame(frame);
-  }, [loading, leftOpen, rightOpen, leftWidth, rightWidth, fitToWidth]);
-
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (loading || !stage || typeof ResizeObserver === "undefined") return;
-    let lastWidth = stage.clientWidth;
-    const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? stage.clientWidth;
-      if (Math.abs(width - lastWidth) > 1) {
-        lastWidth = width;
-        fitToWidth();
-      }
-    });
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, [loading, fitToWidth]);
+    if (loading || !stageRef.current) return;
+    if (autoFit.current) fitToWidth();
+    const observer = new ResizeObserver(() => { if (autoFit.current) fitToWidth(); });
+    observer.observe(stageRef.current);
+    return () => observer.disconnect?.();
+  }, [loading, pageWidth, leftOpen, rightOpen, leftWidth, rightWidth, fitToWidth]);
 
   return { zoom, setZoom, stageRef, fitToWidth };
 }

@@ -23,7 +23,7 @@ def render_medical_pdf(data, asset_root):
     previous_year=now.year-1;current_year=now.year
     names=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];labels=[f'{names[m-1]}/{str(y)[2:]}' for y,m in months]
     days8=[(now.date()-timedelta(days=i)).isoformat() for i in range(8,0,-1)];days10=[(now.date()-timedelta(days=i)).isoformat() for i in range(10,0,-1)]
-    W=1120;navy=HexColor('#173b55');ink=HexColor('#1e3446');muted=HexColor('#6c8190');rule=HexColor('#dce6ed');pale=HexColor('#f3f7fa');blue=HexColor('#2c6da7');orange=HexColor('#c18a49');gray=HexColor('#8d9aa5');green=HexColor('#27977b');red=HexColor('#c7646c')
+    W=1120;navy=HexColor('#171717');ink=HexColor('#262626');muted=HexColor('#595959');rule=HexColor('#d4d4d4');pale=HexColor('#f5f5f5');blue=HexColor('#2c6da7');orange=HexColor('#c18a49');gray=HexColor('#8d9aa5');green=HexColor('#27977b');red=HexColor('#c7646c')
     greenbg=HexColor('#e5f3eb');redbg=HexColor('#f9e7e8');greenfg=HexColor('#286a4e');redfg=HexColor('#a23c45')
     out=io.BytesIO();c=canvas.Canvas(out,pageCompression=1);c.setTitle('Indicadores médicos - Santa Casa Votuporanga');c.setAuthor('SCV Messenger');c.setSubject('Dados atualizados até '+until)
     page=0;H=0

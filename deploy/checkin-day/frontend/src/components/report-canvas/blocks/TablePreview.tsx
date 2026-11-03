@@ -1,0 +1,134 @@
+import { friendlySourceName } from "../data/sourceName";
+import { formatTableCell } from "../data/columnTypes";
+import type { CanvasBlock, CanvasSource, CatalogSqlSource } from "../model";
+import ColumnBadge from "../data/ColumnBadge";
+import { inferColumnType } from "../data/columnTypes";
+import { exampleColumnType } from "../placeholderData";
+import { sourceColumns } from "../sampleData";
+
+export interface TablePreviewProps {
+  block: CanvasBlock;
+  source: CanvasSource;
+  catalog?: CatalogSqlSource;
+  dataset: { columns: string[]; rows: unknown[][] };
+  fontSize: number;
+  primaryColor: string;
+  axisColor: string;
+  showSampleData: boolean;
+}
+
+export default function TablePreview({
+  block,
+  source,
+  catalog,
+  dataset,
+  fontSize,
+  primaryColor,
+  axisColor,
+  showSampleData,
+}: TablePreviewProps) {
+  const opt = block.options || {};
+  const sourceLabel = friendlySourceName(source, catalog);
+  const columnTitle = (column: string) => {
+    const field=opt.header_fields?.[column];
+    if (!field) return column;
+    const index=dataset.columns.indexOf(field);
+    const values=[...new Set(dataset.rows.map(row => row[index]).filter(v => v!=null && String(v).trim()).map(v => String(v).trim()))];
+    return values.length>1 ? "Conflito de cabeçalho" : values[0] || column;
+  };
+
+  if (source.type === "report" && !showSampleData && !dataset.columns.length) {
+    const known = sourceColumns(source, catalog);
+    const headers = opt.columns?.length ? opt.columns : known.length ? known : [];
+    return (
+      <div className="cv-block-inner">
+        {block.title && <div className="cv-block-title">{block.title}</div>}
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
+          <table className="cv-table-preview">
+            <thead>
+              <tr>
+                {headers.map((c) => (
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan={100} style={{ color: axisColor }}>
+                  Fonte: {sourceLabel} · consultada na geração/prévia
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  const chosenCols = opt.columns?.length
+    ? opt.columns.filter((c) => dataset.columns.includes(c))
+    : dataset.columns;
+  const indices = chosenCols.map((c) => dataset.columns.indexOf(c));
+  const widths = opt.column_widths;
+  const hasValidWidths =
+    widths?.length === chosenCols.length && widths.every((w) => Number.isFinite(w) && w > 0);
+  const totalWidth = hasValidWidths ? widths!.reduce((a, b) => a + b, 0) : 0;
+
+  return (
+    <div className="cv-block-inner">
+      {block.title && <div className="cv-block-title">{block.title}</div>}
+      {chosenCols.length === 0 ? (
+        <div className="cv-sql-placeholder">
+          <span className="cv-sql-meta">
+            A fonte "{sourceLabel}" não informou as colunas. Configure as colunas da tabela no inspetor.
+          </span>
+        </div>
+      ) : (
+        <div className="cv-table-wrap" tabIndex={0} role="region" aria-label="Tabela do relatório">
+          <table
+            className="cv-table-preview"
+            style={{ fontSize: `${fontSize}px`, tableLayout: "fixed" }}
+          >
+            {hasValidWidths && (
+              <colgroup>
+                {widths!.map((weight, i) => (
+                  <col key={i} style={{ width: `${(100 * weight) / totalWidth}%` }} />
+                ))}
+              </colgroup>
+            )}
+            <thead>
+              <tr>
+                {chosenCols.map((c) => (
+                  <th scope="col" key={c} style={{ borderBottomColor: primaryColor }}>
+                    <span>{columnTitle(c)}</span>{" "}<ColumnBadge type={showSampleData ? exampleColumnType(c) : inferColumnType(dataset.rows.map(r => r[dataset.columns.indexOf(c)]))} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataset.rows.length === 0 ? (
+                <tr>
+                  <td colSpan={chosenCols.length} style={{ color: axisColor }}>
+                    Sem linhas em "{sourceLabel}".
+                  </td>
+                </tr>
+              ) : (
+                dataset.rows.slice(0, showSampleData ? 14 : 50).map((r, ri) => (
+                  <tr key={ri}>
+                    {indices.map((ci, k) => (
+                      <td key={k}>
+                        {formatTableCell(r[ci], chosenCols[k])}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

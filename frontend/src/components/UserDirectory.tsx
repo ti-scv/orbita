@@ -1,3 +1,4 @@
+import { Cloud } from "lucide-react";
 import Select from "./Select";
 import { useEffect, useState } from "react";
 import { query, request } from "../api";
@@ -69,7 +70,7 @@ function UserForm({row, options, busy, error, revision, save}:{row?:UserRow;opti
       {options.units.map(option=>{
         const grant=grants.find(g=>g.unit===option.slug);
         return <fieldset key={option.slug} className="access-grant" disabled={!option.editable}>
-          <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none()}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote?"☁ ":""}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
+          <legend><label className="checkbox-label"><input type="checkbox" checked={!!grant} onChange={e=>setGrants(v=>e.target.checked?[...v,{unit:option.slug,role:"operator",permissions:none()}]:v.filter(g=>g.unit!==option.slug))}/>{option.remote && <Cloud size={14} />}{option.name}{option.remote?` · ${option.instance_name}`:" · Local"}</label></legend>
           {grant&&<><label className="op-field">Perfil<Select value={grant.role} onChange={e=>setRole(option.slug,e.target.value)}>{Object.entries(profiles).filter(([key])=>option.max_role==="admin"||key!=="admin"&&(option.max_role!=="viewer"||key==="viewer")).map(([key,label])=><option key={key} value={key}>{label}</option>)}</Select></label>
             <div className="table-scroll"><table className="directory-table"><thead><tr><th>Seção / configuração</th><th>Acesso</th></tr></thead><tbody>{Object.entries(options.sections).map(([key,originalLabel])=>{
                const label = ({settings:"Configurações · Integrações e envios",operationsAdmin:"Configurações · Cadastros",users:"Configurações · Usuários"} as Record<string,string>)[key] || originalLabel;

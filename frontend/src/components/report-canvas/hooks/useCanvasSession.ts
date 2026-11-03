@@ -23,9 +23,11 @@ import type {
 import type { BannerMessage } from "../shell/Banner";
 import { validateLayoutBeforeSend } from "../stage/geometry";
 import type { CanvasStore } from "../state/canvasStore";
+import { normalizeLayout } from "../model";
 import { useAssetUrls } from "./useAssetUrls";
 
 export interface UseCanvasSessionParams {
+  initialCanvas?: import("../model").CanvasGetResponse;
   unit: string;
   report: ReportCanvasProps["report"];
   onSaved?: () => void;
@@ -46,6 +48,7 @@ export interface UseCanvasSessionParams {
 
 export function useCanvasSession({
   unit,
+  initialCanvas,
   report,
   onSaved,
   store,
@@ -59,6 +62,8 @@ export function useCanvasSession({
   onOpenProblemsPanel,
 }: UseCanvasSessionParams) {
   const api = useCanvasApi({ reportId: report.id, unit });
+  const [parameterDeclarations, setParameterDeclarations] = useState<import("../model").ParameterDeclaration[]>([]);
+  const [parameterEdits, setParameterEdits] = useState<import("../model").ParameterEdit[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [uploadingAsset, setUploadingAsset] = useState(false);
@@ -73,6 +78,7 @@ export function useCanvasSession({
   const [monthlyGoals, setMonthlyGoals] = useState<
     Array<{ year: number; month: number; value: number }>
   >(Array.isArray(report.monthly_goals) ? report.monthly_goals : []);
+  const [sourceEstablishment, setSourceEstablishment] = useState("");
   const [availableSources, setAvailableSources] = useState<CatalogSqlSource[]>([]);
   const [assets, setAssets] = useState<CanvasAssetMeta[]>([]);
   const [banner, setBanner] = useState<BannerMessage | null>(null);
@@ -98,8 +104,12 @@ export function useCanvasSession({
       setLoading(true);
       setBanner(null);
       try {
-        const { data, normalizedLayout } = await api.fetchCanvas();
+        const { data, normalizedLayout } = !isReload && initialCanvas
+          ? { data: initialCanvas, normalizedLayout: normalizeLayout(initialCanvas.layout) }
+          : await api.fetchCanvas();
         if (data.port_notice) setBanner({ tone: "conflict", text: data.port_notice });
+        setParameterDeclarations(data.parameter_editor || []);
+        setParameterEdits([]);
         const nextEnabled = Boolean(data.enabled);
         const nextFormat: OutputFormat = data.output_format === "xlsx" ? "xlsx" : "pdf";
         setVersion(typeof data.version === "number" ? data.version : initialVersionRef.current);
@@ -108,6 +118,7 @@ export function useCanvasSession({
         setOutputFormat(nextFormat);
         setSavedMeta({ enabled: nextEnabled, outputFormat: nextFormat });
         if (Array.isArray(data.monthly_goals)) setMonthlyGoals(data.monthly_goals);
+        setSourceEstablishment(data.source_establishment || "");
         setAvailableSources(Array.isArray(data.sources) ? data.sources : []);
         const incomingAssets = Array.isArray(data.assets) ? data.assets : [];
         setAssets(incomingAssets);
@@ -116,7 +127,7 @@ export function useCanvasSession({
         setSelectedBlockId(null);
         columnWidthsErrorRef.current = null;
         if (isReload) {
-          setBanner({ tone: "ok", text: "Canvas recarregado com a versão atual." });
+          setBanner({ tone: "ok", text: "Relatório recarregado com a versão atual." });
         }
         requestAnimationFrame(() => fitRef.current(normalizedLayout.page.width));
       } catch (e) {
@@ -125,7 +136,7 @@ export function useCanvasSession({
         setLoading(false);
       }
     },
-    [api, assetState.registerAssetsBatch, setActivePageId, setSelectedBlockId, store.replace],
+    [api, initialCanvas, assetState.registerAssetsBatch, setActivePageId, setSelectedBlockId, store.replace],
   );
 
   useEffect(() => {
@@ -162,10 +173,13 @@ export function useCanvasSession({
     try {
       const { saved, normalizedLayout } = await api.saveCanvas({
         version,
+        parameterEdits,
         layout: clean,
         enabled,
         outputFormat,
       });
+      setParameterDeclarations(saved.parameter_editor || []);
+      setParameterEdits([]);
       const savedEnabled = Boolean(saved.enabled);
       const savedFormat: OutputFormat = saved.output_format === "xlsx" ? "xlsx" : "pdf";
       setVersion(typeof saved.version === "number" ? saved.version : version + 1);
@@ -181,12 +195,12 @@ export function useCanvasSession({
       }
       setBanner({
         tone: "ok",
-        text: savedEnabled ? "Canvas salvo e ativado para este relatório." : "Rascunho salvo.",
+        text: savedEnabled ? "Modelo salvo e ativado para este relatório." : "Rascunho salvo.",
       });
       onSaved?.();
     } catch (e) {
       const isConflict = e instanceof CanvasSaveError && e.isConflict;
-      const rawMsg = (e as Error).message || "Falha ao salvar o Canvas.";
+      const rawMsg = (e as Error).message || "Falha ao salvar o relatório.";
       const blockMatch = rawMsg.match(/Bloco\s+"([^"]+)"|Gráfico\s+"([^"]+)"/);
       if (blockMatch) {
         const blkId = blockMatch[1] || blockMatch[2];
@@ -212,6 +226,7 @@ export function useCanvasSession({
     store.markSaved,
     validateBeforeSend,
     version,
+    parameterEdits,
   ]);
 
   const preview = usePreviewDialog({
@@ -330,9 +345,10 @@ export function useCanvasSession({
     setEnabled,
     outputFormat,
     setOutputFormat,
-    metaDirty: enabled !== savedMeta.enabled || outputFormat !== savedMeta.outputFormat,
+    parameterDeclarations, parameterEdits, setParameterEdits,
+    metaDirty: parameterEdits.length > 0 || enabled !== savedMeta.enabled || outputFormat !== savedMeta.outputFormat,
     monthlyGoals,
-    availableSources,
+    availableSources, sourceEstablishment,
     assets,
     assetUrls: assetState.assetUrls,
     banner,

@@ -1,4 +1,6 @@
 """Bulk manual permissions per WhatsApp recipient. Automatic grants are preserved."""
+from operations.report_removal_compat import active_conditions
+
 import hashlib
 import json
 from django.db.models import Q
@@ -31,7 +33,7 @@ def set_manual_reports(recipient, ids, token, actor, *, created=False, inactive_
     current = list(ReportGrant.objects.select_for_update().filter(unit=recipient.unit, recipient=recipient).select_related("report"))
     if not created and token != grants_token(recipient):
         raise Conflict("As permissões foram alteradas. Reabra o destinatário antes de salvar.")
-    allowed = set(ReportDefinition.objects.filter(unit=recipient.unit, catalog_kind="report", manual_enabled=True, review_queue=False, pk__in=ids).values_list("pk", flat=True))
+    allowed = set(ReportDefinition.objects.filter(unit=recipient.unit, catalog_kind="report", **active_conditions(), manual_enabled=True, review_queue=False, pk__in=ids).values_list("pk", flat=True))
     allowed.update(g.report_id for g in current if g.active and g.manual and g.report.unit_id == recipient.unit_id and g.report.catalog_kind == "report" and g.report_id in ids)
     if allowed != set(ids):
         raise ValidationError("Selecione apenas relatórios manuais desta unidade; componentes não são permitidos.")
@@ -89,7 +91,7 @@ class RecipientManualReportsMixin:
     def manual_report_options(self, request):
         unit = get_unit(request, ["admin"])
         search = request.query_params.get("search", "").strip()
-        qs = ReportDefinition.objects.filter(unit=unit, catalog_kind="report", manual_enabled=True, review_queue=False).order_by("name", "pk")
+        qs = ReportDefinition.objects.filter(unit=unit, catalog_kind="report", **active_conditions(), manual_enabled=True, review_queue=False).order_by("name", "pk")
         qs = qs.filter(Q(name__icontains=search) | Q(code__icontains=search)) if len(search) >= 2 else qs.none()
         page = self.paginate_queryset(qs)
         return self.get_paginated_response([{"id":r.pk, "name":r.name, "code":r.code, "enabled":r.enabled, "manual_enabled":r.manual_enabled} for r in page])

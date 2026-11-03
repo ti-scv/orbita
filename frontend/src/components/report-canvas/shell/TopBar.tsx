@@ -51,8 +51,10 @@ function useCompactTopbar(): boolean {
 
 export interface TopBarProps {
   reportName: string;
+  reportActions?: React.ReactNode;
   version: number;
   enabled: boolean;
+  reportActive: boolean;
   outputFormat: OutputFormat;
   dirty: boolean;
   loading: boolean;
@@ -77,6 +79,7 @@ export interface TopBarProps {
   onChangeDataMode: (mode: CanvasDataMode) => void;
   onChangeEnabled: (enabled: boolean) => void;
   onChangeOutputFormat: (format: OutputFormat) => void;
+  onOpenJson?: () => void;
   onOpenPreview: () => void;
   onSave: () => void;
   onSaveAndClose?: () => void;
@@ -102,8 +105,10 @@ function ToolbarThemeToggle() {
 
 export default function TopBar({
   reportName,
+  reportActions,
   version,
   enabled,
+  reportActive,
   outputFormat,
   dirty,
   loading,
@@ -128,6 +133,7 @@ export default function TopBar({
   onChangeDataMode,
   onChangeEnabled,
   onChangeOutputFormat,
+  onOpenJson,
   onOpenPreview,
   onSave,
   onSaveAndClose,
@@ -281,18 +287,19 @@ export default function TopBar({
             </button>
 
             <div className="cv-topbar-identity">
-              <span className="cv-report-title" tabIndex={0} title={reportName}>
+              <h1 className="cv-report-title" title={reportName}>
                 {reportName}
-              </span>
+              </h1>
               <span
-                className={`cv-status-chip ${enabled ? "is-active" : "is-draft"}`}
-                aria-label={enabled ? "Estado: Ativo" : "Estado: Rascunho"}
+                className={`cv-status-chip ${reportActive ? "is-active" : "is-draft"}`}
+                title={reportActive ? "Estado: Ativo" : "Estado: Rascunho"}
               >
-                {enabled ? "Ativo" : "Rascunho"}
+                {reportActive ? "Ativo" : "Rascunho"}
               </span>
               <span className="cv-version-tag" title={`Versão ${version}`}>
                 v{version}
               </span>
+              {reportActions}
             </div>
           </div>
 
@@ -360,6 +367,8 @@ export default function TopBar({
                 <Plus size={14} aria-hidden="true" />
               </button>
 
+              <button type="button" className="cv-btn-compact" title="Ajustar o zoom à largura disponível" disabled={loading} onClick={() => onFitToWidth()}>Ajustar</button>
+
               {openPopover === "zoom" && (
                 <ZoomMenu
                   zoomPercent={zoomPercent}
@@ -373,6 +382,7 @@ export default function TopBar({
           </div>
 
           <div className="cv-topbar-right">
+            {onOpenJson && <button type="button" className="cv-btn-compact" disabled={loading || busy} onClick={onOpenJson}>Código do relatório</button>}
             {hasProblems && (
               <div className="cv-popover-anchor" data-cv-anchor="problems">
                 <button
@@ -407,31 +417,28 @@ export default function TopBar({
             )}
 
             <div className="cv-data-mode" role="group" aria-label="Dados exibidos nos blocos">
-              <span className="cv-data-mode-prefix" aria-hidden="true">
-                Dados:
-              </span>
               <div className="cv-segmented">
                 <button
                   type="button"
                   tabIndex={0}
-                  aria-label="Dados: Exemplo"
+                  aria-label="Dados de exemplo"
                   aria-pressed={dataMode === "sample"}
-                  title="Exemplo: os blocos exibem estrutura e valores sintéticos para montagem visual sem consultar a fonte real."
+                  title="Mostrar valores fictícios para montar o relatório."
                   className={`cv-seg-btn ${dataMode === "sample" ? "is-active" : ""}`.trim()}
                   onClick={() => onChangeDataMode("sample")}
                 >
-                  Exemplo
+                  Dados de exemplo
                 </button>
                 <button
                   type="button"
                   tabIndex={0}
-                  aria-label="Dados: Prévia"
+                  aria-label="Dados reais"
                   aria-pressed={dataMode === "preview"}
-                  title="Prévia: os blocos exibem dados reais carregados das fontes ou metas configuradas, sem valores fictícios."
+                  title="Consultar as fontes e mostrar dados reais nos blocos."
                   className={`cv-seg-btn ${dataMode === "preview" ? "is-active" : ""}`.trim()}
                   onClick={() => onChangeDataMode("preview")}
                 >
-                  Prévia
+                  Dados reais
                 </button>
               </div>
             </div>
@@ -477,7 +484,8 @@ export default function TopBar({
                     type="button"
                     tabIndex={0}
                     className={`cv-btn ${openPopover === "publish" ? "is-open" : ""}`.trim()}
-                    aria-label="Publicação"
+                    aria-label="Publicação: abrir opções de ativação do modelo do relatório e formato de saída"
+                    title="Abrir opções de publicação: ativar o modelo do relatório e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
                     aria-haspopup="dialog"
                     aria-expanded={openPopover === "publish"}
                     onClick={() => setOpenPopover((p) => (p === "publish" ? null : "publish"))}
@@ -500,12 +508,13 @@ export default function TopBar({
                   type="button"
                   tabIndex={0}
                   className="cv-btn"
-                  aria-label="Gerar prévia do relatório"
+                  aria-label="Testar relatório"
+                  title="Abrir o teste do relatório com parâmetros."
                   disabled={loading || busy}
                   onClick={onOpenPreview}
                 >
                   <Eye size={14} aria-hidden="true" />
-                  <span>Prévia</span>
+                  <span>Testar relatório</span>
                 </button>
               </>
             )}

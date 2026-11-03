@@ -20,6 +20,9 @@ export interface PageViewProps {
   zoom: number;
   showGrid: boolean;
   selectedBlockId: string | null;
+  extraSelectedIds?: string[];
+  onToggleBlock?: (blockId: string) => void;
+  onRemoveBlock?: (blockId: string) => void;
   draggingBlockId: string | null;
   sources: CanvasSource[];
   assets: CanvasAssetMeta[];
@@ -53,6 +56,9 @@ export default function PageView({
   zoom,
   showGrid,
   selectedBlockId,
+  extraSelectedIds = [],
+  onToggleBlock,
+  onRemoveBlock,
   draggingBlockId,
   sources,
   assets,
@@ -144,7 +150,7 @@ export default function PageView({
             key={block.id}
             block={block}
             overlapping={blocks.some(other => other.id !== block.id && rectanglesOverlap(tempGeometries?.[block.id] || block, tempGeometries?.[other.id] || other))}
-            isSelected={block.id === selectedBlockId}
+            isSelected={block.id === selectedBlockId || extraSelectedIds.includes(block.id)}
             isDragging={draggingBlockId === block.id}
             background={pageConfig.background}
             sources={sources}
@@ -164,6 +170,9 @@ export default function PageView({
             onStartDrag={onStartDrag}
             onStartResize={onStartResize}
             onFocusBlock={onSelectBlock}
+            onToggleBlock={onToggleBlock}
+            onRemoveBlock={onRemoveBlock}
+            selectedCount={1 + extraSelectedIds.length}
             onKeyboardResize={onKeyboardResize}
           />
         ))}

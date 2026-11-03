@@ -175,7 +175,7 @@
 
 [data-theme="dark"] .cv-root .cv-seg-btn:disabled {
   color: var(--cv-text-disabled);
-  opacity: 0.45;
+  opacity: 1;
   cursor: not-allowed;
   pointer-events: auto;
 }
@@ -187,8 +187,8 @@
 .cv-root .cv-topbar {
   position: relative;
   z-index: var(--cv-z-topbar);
-  flex: 0 0 var(--cv-h-topbar);
-  height: var(--cv-h-topbar);
+  flex: 0 0 auto;
+  height: auto;
   min-height: var(--cv-h-topbar);
   background: var(--cv-surface);
   border-bottom: 1px solid var(--cv-line);
@@ -201,7 +201,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--cv-sp-3);
-  height: 100%;
+  height: auto;
+  flex-wrap: wrap;
+  padding: var(--cv-sp-2) 0;
   min-width: 0;
 }
 
@@ -209,7 +211,7 @@
   display: flex;
   align-items: center;
   gap: var(--cv-sp-2);
-  flex: 1 1 0;
+  flex: 1 0 100%;
   min-width: 0;
 }
 
@@ -223,19 +225,21 @@
   display: flex;
   align-items: center;
   gap: var(--cv-sp-2);
+  flex-wrap: wrap;
+  flex: 1 1 auto;
   min-width: 0;
   padding-left: var(--cv-sp-1);
 }
 
 .cv-root .cv-report-title {
+  margin: 0;
   font-family: var(--cv-font-head);
   font-size: var(--cv-fs-lg);
   font-weight: var(--cv-fw-semibold);
   line-height: var(--cv-lh-base);
   color: var(--cv-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   min-width: 0;
 }
 
@@ -408,11 +412,21 @@
 
 @media (max-width: 1180px) {
   .cv-root .cv-topbar {
-    padding: 0 var(--cv-sp-2);
+    flex-basis: auto;
+    height: auto;
+    padding: var(--cv-sp-2);
   }
   .cv-root .cv-topbar-toolbar {
+    height: auto;
+    flex-wrap: wrap;
     gap: var(--cv-sp-2);
   }
+  .cv-root .cv-topbar-left {
+    flex: 1 0 100%;
+  }
+  .cv-root .cv-topbar-identity { flex-wrap: wrap; }
+  .cv-root .cv-report-title { flex: 1 1 220px; }
+  .cv-root .cv-topbar-center, .cv-root .cv-topbar-right { flex-wrap: wrap; }
   .cv-root .cv-data-mode-prefix,
   .cv-root .cv-problems-label {
     display: none;
@@ -622,7 +636,7 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--cv-text-2);
+  color: var(--cv-text);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -656,7 +670,7 @@
   letter-spacing: -0.01em;
   line-height: 12px;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -946,8 +960,31 @@
 
 .cv-root .cv-save-indicator { display: inline-block; width: 142px; flex: 0 0 142px; white-space: nowrap; }
 .cv-root .cv-save-btn { min-width: 100px; }
+.cv-root .cv-topbar .cv-btn-primary { height: var(--cv-h-control); min-height: var(--cv-h-control); padding: 0 var(--cv-sp-2); font-size: var(--cv-fs-sm); }
 .cv-root .cv-panel-action-btn:disabled { color: var(--cv-text-2); opacity: 1; background: var(--cv-surface-3); border-style: dashed; cursor: not-allowed; }
 .cv-root .cv-status-problems { min-height: 24px; color: var(--cv-text-2); background: transparent; border: 1px solid var(--cv-line-strong); border-radius: var(--cv-r-sm); cursor: pointer; white-space: nowrap; font-size: var(--cv-fs-xs); }
 .cv-root .cv-status-problems:focus-visible { outline: 2px solid var(--cv-focus); }
 
 .cv-root .cv-save-dot-slot { display: inline-flex; width: 6px; flex: 0 0 6px; }
+
+/* Query progress is neutral, including when placed on the white report sheet. */
+.cv-root .cv-block-status-inline {
+  width: 100%; height: 100%; box-sizing: border-box; padding: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; text-align: center; font-family: var(--cv-font-ui);
+  background: var(--cv-surface-3); color: var(--cv-text-2);
+}
+.cv-root .cv-block-status-inline button { pointer-events: auto; }
+.cv-root .cv-skel-stage { flex-direction: column; align-items: center; }
+.cv-root .cv-skel-message { color: var(--cv-text); margin: 0 0 12px; }
+
+.cv-report-actions { position: relative; }
+.cv-report-actions summary { cursor: pointer; list-style: none; padding: 2px 6px; }
+.cv-report-actions-menu { position: absolute; top: 100%; left: 0; z-index: 60; padding: 4px; background: var(--cv-surface); border: 1px solid var(--cv-line); box-shadow: var(--cv-shadow-pop); }
+
+.cv-removal-toast {
+  position: fixed; right: 24px; bottom: 24px; z-index: 1000;
+  display: flex; align-items: center; gap: 12px; max-width: min(440px, calc(100vw - 48px));
+  padding: 10px 12px; border: 1px solid var(--cv-border, #aaa); border-radius: 8px;
+  background: var(--cv-surface, #fff); color: var(--cv-text, #222); box-shadow: 0 4px 16px #0003;
+}

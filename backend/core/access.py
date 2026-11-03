@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from core.models import Membership, RemoteMembership, UserAccessProfile
 
 SECTIONS = {
+    "autoagenda": "Autoagendamento",
+    "surveys": "Pesquisas",
     "overview": "Visão geral",
     "costs": "Custos Meta",
     "appointments": "Agendamentos",
@@ -21,6 +23,8 @@ SECTIONS = {
 LEVELS = {"none": 0, "read": 1, "write": 2}
 PRIVILEGED = {"operationsAdmin", "settings", "users"}
 RESOURCES = {
+    "autoagenda": ["autoagenda"],
+    "surveys": ["surveys"],
     "indicators": ["overview"],
     "meta-costs": ["costs"],
     "appointments": ["appointments"],
@@ -92,6 +96,8 @@ def role_permissions(role, overrides=None):
         value["users"] = "none"
     if role != "admin" or (overrides and "costs" not in overrides):
         value["costs"] = "none"
+    if role != "admin" or (overrides and "autoagenda" not in overrides):
+        value["autoagenda"] = "none"
     value.update(
         {k: v for k, v in (overrides or {}).items() if k in SECTIONS and v in LEVELS}
     )

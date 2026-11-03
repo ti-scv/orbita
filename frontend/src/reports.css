@@ -47,7 +47,7 @@
   gap: 16px;
   padding: 18px 22px;
 }
-.report-list-heading h2 {
+.report-list-heading h1 {
   margin: 0 0 3px;
   font-size: 17px;
   font-weight: 650;
@@ -875,6 +875,7 @@
   left: auto;
   right: 28px;
   bottom: 28px;
+  color: #25d366;
 }
 @keyframes report-channel-dots-flow {
   from {
@@ -958,3 +959,76 @@
 .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close:hover:not(:disabled){background:#dc26261a;border-color:#dc262666;}
 .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close svg{display:block;width:20px;height:20px;stroke:currentColor;stroke-width:2.2;}
 [data-theme="dark"] .modal.inline-dialog.report-dialog.report-dialog-fullscreen>.modal-close{color:#f87171;border-color:#f8717140;background:#f8717112;}
+
+.report-mapping-details { display:grid; grid-template-columns:160px minmax(0,1fr); gap:10px 16px; margin:0; }
+.report-mapping-details dt { font-weight:600; }
+.report-mapping-details dd { margin:0; overflow-wrap:anywhere; }
+
+/* ==========================================================================
+   Tarefa 22: Paginação, respiro e alinhamento do espaço de relatórios
+   ========================================================================== */
+.report-workspace .op-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-default, #e2e8f0);
+  color: var(--text-muted, #718399);
+  font-size: 12px;
+}
+.report-workspace .op-pager .button {
+  padding: 7px 12px;
+  min-height: 32px;
+  font-size: 12px;
+}
+.report-workspace .op-pager .button:focus-visible {
+  outline: 2px solid var(--brand-cyan, #14b4cb);
+  outline-offset: 2px;
+}
+.report-workspace .op-pager .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.snapshot-workspace > .report-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border-default, #e2e8f0);
+}
+.snapshot-workspace > .report-actions .button:focus-visible {
+  outline: 2px solid var(--brand-cyan, #14b4cb);
+  outline-offset: 2px;
+}
+.snapshot-workspace > .report-actions .button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .report-workspace .op-pager,
+[data-theme="dark"] .snapshot-workspace > .report-actions {
+  border-top-color: var(--border-strong, #383838);
+  color: #8593a6;
+}
+[data-theme="dark"] .report-workspace .op-pager .button:disabled,
+[data-theme="dark"] .snapshot-workspace > .report-actions .button:disabled {
+  opacity: 0.5;
+  color: #64748b;
+  border-color: #334155;
+  background: #1e293b;
+}
+
+
+/* Keep actions together; wrap filters before their selected labels are cut. */
+.report-table td:last-child .report-actions { flex-wrap: nowrap; width: max-content; gap: 5px; }
+.report-table td:last-child .report-actions .button { padding: 6px 8px; }
+.report-filters > label { flex: 1 1 185px; min-width: min(185px, 100%); }
+.report-filters .scv-select-trigger { min-width: 0; height: auto; min-height: 37px; }
+.report-filters .scv-select-trigger > span { white-space: normal; overflow: visible; text-overflow: clip; }
+.report-pending-details summary { cursor: pointer; color: var(--text-primary); }
+.report-pending-details ul { padding-left: 16px; margin: 6px 0; font-size: 12px; }
+
+/* Keep origin and database names readable at browser zoom levels. */
+.report-workspace .report-table td:nth-child(2) { min-width: 145px; word-break: normal; overflow-wrap: normal; }
+.report-workspace .report-table td:nth-child(2) small { word-break: normal; overflow-wrap: normal; }

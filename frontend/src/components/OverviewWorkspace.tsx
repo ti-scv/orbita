@@ -94,6 +94,35 @@ export default function OverviewWorkspace({data,start,end,kind,kinds,onFilterCha
         </div>
       </section>
     </div>
+    <section className="operational-section attendance-overview" aria-label="Confirmação e comparecimento">
+      <header>
+        <h2>Confirmação e comparecimento</h2>
+        <span>{period}</span>
+      </header>
+      <div className="attendance-overview-grid">
+        <button type="button" onClick={() => onNavigate("appointments", "confirmed")}>
+          <span>Confirmados</span>
+          <strong>{number(data.appointments_confirmed ?? 0)}</strong>
+        </button>
+        <button
+          type="button"
+          disabled={data.attendance_available === false}
+          title={
+            data.attendance_available === false
+              ? "Consulta Oracle indisponível para cruzar com ausentes"
+              : "Confirmados sem atendimento vinculado no Oracle"
+          }
+          onClick={() => onNavigate("campaigns")}
+        >
+          <span>Não compareceram</span>
+          <strong>
+            {data.attendance_available === false
+              ? "—"
+              : number(data.appointments_no_show ?? 0)}
+          </strong>
+        </button>
+      </div>
+    </section>
     <section className="operational-section">
       <header><h2>Mensagens por dia de criação</h2><div className="chart-key"><span>Mensagens</span><span>Entregues</span><span>Respondidas</span></div></header>
       {hasChart ? <div className="operational-chart"><ResponsiveContainer width="100%" height="100%">

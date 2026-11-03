@@ -37,11 +37,11 @@ function BlockPreview({
   showSampleData = false,
 }: BlockPreviewProps) {
   const opt = block.options || {};
-  const primaryColor = validColor(opt.color, "#075b94");
+  const primaryColor = validColor(opt.color, ["bar", "line", "pie"].includes(block.type) ? "#075b94" : "#262626");
   const fontSize = clamp(Number(opt.font_size) || 14, 6, 100);
   const pageDark = isDarkHex(background);
-  const axisColor = pageDark ? "#9fb3c8" : "#526980";
-  const gridColor = pageDark ? "rgba(255,255,255,0.14)" : "#dbe4ee";
+  const axisColor = pageDark ? "#bdbdbd" : "#595959";
+  const gridColor = pageDark ? "rgba(255,255,255,0.14)" : "#d4d4d4";
 
   if (block.type === "text") {
     return (
@@ -68,7 +68,11 @@ function BlockPreview({
         {block.title && <div className="cv-block-title">{block.title}</div>}
         <div className="cv-sql-placeholder">
           <span className="cv-sql-badge">{BLOCK_LABELS[block.type]}</span>
-          <span className="cv-sql-meta">Selecione uma fonte de dados no inspetor à direita.</span>
+          <span className="cv-sql-meta">
+            {block.source_id
+              ? "Fonte não encontrada neste relatório."
+              : "Selecione uma fonte de dados no inspetor à direita."}
+          </span>
         </div>
       </div>
     );

@@ -1,0 +1,51 @@
+services:
+  db:
+    mem_limit: 768m
+    memswap_limit: 1536m
+    cpus: "1.50"
+    pids_limit: 256
+  redis:
+    mem_limit: 256m
+    memswap_limit: 512m
+    cpus: "0.50"
+    pids_limit: 128
+  api:
+    mem_limit: 768m
+    memswap_limit: 1536m
+    cpus: "1.50"
+    pids_limit: 256
+  worker:
+    mem_limit: 768m
+    memswap_limit: 1536m
+    cpus: "2.00"
+    pids_limit: 256
+  worker-reports:
+    mem_limit: 512m
+    memswap_limit: 1024m
+    cpus: "1.50"
+    pids_limit: 256
+  scheduler:
+    mem_limit: 256m
+    memswap_limit: 512m
+    cpus: "0.50"
+    pids_limit: 128
+  baileys:
+    mem_limit: 512m
+    memswap_limit: 1024m
+    cpus: "0.75"
+    pids_limit: 128
+  panel:
+    mem_limit: 256m
+    memswap_limit: 512m
+    cpus: "0.50"
+    pids_limit: 128
+  autoagenda-api:
+    mem_limit: 768m
+    memswap_limit: 1536m
+    cpus: "1.00"
+    pids_limit: 256
+  autoagenda-web:
+    mem_limit: 128m
+    memswap_limit: 256m
+    cpus: "0.50"
+    pids_limit: 128

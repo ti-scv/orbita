@@ -3,8 +3,11 @@
 import json
 import re
 from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from core.oracle_credentials import connect, connection_payload
@@ -91,9 +94,19 @@ def mapped_row(raw):
     }
 
 
-def fetch_absences(unit, absence_date, item_type):
+KIND_TO_ITEM = {"consultation": "A", "exam": "I", "lab": "L"}
+
+
+def item_type_for_kind(kind=""):
+    return KIND_TO_ITEM.get(kind or "", "ALL")
+
+
+def fetch_absences_range(unit, start_date, end_date, item_type="ALL"):
+    """Read-only absences using the same CD_ATENDIMENTO IS NULL criterion as CROSS."""
     if item_type not in ITEM_SELECTIONS:
         raise ValidationError("Tipo de atendimento inválido.")
+    if end_date < start_date:
+        raise ValidationError("Período de ausências inválido.")
     try:
         payload = connection_payload(unit)
         if not payload:
@@ -102,7 +115,8 @@ def fetch_absences(unit, absence_date, item_type):
             **payload,
             "timeout_ms": min(payload.get("timeout_ms", 10000), 15000),
         }
-        start = datetime.combine(absence_date, time.min)
+        start = datetime.combine(start_date, time.min)
+        end = datetime.combine(end_date + timedelta(days=1), time.min)
         with connect(payload) as connection:
             try:
                 with connection.cursor() as cursor:
@@ -111,7 +125,7 @@ def fetch_absences(unit, absence_date, item_type):
                     cursor.execute(
                         SQL,
                         start_day=start,
-                        end_day=start + timedelta(days=1),
+                        end_day=end,
                         item_type=item_type,
                     )
                     names = [column[0] for column in cursor.description]
@@ -130,6 +144,75 @@ def fetch_absences(unit, absence_date, item_type):
         raise ValidationError(
             "Não foi possível consultar o Oracle da unidade. Verifique a conexão e as permissões de leitura."
         ) from None
+
+
+def fetch_absences(unit, absence_date, item_type):
+    return fetch_absences_range(unit, absence_date, absence_date, item_type)
+
+
+def confirmed_attendance_stats(unit, appointments, start_date, end_date, kind=""):
+    """
+    Confirmed appointments from Órbita history crossed with Oracle absences
+    (same no_linked_attendance selection as Importa CROSS).
+    """
+    zone = ZoneInfo(unit.timezone)
+    start = datetime.combine(start_date, time.min, zone)
+    end = datetime.combine(end_date + timedelta(days=1), time.min, zone)
+    scoped = appointments.filter(scheduled_at__gte=start, scheduled_at__lt=end)
+    confirmed_qs = scoped.filter(
+        Q(
+            sourceevent__cases__purpose="appointment",
+            sourceevent__cases__outcome="confirmed",
+        )
+        | Q(messages__response_state="confirmed")
+    ).distinct()
+    confirmed = list(
+        confirmed_qs.values("id", "patient_external_id", "scheduled_at", "external_id")
+    )
+    confirmed_count = len(confirmed)
+    result = {
+        "appointments_confirmed": confirmed_count,
+        "appointments_no_show": 0,
+        "attendance_available": False,
+    }
+    if not confirmed_count:
+        result["attendance_available"] = True
+        return result
+    try:
+        rows = fetch_absences_range(
+            unit, start_date, end_date, item_type_for_kind(kind)
+        )
+    except ValidationError:
+        return result
+    except Exception:
+        return result
+
+    absence_keys = set()
+    for row in rows:
+        try:
+            day = datetime.fromisoformat(row["occurred_at"]).date().isoformat()
+        except (TypeError, ValueError, KeyError):
+            continue
+        patient = text(row.get("patient_external_id"))
+        if patient:
+            absence_keys.add((patient, day))
+        source_id = text(row.get("source_appointment_id"))
+        if source_id:
+            absence_keys.add(("id:" + source_id, day))
+
+    no_show = 0
+    for item in confirmed:
+        day = timezone.localtime(item["scheduled_at"], zone).date().isoformat()
+        patient = text(item.get("patient_external_id"))
+        if patient and (patient, day) in absence_keys:
+            no_show += 1
+            continue
+        external = text(item.get("external_id"))
+        if external and ("id:" + external, day) in absence_keys:
+            no_show += 1
+    result["appointments_no_show"] = no_show
+    result["attendance_available"] = True
+    return result
 
 
 @transaction.atomic

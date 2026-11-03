@@ -1,3 +1,4 @@
+import { friendlyParameterName } from "../parameters";
 import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { query, request } from "../../../api";
 import type { CanvasSource, ColumnInfo, SourcePreview } from "../model";
@@ -10,6 +11,8 @@ export interface SourcePreviewState {
   data: SourcePreview | null;
   error: string | null;
   errorCode?: string;
+  httpStatus?: number;
+  elapsedMs?: number;
   loadedAt: Date | null;
 }
 
@@ -98,9 +101,7 @@ export function findMissingRequiredParameter(
         (typeof val === "string" && val.trim() === "") ||
         (typeof val === "object" && !isParameterBinding(val) && Object.keys(val).length === 0);
       if (isMissing) {
-        const key = name.toLowerCase().replace(/^wpa_/, "");
-        const fallback = key.replaceAll("_", " ");
-        const label = spec.label || fallback.charAt(0).toUpperCase() + fallback.slice(1);
+        const label = spec.label || friendlyParameterName(name);
         return { name, label };
       }
     }
@@ -115,6 +116,7 @@ export async function fetchSourcePreviewRequest(
   parameters: Record<string, unknown> = {},
   limit = 50,
   signal?: AbortSignal,
+  offset = 0,
 ): Promise<SourcePreview> {
   if (signal?.aborted) {
     throw new DOMException("Aborted", "AbortError");
@@ -125,24 +127,21 @@ export async function fetchSourcePreviewRequest(
     source,
     parameters,
     limit,
-  });
-
-  const res = signal
-    ? await Promise.race([
-        reqPromise,
-        new Promise<never>((_, reject) => {
-          signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {
-            once: true,
-          });
-        }),
-      ])
-    : await reqPromise;
+    offset,
+  }, signal);
+  const res = signal ? await Promise.race([
+    reqPromise,
+    new Promise<never>((_, reject) => {
+      signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), {once: true});
+    }),
+  ]) : await reqPromise;
 
   const columns: ColumnInfo[] = Array.isArray(res.columns)
     ? res.columns.map((c: any) => ({
         name: String(c.name || ""),
         type: c.type || "unknown",
         looks_like: c.looks_like,
+        estimated: Boolean(c.estimated),
         nullable: Boolean(c.nullable),
         null_count: typeof c.null_count === "number" ? c.null_count : 0,
         sample: Array.isArray(c.sample) ? c.sample.map(String) : [],
@@ -150,10 +149,15 @@ export async function fetchSourcePreviewRequest(
     : [];
 
   const preview: SourcePreview = {
+    effective_parameters: res.effective_parameters,
     columns,
     rows: Array.isArray(res.rows) ? res.rows : [],
     total_rows: typeof res.total_rows === "number" ? res.total_rows : (res.rows?.length || 0),
     truncated: Boolean(res.truncated),
+    has_more: res.has_more,
+    next_offset: res.next_offset,
+    total_rows_exact: res.total_rows_exact,
+    total_rows_capped: res.total_rows_capped,
     elapsed_ms: res.elapsed_ms,
     loaded_at: new Date().toISOString(),
   };

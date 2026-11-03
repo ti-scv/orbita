@@ -99,10 +99,10 @@ export function PublishPopover({
           type="checkbox"
           checked={enabled}
           disabled={disabled}
-          aria-label="Usar este canvas para gerar o relatório"
+          aria-label="Usar este modelo para gerar o relatório"
           onChange={(e) => onToggleEnabled(e.target.checked)}
         />
-        <span>Usar este canvas para gerar o relatório</span>
+        <span>Usar este modelo para gerar o relatório</span>
       </label>
 
       <div className="cv-publish-format">
@@ -120,13 +120,13 @@ export function PublishPopover({
           </button>
           <button
             type="button"
-            aria-label="Formato XLSX"
+            aria-label="Formato Excel (XLSX)"
             aria-pressed={outputFormat === "xlsx"}
             disabled={disabled}
             className={`cv-seg-btn ${outputFormat === "xlsx" ? "is-active" : ""}`.trim()}
             onClick={() => onChangeOutputFormat("xlsx")}
           >
-            XLSX
+            Excel (XLSX)
           </button>
         </div>
       </div>
@@ -156,6 +156,7 @@ export function MoreActionsMenu({
         type="button"
         role="menuitem"
         aria-label="Publicação"
+        title="Abrir opções de publicação: ativar o modelo do relatório e escolher PDF ou Excel. As alterações são aplicadas ao salvar."
         className="cv-menu-item"
         onClick={onOpenPublish}
       >
@@ -165,7 +166,8 @@ export function MoreActionsMenu({
       <button
         type="button"
         role="menuitem"
-        aria-label="Prévia"
+        aria-label="Testar relatório"
+        title="Abrir o teste do relatório com parâmetros."
         disabled={disabled}
         className="cv-menu-item"
         onClick={() => {
@@ -174,7 +176,7 @@ export function MoreActionsMenu({
         }}
       >
         <Eye size={14} aria-hidden="true" />
-        <span>Prévia</span>
+        <span>Testar relatório</span>
       </button>
     </div>
   );
@@ -307,7 +309,7 @@ export function ConfirmEnableCanvasDialog({
   if (!open) return null;
   return (
     <InlineDialog
-      title="Usar este canvas para gerar o relatório?"
+      title="Usar este modelo para gerar o relatório?"
       subtitle=""
       onClose={onCancel}
       className="cv-root cv-dialog"
@@ -324,7 +326,7 @@ export function ConfirmEnableCanvasDialog({
           <button
             type="button"
             className="cv-btn cv-btn-primary"
-            aria-label="Confirmar geração por este canvas"
+            aria-label="Confirmar geração por este modelo"
             onClick={onConfirm}
           >
             Ativar ao salvar
@@ -333,7 +335,7 @@ export function ConfirmEnableCanvasDialog({
       }
     >
       <p className="cv-dialog-text">
-        Ao salvar o relatório, as próximas execuções e envios passarão a ser gerados por este Canvas no formato{" "}
+        Ao salvar o relatório, as próximas execuções e envios passarão a ser gerados por este modelo do relatório no formato{" "}
         <strong>{outputFormat.toUpperCase()}</strong>.
       </p>
     </InlineDialog>

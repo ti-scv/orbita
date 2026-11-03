@@ -27,7 +27,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NAME="${STAGE_NAME:-orbita-canvas-stage}"
 PORT="${STAGE_PORT:-8091}"
 IMAGE="orbita-panel-canvas-stage"
-NETWORK="orbita_default"
+NETWORK="${STAGE_NETWORK:-orbita_default}"
 API_UPSTREAM="${API_UPSTREAM:-}"
 STAGE_REF="${STAGE_REF:-}"
 

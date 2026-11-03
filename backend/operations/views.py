@@ -1,3 +1,4 @@
+from operations.report_removal_compat import active_conditions
 import base64
 import binascii
 
@@ -1197,7 +1198,14 @@ class CampaignViewSet(ScopedRead):
 
 
 class ReportViewSet(ConfigViewSet):
-    queryset = m.ReportDefinition.objects.order_by("name")
+    def get_object(self):
+        from django.http import Http404
+        try:
+            return super().get_object()
+        except Http404:
+            raise Http404("Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista.")
+
+    queryset = m.ReportDefinition.objects.filter(**active_conditions()).order_by("name")
     serializer_class = s.ReportSerializer
 
     def get_queryset(self):
@@ -1308,7 +1316,7 @@ class ReportRequestViewSet(ScopedRead):
         def execute():
             unit = get_unit(request, ["admin", "operator"])
             data = values.validated_data
-            report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"])
+            report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"], **active_conditions())
             params = validate_parameters(data["parameters"])
             job = m.ReportRequest(
                 unit=unit,
@@ -1454,13 +1462,19 @@ class UnitViewSet(viewsets.ReadOnlyModelViewSet):
             hours = serializer.validated_data.get("response_hours", obj.response_hours)
             if not 1 <= hours <= 168:
                 raise ValidationError("Prazo deve estar entre 1 e 168 horas.")
+            feature_changes = {
+                key: {"antes": getattr(obj, key), "depois": value}
+                for key, value in serializer.validated_data.items()
+                if key in ("checkin_enabled", "autoagenda_enabled", "surveys_enabled")
+                and getattr(obj, key) != value
+            }
             obj = serializer.save()
             Audit.objects.create(
                 unit=obj,
                 actor=request.user,
                 action="unit.configured",
                 object_id=str(obj.pk),
-                details={"version": obj.version},
+                details={"version": obj.version, "recursos": feature_changes},
             )
             return self.get_serializer(obj).data
 

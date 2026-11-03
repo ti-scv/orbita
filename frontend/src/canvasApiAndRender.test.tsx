@@ -95,6 +95,7 @@ describe("Cliente de API do Canvas com request mockado (load, save, preview, con
       layout: clean,
       enabled: false,
       output_format: "xlsx",
+      parameter_edits: [],
     });
 
     // Conflito de versão (409)
@@ -154,6 +155,13 @@ describe("Cliente de API do Canvas com request mockado (load, save, preview, con
 });
 
 describe("Renderização estática dos módulos extraídos (preservação estrutural e classes CSS)", () => {
+  it.each(["preview", "sample"] as const)("respeita o modo inicial %s validado", (mode) => {
+    const html = renderToStaticMarkup(<ThemeProvider><ReportCanvas unit="scv"
+      report={{id:354,name:"Leitos",version:2}} onClose={() => {}}
+      initialCanvas={{version:2,layout:createDefaultLayout(),enabled:false,output_format:"pdf",sources:[],assets:[],default_data_mode:mode}}
+    /></ThemeProvider>);
+    expect(html).toMatch(new RegExp(`aria-label="Dados reais"[^>]*aria-pressed="${mode === "preview"}"`));
+  });
   it("renderiza ReportCanvas inicial com classe cv-root no shell e controles principais", () => {
     const html = renderToStaticMarkup(
       <ThemeProvider>
@@ -170,7 +178,7 @@ describe("Renderização estática dos módulos extraídos (preservação estrut
     expect(html).toContain("Rascunho");
     expect(html).toContain("v2");
     expect(html).toContain('role="toolbar"');
-    expect(html).toContain("Carregando estrutura do Canvas…");
+    expect(html).toContain("Montando a página…");
   });
 
   it("renderiza TopBar, LeftRail, Stage e Inspector com os atributos e classes esperados", () => {
@@ -194,6 +202,7 @@ describe("Renderização estática dos módulos extraídos (preservação estrut
           reportName="Relatório Assistencial"
           version={7}
           enabled
+          reportActive
           outputFormat="pdf"
           dirty
           loading={false}

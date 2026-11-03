@@ -1,19 +1,27 @@
 import type { PageName, SectionPermissions, Session } from "./types";
 
 export const sectionLabels: Record<string, string> = {
+  autoagenda: "Autoagendamento",
+  surveys: "Pesquisas",
   costs: "Custos Meta", overview: "Visão geral", appointments: "Agendamentos", groups: "Grupos", messages: "Mensagens",
   issues: "Pendências", campaigns: "Importa CROSS", reports: "Relatórios",
   operationsAdmin: "Administração", settings: "Configurações", users: "Usuários",
 };
 export function defaultPermissions(role: string): SectionPermissions {
   return Object.fromEntries(Object.keys(sectionLabels).map(section => [section,
-    section === "costs" && role !== "admin" ? "none" : role === "admin" || (role === "operator" && !["settings", "operationsAdmin", "users"].includes(section)) ? "write" : section === "users" ? "none" : "read"]));
+    ["costs", "autoagenda"].includes(section) && role !== "admin" ? "none" : role === "admin" || (role === "operator" && !["settings", "operationsAdmin", "users"].includes(section)) ? "write" : section === "users" ? "none" : "read"]));
 }
 export function permissionsFor(session: Session, unit: string): SectionPermissions {
   if (!session.units.some(u=>u.slug===unit)) return Object.fromEntries(Object.keys(sectionLabels).map(key=>[key,"none"]));
-  return session.permissions?.[unit] || defaultPermissions(session.roles[unit] || "viewer");
+  const defaults = defaultPermissions(session.roles[unit] || "viewer");
+  // Permission records created before this section existed lack its key. Keep
+  // explicit settings and use the role's default only for new sections.
+  return {...defaults, ...(session.permissions?.[unit] || {})};
 }
 export function canAccess(session: Session, unit: string, page: PageName, write = false): boolean {
+  if (page === "autoagenda" && unit !== "sansaude") return false;
+  const currentUnit = session.units.find(u => u.slug === unit);
+  if (page === "surveys" && !currentUnit?.surveys_enabled) return false;
   const policy = permissionsFor(session, unit);
   if (page === "settings" && !write) return ["settings", "operationsAdmin", ...(unit.startsWith("remote:") ? [] : ["users"])].some(key => !!policy[key] && policy[key] !== "none");
   const level = policy[pageSection(page)] || "none";

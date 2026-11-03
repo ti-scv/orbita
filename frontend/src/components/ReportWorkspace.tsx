@@ -1,7 +1,10 @@
+import { friendlyDatabaseName } from "../reportLabels";
+import ReportDataPreview from "./ReportDataPreview";
 import ReportAppConnections from "./ReportAppConnections";
+import { RemovalButton, RemovedRecords } from "./ReportRemoval";
 import SqlEditor from "./SqlEditor";
 import Select from "./Select";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   AlertTriangle,
   Check,
@@ -84,6 +87,7 @@ const engines: Record<string, string> = {
   postgres: "PostgreSQL",
 };
 const sources: Record<string, string> = {
+  oracle: "Oracle (estoque)",
   app: "Dados do app",
   sql: "Consulta SQL",
   composite: "Composição",
@@ -274,6 +278,7 @@ function seed(tab: Tab, row?: Row): Row {
     return {
       name: "",
       code: "",
+      category: "",
       source: "sql",
       connection: "",
       query_sql: "",
@@ -389,7 +394,7 @@ export default function ReportWorkspace({
     setGrantRecipientFilter("");
     setPermissionFilter("");
     setRecipientKindFilter("");
-    setScheduleFilters({search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
+    setScheduleFilters(previous => Object.values(previous).every(value => !value) ? previous : {search:"",report:"",recipient:"",status:"",weekday:"",timeFrom:"",timeTo:"",recipientKind:""});
   }, [unit, tab]);
   useEffect(() => {
     let alive = true;
@@ -429,10 +434,10 @@ export default function ReportWorkspace({
     if (tab === "snapshots" || tab === "appSources") return;
     let alive = true;
     const tasks = [
-      tab === "recipients" || tab === "grants" ? Promise.resolve([]) : all("reports", unit),
-      admin ? all("report-connections", unit) : Promise.resolve([]),
-      all("report-recipients", unit),
-      admin
+      modal || tab === "grants" || tab === "automations" ? all("reports", unit) : Promise.resolve([]),
+      admin && (isReports || modal?.kind === "edit") ? all("report-connections", unit) : Promise.resolve([]),
+      modal || tab === "grants" || tab === "automations" ? all("report-recipients", unit) : Promise.resolve([]),
+      admin && modal?.kind === "edit"
         ? request<Row[]>(query("report-recipients/users", { unit }))
         : Promise.resolve([]),
     ];
@@ -451,7 +456,7 @@ export default function ReportWorkspace({
     return () => {
       alive = false;
     };
-  }, [unit, admin, tab]);
+  }, [unit, admin, tab, revision, modal?.kind, isReports]);
   useEffect(() => {
     if (!admin) {
       setInventory(null);
@@ -499,7 +504,7 @@ export default function ReportWorkspace({
     if (isReports && !row) value.catalog_kind = tab === "components" ? "component" : "report";
     setForm(
       kind === "run" || kind === "preview"
-        ? { report: row?.id || "", recipient: "", parameters: {} }
+        ? { report: row?.id || "", recipient: "", parameters: Object.fromEntries(Object.entries(row?.parameter_schema || {}).filter(([, spec]) => (spec as Row).default != null).map(([key, spec]) => [key, (spec as Row).default])) }
         : kind === "verify"
           ? { evidence: "" }
           : value,
@@ -589,6 +594,7 @@ export default function ReportWorkspace({
           "manual_enabled",
           "request_message",
           "description",
+          "category",
           "monthly_goals",
         ],
         connections: [
@@ -654,6 +660,17 @@ export default function ReportWorkspace({
       setError((e as Error).message);
     }
   }
+  function navigateTabs(event: KeyboardEvent<HTMLDivElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+    if (index < 0 || !tabs.length) return;
+    const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+      (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  }
   function changeTab(t: Tab) {
     setTab(t);
     setPage(1);
@@ -663,7 +680,7 @@ export default function ReportWorkspace({
     else url.searchParams.delete("componentCategory");
     history.replaceState(history.state, "", url);
   }
-  const selected = catalog.find((r) => r.id === Number(form.report)) || (modal?.kind === "preview" ? modal.row : undefined);
+  const selected = ((modal?.kind === "run" || modal?.kind === "preview") && modal.row.id === Number(form.report) ? modal.row : undefined) || catalog.find((r) => r.id === Number(form.report));
   const scopedRows = loadedScope === `${unit}:${tab}` ? rows : [];
   const filtered =
     !isReports && tab !== "grants" && search
@@ -678,7 +695,13 @@ export default function ReportWorkspace({
       <Select
         required
         value={form.report || ""}
-        onChange={(e) => update("report", Number(e.target.value))}
+        onChange={(e) => {
+          const id = Number(e.target.value);
+          if (modal?.kind === "run" || modal?.kind === "preview") {
+            const report = catalog.find(r => r.id === id) || modal.row;
+            setForm(current => ({...current, report:id, parameters:Object.fromEntries(Object.entries(report?.parameter_schema || {}).filter(([, spec]) => (spec as Row).default != null).map(([key, spec]) => [key, (spec as Row).default]))}));
+          } else update("report", id);
+        }}
       >
         <option value="">Selecione</option>
         {(modal?.kind === "preview" ? [modal.row] : catalog).map((r) => (
@@ -738,7 +761,7 @@ export default function ReportWorkspace({
   );
   return (
     <div className="report-workspace">
-      <div className="report-tabs" role="tablist" aria-label="Relatórios">
+      <div className="report-tabs" role="tablist" aria-label="Relatórios" onKeyDown={navigateTabs}>
         {(Object.keys(names) as Tab[])
           .filter((t) => t !== "grants" && t !== "snapshots" && (admin || t === "reports" || t === "executions"))
           .map((t) => {
@@ -746,20 +769,21 @@ export default function ReportWorkspace({
             return <button
               role="tab"
               aria-selected={tab === t || (t === "components" && tab === "snapshots")}
+              tabIndex={tab === t || (t === "components" && tab === "snapshots") ? 0 : -1}
               key={t}
               className={tab === t || (t === "components" && tab === "snapshots") ? "active" : ""}
               onClick={() => changeTab(t)}
             >
               <Icon size={15} aria-hidden="true" />
               {names[t]}
-              {t === "components" && inventory && <span className="report-tab-count">{inventory.components || 0}</span>}
+              {t === "components" && !!inventory?.components && <span className="report-tab-count" title="Fontes auxiliares cadastradas; blocos do editor são contados dentro do relatório" aria-label={`${inventory.components || 0} fontes auxiliares cadastradas`}>{inventory.components || 0}</span>}
             </button>;
           })}
       </div>
       {admin && (tab === "components" || tab === "snapshots") && (
-        <div className="report-tabs" role="tablist" aria-label="Categoria de componentes">
-          <button role="tab" aria-selected={tab === "components"} className={tab === "components" ? "active" : ""} onClick={() => changeTab("components")}><Layers size={15} aria-hidden="true"/>Auxiliares</button>
-          <button role="tab" aria-selected={tab === "snapshots"} className={tab === "snapshots" ? "active" : ""} onClick={() => changeTab("snapshots")}><DatabaseBackup size={15} aria-hidden="true"/>Coleta</button>
+        <div className="report-tabs" role="tablist" aria-label="Categoria de componentes" onKeyDown={navigateTabs}>
+          <button role="tab" tabIndex={tab === "components" ? 0 : -1} aria-selected={tab === "components"} className={tab === "components" ? "active" : ""} onClick={() => changeTab("components")}><Layers size={15} aria-hidden="true"/>Auxiliares</button>
+          <button role="tab" tabIndex={tab === "snapshots" ? 0 : -1} aria-selected={tab === "snapshots"} className={tab === "snapshots" ? "active" : ""} onClick={() => changeTab("snapshots")}><DatabaseBackup size={15} aria-hidden="true"/>Coleta</button>
         </div>
       )}
       {error && !modal && (
@@ -792,13 +816,15 @@ export default function ReportWorkspace({
       <section className="panel">
         <div className="report-list-heading">
           <div>
-            <h2>{names[tab]}</h2>
-            <span>{count} registros</span>
+            <h1>{names[tab]}</h1>
+            <span>{!loading && loadedScope === `${unit}:${tab}` ? `${count} ${count === 1 ? "registro" : "registros"}` : "Carregando…"}</span>
           </div>
           <div className="report-actions">
             <button
+              type="button"
               className="button"
-              aria-label="Atualizar"
+              aria-label="Atualizar relatórios"
+              title="Atualizar relatórios"
               onClick={() => setRevision((v) => v + 1)}
             >
               <RefreshCw size={15} />
@@ -884,12 +910,12 @@ export default function ReportWorkspace({
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <strong>{r.name || r.report_name}</strong>
+                      <strong>{tab === "connections" && r.engine === "postgres" && r.host === "db" && <img src="/brand-envelope.png?v=fe94463a5107" alt="SCV local" title="PostgreSQL local do SCV" width={14} height={14} style={{display:"inline-block",objectFit:"contain",verticalAlign:"-2px",marginRight:6}} draggable={false}/>} {String(r.name || r.report_name || "")}</strong>
+                      {isReports && r.category && <small className="report-category">{r.category}</small>}
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}
                       <small>
-                        {r.code ||
-                          (r.engine &&
+                        {(tab !== "connections" && r.engine &&
                             (r.legacy?.source_config
                               ? `Destino: ${engines[r.engine]}`
                               : engines[r.engine])) ||
@@ -907,7 +933,7 @@ export default function ReportWorkspace({
                     <td>
                       {isReports ? (
                         <>
-                          <span>{sources[r.source] || r.source}</span>
+                          <span>{sources[r.source] || "Outra origem"}</span>
                           <small>{r.connection_name || "—"}</small>
                           {tab === "components" && (
                             <small className="report-component-parents">
@@ -921,8 +947,8 @@ export default function ReportWorkspace({
                         <>
                           {r.engine === "sqlite"
                             ? "Arquivo local"
-                            : r.host || "Destino pendente"}
-                          <small>{r.database || "Destino pendente"}</small>
+                            : r.engine === "postgres" ? "PostgreSQL" : r.engine === "oracle" ? "Oracle" : "Banco configurado"}
+                          <small>{friendlyDatabaseName(r.database)}</small>
                         </>
                       ) : tab === "recipients" || tab === "grants" ? (
                         <span className="report-address">{r.address}</span>
@@ -975,21 +1001,14 @@ export default function ReportWorkspace({
                           {r.pending_items?.length ||
                           (tab === "connections" && !r.validated) ||
                           (tab === "recipients" && !r.verified_at) ? (
-                            <span
-                              className="report-warning"
-                              title={(r.pending_items || []).join("\n")}
-                            >
-                              <AlertTriangle size={15} />
-                              {r.pending_items?.length
-                                ? `${r.pending_items.length} pendência${r.pending_items.length > 1 ? "s" : ""}`
-                                : tab === "connections"
-                                  ? "Validar conexão"
-                                  : "Verificar destinatário"}
-                            </span>
+                            <details className="report-pending-details">
+                              <summary title="Clique para ver o que precisa ser resolvido"><AlertTriangle size={15} aria-hidden="true" /> {r.pending_items?.length ? `${r.pending_items.length} pendências` : tab === "connections" ? "Validar conexão" : "Verificar destinatário"}</summary>
+                              <ul>{(r.pending_items?.length ? r.pending_items : [tab === "connections" ? "Valide a conexão antes de ativar." : "Verifique o destinatário antes de ativar."]).map((item: string) => <li key={item}>{item}</li>)}</ul>
+                            </details>
                           ) : (
-                            <span className="report-ok">
-                              <Check size={14} />
-                              Revisado
+                            <span className="report-ok" title="Revisado">
+                              <Check size={14} aria-hidden="true" />
+                              <span className="sr-only">Revisado</span>
                             </span>
                           )}
                         </>
@@ -1018,17 +1037,20 @@ export default function ReportWorkspace({
                             <Edit3 size={14} />
                           </button>
                         )}
+                        {admin && (tab === "reports" || tab === "connections") && (
+                          <RemovalButton unit={unit} resource={resources[tab]} active={tab === "reports" && !!r.enabled} row={{ id: r.id, name: r.name, version: r.version }} kind={tab === "reports" ? "relatório" : "conexão"} onChanged={() => setRevision(n => n + 1)} />
+                        )}
                         {admin && isReports && (
                           <button
                             type="button"
                             className="button"
-                            title={`Canvas: ${r.name}`}
+                            title={`Editar relatório: ${r.name}`}
                             onClick={() => {
                               window.history.pushState({}, "", `/relatorios/${r.id}/canvas?unit=${encodeURIComponent(unit)}`);
                               window.dispatchEvent(new PopStateEvent("popstate"));
                             }}
                           >
-                            Canvas
+                            Editar relatório
                           </button>
                         )}
                         {admin && tab === "recipients" && (
@@ -1061,8 +1083,10 @@ export default function ReportWorkspace({
                         )}
                         {operate && tab === "reports" && r.catalog_kind !== "component" && r.enabled && (
                           <button
+                            type="button"
                             className="button"
                             title="Gerar relatório"
+                            aria-label="Gerar relatório"
                             onClick={() => open("run", r)}
                           >
                             <Play size={14} />
@@ -1078,7 +1102,7 @@ export default function ReportWorkspace({
         )}
         <div className="op-pager">
           <span>
-            Página {page} · {count} registros
+            Página {page}{!loading && loadedScope === `${unit}:${tab}` && ` · ${count} ${count === 1 ? "registro" : "registros"}`}
           </span>
           <button
             className="button"
@@ -1095,6 +1119,7 @@ export default function ReportWorkspace({
             Próxima
           </button>
         </div>
+        {admin && (tab === "reports" || tab === "connections") && <RemovedRecords key={`${unit}:${tab}:${revision}`} unit={unit} resource={resources[tab]} kind={tab === "reports" ? "relatório" : "conexão"} revision={revision} onChanged={() => setRevision(n => n + 1)} />}
       </section>
       </>}
       {modal && (
@@ -1211,10 +1236,10 @@ export default function ReportWorkspace({
                 )}
                 {Object.keys(selected?.parameter_schema || {}).length > 0 && (
                   <div className="report-form-grid">
-                    {Object.entries(selected?.parameter_schema || {}).map(
+                    {Object.entries(selected?.parameter_schema || {}).sort(([,a],[,b]) => ((a as Row).order ?? 1000) - ((b as Row).order ?? 1000)).map(
                       ([key, spec]) => (
-                        <Field label={({start:"Data inicial", start_date:"Data inicial", end:"Data final", end_date:"Data final", data_inicial:"Data inicial", data_final:"Data final"} as Record<string,string>)[key.toLowerCase()] || key.replaceAll("_", " ")} key={key}>
-                          <input
+                        <Field label={(spec as Row).label || ({start:"Data inicial", start_date:"Data inicial", end:"Data final", end_date:"Data final", data_inicial:"Data inicial", data_final:"Data final", unidade:"Unidade", tipo_envio:"Tipo de envio"} as Record<string,string>)[key.toLowerCase()] || key.replaceAll("_", " ")} key={key}>
+                          {Array.isArray((spec as Row).choices) ? <Select value={form.parameters?.[key] ?? (spec as Row).default ?? ""} onChange={e => update("parameters", {...form.parameters, [key]: e.target.value})}>{(spec as Row).choices.map((choice: Row) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</Select> : <input
                             required={(spec as Row).required !== false}
                             type={
                               (spec as Row).type === "date"
@@ -1224,14 +1249,14 @@ export default function ReportWorkspace({
                                   ? "number"
                                   : "text"
                             }
-                            value={form.parameters?.[key] ?? ""}
+                            value={form.parameters?.[key] ?? (spec as Row).default ?? ""}
                             onChange={(e) =>
                               update("parameters", {
                                 ...form.parameters,
                                 [key]: e.target.value,
                               })
                             }
-                          />
+                          />}
                         </Field>
                       ),
                     )}
@@ -1240,13 +1265,7 @@ export default function ReportWorkspace({
                 {preview && (
                   <div className="report-preview">
                     <strong>{preview.total} linhas · prévia de até 20</strong>
-                    <pre>
-                      {JSON.stringify(
-                        { colunas: preview.columns, linhas: preview.rows },
-                        null,
-                        2,
-                      )}
-                    </pre>
+                    <ReportDataPreview columns={preview.columns} rows={preview.rows} />
                   </div>
                 )}
               </>
@@ -1271,6 +1290,10 @@ export default function ReportWorkspace({
                     <div className="report-form-grid report-form-grid-title">
                       {input("name", "Nome", "text", true)}
                       {input("code", "Código", "text", true)}
+                      <Field label="Categoria">
+                        <input list="report-category-options" maxLength={100} value={form.category || ""} onChange={e => update("category", e.target.value)} />
+                        <datalist id="report-category-options">{Array.from(new Set(catalog.map(r => String(r.category || "").trim()).filter(Boolean))).sort().map(category => <option key={category} value={category} />)}</datalist>
+                      </Field>
                     </div>
                     {(form.code === "legacy123-310" || (form.monthly_goals || []).length > 0) && (
                       <ReportMonthlyGoals value={form.monthly_goals || []} onChange={(value) => update("monthly_goals", value)} />
@@ -1310,7 +1333,7 @@ export default function ReportWorkspace({
                         >
                           <option value="pdf">PDF</option>
                           <option value="csv">CSV</option>
-                          <option value="xlsx">XLSX</option>
+                          <option value="xlsx">Excel (XLSX)</option>
                           <option value="text">Texto</option>
                         </Select>
                       </Field>
@@ -1330,12 +1353,12 @@ export default function ReportWorkspace({
                           spellCheck={false}
                           value={form.query_sql}
                           onChange={(e) => update("query_sql", e.target.value)}
-                          placeholder="SELECT coluna FROM schema.view WHERE data >= :data_inicial"
+                          placeholder="SELECT coluna FROM dados WHERE data >= :data_inicial"
                         />
                       </Field>
                     )}
                     {form.source === "composite" && (
-                      <Field label="Componentes (JSON: code e parameters)">
+                      <Field label="Componentes (código e parâmetros)">
                         <textarea
                           className="report-code"
                           rows={5}
@@ -1393,6 +1416,18 @@ export default function ReportWorkspace({
                         </div>
                       </details>
                     )}
+                    {modal.row.legacy?.external_mapping && <details className="report-collapsible">
+                      <summary>Origem e dependências</summary>
+                      <div className="report-collapsible-body">
+                        <dl className="report-mapping-details">
+                          <dt>Família</dt><dd>{modal.row.legacy.external_mapping.family}</dd>
+                          <dt>Origem</dt><dd>{modal.row.legacy.external_mapping.target}</dd>
+                          <dt>Rotina legada</dt><dd>{modal.row.legacy.external_mapping.legacy_procedure || "—"}</dd>
+                          <dt>Campos mapeados</dt><dd>{modal.row.legacy.external_mapping.columns?.length || 0}</dd>
+                          <dt>Situação</dt><dd>{modal.row.legacy.external_mapping.blocker || "Fonte integrada"}</dd>
+                        </dl>
+                      </div>
+                    </details>}
                     <details className="report-collapsible">
                       <summary>Descrição</summary>
                       <div className="report-collapsible-body">
@@ -1635,7 +1670,7 @@ export default function ReportWorkspace({
                         </div>
                       </>
                     )}
-                    <Field label="Parâmetros da execução (JSON)">
+                    <Field label="Parâmetros da execução (avançado)">
                       <textarea
                         className="report-code"
                         rows={5}

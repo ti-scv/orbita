@@ -1,4 +1,5 @@
 import type { ColumnDataType, ColumnInfo } from "../model";
+import { displayCanvasValue } from "../common/displayValue";
 
 export type { ColumnDataType, ColumnInfo };
 
@@ -6,7 +7,7 @@ export const COLUMN_TYPE_LABELS: Record<ColumnDataType, string> = {
   number: "Número",
   date: "Data",
   datetime: "Data e hora",
-  boolean: "Booleano",
+  boolean: "Sim/Não",
   text: "Texto",
   unknown: "Tipo não detectado",
 };
@@ -24,7 +25,7 @@ export function inferValueType(val: unknown): ColumnDataType {
   if (typeof val === "string") {
     const trimmed = val.trim();
     if (trimmed.toLowerCase() === "true" || trimmed.toLowerCase() === "false") return "boolean";
-    if (ISO_DATE_RE.test(trimmed)) return "date";
+    if (ISO_DATE_RE.test(trimmed) || /^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) return "date";
     if (ISO_DATETIME_RE.test(trimmed)) return "datetime";
     if (NUMERIC_STRING_RE.test(trimmed)) return "number";
     return "text";
@@ -58,7 +59,7 @@ export function inferColumnType(values: unknown[]): ColumnDataType {
 }
 
 export function formatCellValue(val: unknown, type?: ColumnDataType): string {
-  if (val === null || val === undefined || val === "") return "—";
+  if (val == null || (typeof val === "string" && !val.trim())) return "—";
 
   if (type === "number" || (type === undefined && typeof val === "number")) {
     const num = typeof val === "number" ? val : Number(val);
@@ -67,30 +68,15 @@ export function formatCellValue(val: unknown, type?: ColumnDataType): string {
     return num.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 4 });
   }
 
-  if (
-    type === "date" ||
-    (type === undefined && typeof val === "string" && ISO_DATE_RE.test(val.trim()))
-  ) {
-    const str = String(val).trim();
-    if (ISO_DATE_RE.test(str)) {
-      const [year, month, day] = str.split("-");
-      return `${day}/${month}/${year}`;
-    }
-    if (val instanceof Date) {
-      return val.toLocaleDateString("pt-BR", { timeZone: "UTC" });
-    }
+  // Share date validation and wall-clock formatting with block previews.
+  if (type === "date" && val instanceof Date) {
+    return Number.isFinite(val.getTime()) ? val.toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
   }
-
   if (
-    type === "datetime" ||
-    (type === undefined && typeof val === "string" && ISO_DATETIME_RE.test(val.trim()))
+    type === "date" || type === "datetime" ||
+    (typeof val === "string" && (ISO_DATE_RE.test(val.trim()) || ISO_DATETIME_RE.test(val.trim())))
   ) {
-    const str = String(val).trim();
-    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (match) {
-      const [, y, m, d, hh, mm, ss] = match;
-      return ss ? `${d}/${m}/${y} ${hh}:${mm}:${ss}` : `${d}/${m}/${y} ${hh}:${mm}`;
-    }
+    return displayCanvasValue(typeof val === "string" ? val.trim() : val);
   }
 
   if (type === "boolean" || typeof val === "boolean") {
@@ -98,7 +84,8 @@ export function formatCellValue(val: unknown, type?: ColumnDataType): string {
     if (val === false || val === "false") return "Não";
   }
 
-  return String(val);
+  const states: Record<string, string> = { not_requested: "Não solicitado", answered: "Respondido", confirmed: "Confirmado", scheduled: "Agendado", done: "Concluído", delivered: "Entregue", read: "Lido", no_answer: "Sem resposta", no_response: "Sem resposta", unanswered: "Sem resposta", not_answered: "Não atendido", declined: "Recusado", review: "Em revisão", assigned: "Em atendimento", waiting_external: "Aguardando ação externa", pending_external: "Aguardando ação externa", preview: "Somente análise", queued: "Na fila", sending: "Enviando", accepted: "Aceito", uncertain: "Resultado incerto", blocked: "Bloqueado", expired: "Vencido", running: "Em execução", ready: "Pronto", missed: "Perdido", draft: "Rascunho", pending: "Pendente", open: "Aberto", closed: "Fechado", completed: "Concluído", cancelled: "Cancelado", canceled: "Cancelado", sent: "Enviado", failed: "Falhou" };
+  return typeof val === "string" ? states[val.trim().toLowerCase()] || (val.includes("_") ? val.replaceAll("_", " ").replace(/^./, c => c.toLocaleUpperCase("pt-BR")) : val) : String(val);
 }
 
 export function formatColumnTypeLabel(type?: ColumnDataType, looksLike?: string): string {
@@ -115,4 +102,20 @@ export function getColumnTypeAriaLabel(type?: ColumnDataType, looksLike?: string
   if (!type || type === "unknown") return "Coluna com tipo não detectado";
   const label = formatColumnTypeLabel(type, looksLike);
   return `Tipo de dado: ${label}`;
+}
+
+export function formatTableCell(value: unknown, column: string): string {
+  if (/(telefone|whatsapp|celular|phone)/i.test(column) && value != null) {
+    const digits = String(value).replace(/\D/g, "");
+    const local = digits.length === 12 || digits.length === 13 ? (digits.startsWith("55") ? digits.slice(2) : "") : digits;
+    if (local.length === 10 || local.length === 11) {
+      const prefix = "+55 ";
+      return `${prefix}(${local.slice(0, 2)}) ${local.slice(2, -4)}-${local.slice(-4)}`;
+    }
+  }
+  if (/(resposta|atendimento|resultado|situação|situacao|status|state|outcome)/i.test(column)) {
+    const labels: Record<string, string> = {pending: "Pendente", open: "Aberto", closed: "Concluído", assigned: "Em atendimento", waiting_external: "Aguardando ação externa", confirmed: "Confirmado", declined: "Recusado", no_response: "Sem resposta", not_confirmed: "Não confirmado", not_sent: "Não enviado", answered: "Respondido", received: "Recebido", sent: "Enviado", failed: "Falhou", cancelled: "Cancelado", resolved: "Resolvido"};
+    if (labels[String(value)]) return labels[String(value)];
+  }
+  return formatCellValue(value);
 }

@@ -1,3 +1,4 @@
+from operations.report_removal_compat import active_conditions
 import base64
 import binascii
 import copy
@@ -12,6 +13,7 @@ from contextlib import ExitStack
 from datetime import date, datetime
 from decimal import Decimal
 from types import SimpleNamespace
+from django.http import Http404
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -25,6 +27,7 @@ from operations.report_engine import parameters, report_filename
 from .schema import default_layout, validate_layout, validate_complete, fail, fail_at, source_label
 from .engine import definition_snapshot, export, validate_values
 from .registry import SOURCES
+from .parameter_editor import declarations
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ NUMBER_REGEX = re.compile(r"^-?\d+(?:\.\d+)?$")
 
 
 class CanvasConfigSchema(serializers.Serializer):
+    default_data_mode = serializers.ChoiceField(choices=["sample", "preview"], read_only=True)
     version = serializers.IntegerField(min_value=1)
     layout = serializers.JSONField()
     enabled = serializers.BooleanField(default=False)
@@ -61,6 +65,7 @@ class CanvasSourcePreviewSchema(serializers.Serializer):
     source = serializers.DictField()
     parameters = serializers.JSONField(required=False, default=dict)
     limit = serializers.IntegerField(required=False, default=50, min_value=1, max_value=500)
+    offset = serializers.IntegerField(required=False, default=0, min_value=0, max_value=10000)
 
 
 class CanvasSourcePreviewResult(serializers.Serializer):
@@ -69,6 +74,15 @@ class CanvasSourcePreviewResult(serializers.Serializer):
     total_rows = serializers.IntegerField()
     truncated = serializers.BooleanField()
     elapsed_ms = serializers.IntegerField()
+    total_rows_exact = serializers.BooleanField()
+    total_rows_capped = serializers.BooleanField()
+    has_more = serializers.BooleanField()
+    offset = serializers.IntegerField()
+    next_offset = serializers.IntegerField(allow_null=True)
+    cache_hit = serializers.BooleanField()
+    external = serializers.BooleanField()
+    notice = serializers.CharField()
+    timings = serializers.DictField()
 
 
 class CanvasAssetSchema(serializers.Serializer):
@@ -83,7 +97,27 @@ class CanvasAssetSchema(serializers.Serializer):
 
 def context_report(view, request):
     unit = get_unit(request, ["admin"])
-    return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit)
+    try:
+        return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
+    except Http404:
+        raise Http404("Este relatório não existe na unidade escolhida. Troque a unidade ou volte para a lista.")
+
+
+def source_establishment(report):
+    """Identify the establishment from legacy evidence, falling back to the owning unit."""
+    import unicodedata
+    legacy = report.legacy or {}
+    location = (legacy.get("source_location") or {}).get("name", "")
+    text = unicodedata.normalize("NFKD", f"{report.name} {location} {getattr(report, 'code', '')}").encode("ascii", "ignore").decode().upper().replace("-", " ").replace("_", " ")
+    if "AME JALES" in text: return "AME Jales"
+    if "AME SANTA FE" in text: return "AME Santa Fé"
+    if "AME VOTUPORANGA" in text or "AME VOTU" in text or "ROB8 MENSAGENS CONFIRMACAO" in text: return "AME Votuporanga"
+    if "CECAP" in text: return "CECAP"
+    if "UBS" in text: return "UBS"
+    if "SANTA CASA VOTUPORANGA" in text: return "Santa Casa Votuporanga"
+    if location and "ROB8" in location.upper():
+        return location.replace("ROB8", "").strip(" -").title() or report.unit.name
+    return report.unit.name
 
 
 def response(report):
@@ -96,28 +130,47 @@ def response(report):
         "opinions_months": "Pareceres por mês", "opinions_days": "Pareceres por dia",
     }
     candidates = ReportDefinition.objects.filter(
-        unit=report.unit, reviewed=True, review_queue=False
+        unit=report.unit, **active_conditions(), reviewed=True, review_queue=False
     ).select_related("connection", "unit").order_by("name")
+    from .sources import external_source
     sources = []
     for child in candidates:
+        display_name = child.name + (" (origem externa)" if external_source(child) else "")
         native = catalog_datasets(child)
-        if not child.enabled and not (child.pk == report.pk and native):
+        if not child.enabled and not (child.pk == report.pk and (native or child.source == "sql")):
             continue
         if native:
             sources.append({
                 "id": child.pk,
-                "name": child.name,
+                "name": display_name,
                 "code": child.code,
                 "datasets": [{"id": k, "name": labels.get(k, k.replace("_", " ")), "columns": v} for k, v in native.items()],
             })
         elif child.source == "sql" and child.connection_id and child.connection.unit_id == report.unit_id and child.connection.enabled and child.connection.validated:
-            sources.append({"id": child.pk, "name": child.name, "code": child.code})
+            from .sql_columns import query_columns
+            sources.append({"id": child.pk, "name": display_name, "code": child.code, "columns": query_columns(child.query_sql, child.connection.engine)})
+    # Draft contracts expose fields for design only. Runtime resolution still
+    # requires reviewed, enabled sources and a validated same-unit connection.
+    from operations.external_report_mapping import catalog_contract
+    existing={s["id"] for s in sources}
+    for child in ReportDefinition.objects.filter(unit=report.unit,**active_conditions(),legacy__external_mapping__isnull=False):
+        if child.pk in existing:continue
+        pending=catalog_contract(child)
+        if pending:sources.append(pending)
+    establishments = {child.pk: source_establishment(child) for child in ReportDefinition.objects.filter(pk__in=[item["id"] for item in sources]).select_related("unit")}
+    for item in sources:
+        item["establishment"] = establishments[item["id"]]
     notice = ""
     if report.handler == "external_pdf_v1" and not report.canvas_layout:
         notice = "PDF recebido pronto. A edição dos elementos depende do arquivo de origem."
     elif not report.reviewed and not report.canvas_layout:
         notice = "Portabilidade pendente: a fonte deste relatório ainda não foi integrada."
+    mapping=report.legacy.get("external_mapping",{})
+    if mapping and not report.canvas_enabled:
+        notice=mapping.get("blocker") or "Modelo do relatório mapeado; geração pendente de homologação da fonte."
     return {
+        "parameter_editor": declarations(report),
+        "default_data_mode": "preview" if report.reviewed and report.legacy.get("canvas_legacy_delivery", {}).get("data_mode") == "preview" else "sample",
         "port_notice": notice,
         "monthly_goals": report.monthly_goals,
         "version": report.version,
@@ -125,8 +178,57 @@ def response(report):
         "enabled": report.canvas_enabled,
         "output_format": report.canvas_layout.get("export_format", report.output_format),
         "sources": sources,
+        "source_establishment": source_establishment(report),
         "assets": [{"id": str(a.pk), "filename": a.filename, "width": a.width, "height": a.height} for a in report.canvas_assets.only("id", "filename", "width", "height")],
     }
+
+
+def validate_configuration(report, raw_layout, enabled=False, fmt="pdf"):
+    layout = validate_layout(raw_layout)
+    if type(enabled) is not bool or fmt not in ("pdf", "xlsx"):
+        fail("Formato ou ativação inválidos.")
+    # Drafts may refer to a source not yet available, but never to another unit's assets/sources.
+    for spec in layout["sources"]:
+        if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit, **active_conditions()).exists():
+            fail("Fonte de outra unidade ou não encontrada.")
+        if spec["type"] == "report":
+            from .native import datasets
+            child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=report.unit, **active_conditions()).first()
+            if child and datasets(child):
+                from .sources import resolve_report
+                resolve_report(report, spec)
+    from .engine import assets_for
+    assets_for(report, layout)
+    if enabled:
+        if report.catalog_kind != "report" or report.review_queue:
+            fail("Ative o modelo apenas em relatórios finais revisados.")
+        definition_snapshot(report, layout)
+    return layout
+
+
+def validate_json(view, request):
+    report = context_report(view, request)
+    text = request.data.get("json")
+    if not isinstance(text, str) or len(text.encode()) > 750000:
+        fail("Informe o código do relatório com até 750 KB.")
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as exc:
+        return Response({"detail": f"Código inválido na linha {exc.lineno}, coluna {exc.colno}: Verifique aspas duplas, vírgulas e o fechamento de chaves e colchetes.", "line": exc.lineno, "column": exc.colno}, status=400)
+    from .parameter_editor import apply_edits
+    apply_edits(report, request.data.get("parameter_edits", []))
+    try:
+        layout = validate_configuration(report, value, request.data.get("enabled", False), request.data.get("output_format", "pdf"))
+    except ValidationError as exc:
+        from .schema import error_messages
+        detail = exc.detail if isinstance(exc.detail, dict) else {}
+        identity = detail.get("block_id") or detail.get("source_id")
+        position = text.find(json.dumps(str(identity), ensure_ascii=False)) if identity else 0
+        position = max(0, position)
+        line = text[:position].count("\n") + 1
+        column = position - text.rfind("\n", 0, position)
+        return Response({"detail": f"Esquema inválido, linha {line}, coluna {column}: " + "; ".join(error_messages(exc)), "line": line, "column": column}, status=400)
+    return Response({"layout": layout})
 
 
 def configure(view, request):
@@ -140,26 +242,13 @@ def configure(view, request):
             if type(request.data.get("version")) is not int or request.data["version"] != current.version:
                 raise Conflict()
             layout = validate_layout(request.data.get("layout"))
+            from .parameter_editor import apply_edits
+            apply_edits(current, request.data.get("parameter_edits", []))
             enabled = request.data.get("enabled", False)
             fmt = request.data.get("output_format", "pdf")
             if type(enabled) is not bool or fmt not in ("pdf", "xlsx"):
                 fail("Formato ou ativação inválidos.")
-            # Drafts may refer to a source not yet available, but never to another unit's assets/sources.
-            for spec in layout["sources"]:
-                if spec["type"] == "report" and not ReportDefinition.objects.filter(pk=spec["report_id"], unit=current.unit).exists():
-                    fail("Fonte de outra unidade ou não encontrada.")
-                if spec["type"] == "report":
-                    from .native import datasets
-                    child = ReportDefinition.objects.filter(pk=spec["report_id"], unit=current.unit).first()
-                    if child and datasets(child):
-                        from .sources import resolve_report
-                        resolve_report(current, spec)
-            from .engine import assets_for
-            assets_for(current, layout)
-            if enabled:
-                if current.catalog_kind != "report" or current.review_queue:
-                    fail("Ative Canvas apenas em relatórios finais revisados.")
-                definition_snapshot(current, layout)
+            validate_configuration(current, layout, enabled, fmt)
             previous = {"layout": current.canvas_layout, "enabled": current.canvas_enabled, "format": current.output_format}
             legacy = dict(current.legacy)
             if enabled and not current.canvas_enabled:
@@ -176,7 +265,7 @@ def configure(view, request):
                 current.reviewed = True
                 current.output_format = fmt
             current.version += 1
-            current.save(update_fields=["canvas_layout", "canvas_enabled", "reviewed", "output_format", "legacy", "version"])
+            current.save(update_fields=["canvas_layout", "canvas_enabled", "reviewed", "output_format", "legacy", "parameter_schema", "version"])
             Audit.objects.create(
                 unit=current.unit,
                 actor=request.user,
@@ -203,10 +292,11 @@ def preview(view, request):
         content, count = export(report, layout, values, report.monthly_goals, fmt)
     except ValidationError:
         raise
-    except Exception:
+    except Exception as exc:
+        from .diagnostics import safe_error
         logger.warning("Canvas preview failed unexpectedly (details suppressed)")
         fail_at(
-            "Não foi possível gerar a prévia. Verifique a fonte, os parâmetros e os blocos.",
+            "Não foi possível gerar a prévia: " + safe_error(exc),
             code="preview_failed",
         )
     Audit.objects.create(unit=report.unit, actor=request.user, action="report.canvas_previewed", object_id=str(report.pk), details={"format": fmt, "rows": count})
@@ -214,9 +304,9 @@ def preview(view, request):
 
 
 def infer_column_metadata(col_name, values):
-    null_count = sum(1 for v in values if v is None)
+    null_count = sum(1 for v in values if v is None or (isinstance(v, str) and not v.strip()))
     nullable = null_count > 0
-    non_nulls = [v for v in values if v is not None]
+    non_nulls = [v for v in values if v is not None and not (isinstance(v, str) and not v.strip())]
 
     sample = []
     seen = set()
@@ -300,105 +390,8 @@ def serialize_cell(val):
 
 
 def source_preview(view, request):
-    start_time = time.perf_counter()
-    report = context_report(view, request)
-
-    source = request.data.get("source")
-    if not isinstance(source, dict):
-        fail_at("Informe a especificação da fonte para a prévia.", code="source_required")
-
-    source_type = source.get("type")
-    if not isinstance(source_type, str) or source_type not in SOURCES:
-        fail_at(f'Tipo de fonte desconhecido: "{source_type}".', code="source_type_invalid")
-
-    validation_layout = default_layout()
-    validation_layout["sources"] = [source]
-    validate_layout(validation_layout)
-    if source_type == "report":
-        from .sources import resolve_report
-        resolve_report(report, source)
-
-    raw_params = request.data.get("parameters")
-    params = raw_params if isinstance(raw_params, dict) else {}
-
-    raw_limit = request.data.get("limit", 50)
-    try:
-        limit = int(raw_limit)
-        if not (1 <= limit <= 500):
-            limit = 50
-    except (ValueError, TypeError):
-        limit = 50
-
-    with ExitStack() as stack:
-        ctx = SimpleNamespace(
-            report=report,
-            parameters=params,
-            goals=report.monthly_goals,
-            assets={},
-            datasets={},
-            sessions={},
-            native_cache={},
-            stack=stack,
-        )
-        try:
-            dataset = SOURCES[source_type].read(ctx, source)
-        except ValidationError:
-            raise
-        except Exception:
-            logger.warning("Canvas source preview failed (details suppressed)")
-            fail_at(
-                f'Fonte "{source_label(source)}": conexão indisponível. Verifique a conexão e os parâmetros e tente novamente.',
-                source_id=source.get("id"),
-                code="source_connection_failed",
-            )
-
-    total_rows = len(dataset.rows)
-    if total_rows > 30000:
-        fail_at(
-            f'Fonte "{source_label(source)}" excede o limite de 30.000 linhas (retornou {total_rows}).',
-            source_id=source.get("id"),
-            code="source_limit_exceeded",
-        )
-    raw_size = len(json.dumps(dataset.rows, default=str).encode())
-    if raw_size > 10 * 1024 * 1024:
-        fail_at(
-            f'Fonte "{source_label(source)}" excede o limite de 10 MB.',
-            source_id=source.get("id"),
-            code="source_size_exceeded",
-        )
-
-    columns = [
-        infer_column_metadata(col_name, [r[col_idx] for r in dataset.rows])
-        for col_idx, col_name in enumerate(dataset.columns)
-    ]
-
-    preview_rows = [
-        [serialize_cell(cell) for cell in row]
-        for row in dataset.rows[:limit]
-    ]
-
-    elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-
-    Audit.objects.create(
-        unit=report.unit,
-        actor=request.user,
-        action="report.canvas_source_previewed",
-        object_id=str(report.pk),
-        details={
-            "source_id": source.get("id"),
-            "source_type": source_type,
-            "total_rows": total_rows,
-            "elapsed_ms": elapsed_ms,
-        },
-    )
-
-    return Response({
-        "columns": columns,
-        "rows": preview_rows,
-        "total_rows": total_rows,
-        "truncated": total_rows > limit,
-        "elapsed_ms": elapsed_ms,
-    })
+    from .source_preview import source_preview as read_sample
+    return read_sample(view, request)
 
 
 def asset_data(asset, content=False):

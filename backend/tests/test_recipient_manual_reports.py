@@ -104,7 +104,7 @@ def test_search_is_lazy_paginated_and_excludes_components_and_other_units(access
     response=e["client"].get(url+"&search=B");assert response.data["count"]==0
     response=e["client"].get(url+"&search=Buscável")
     assert response.status_code==200 and response.data["count"]==65 and response.data["next"]
-    assert len(response.data["results"])==50
+    assert len(response.data["results"])==25
     assert all(r["code"].startswith("find-") and r["code"] not in {"find-part","find-foreign"} for r in response.data["results"])
 
 def test_removing_old_inactive_permission_preserves_automatic_state_and_history(access_env):

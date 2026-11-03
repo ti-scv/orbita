@@ -5,6 +5,9 @@ from django.db import models
 
 
 class Unit(models.Model):
+    checkin_enabled = models.BooleanField(default=False)
+    autoagenda_enabled = models.BooleanField(default=False)
+    surveys_enabled = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
     authorized_recipients = models.JSONField(null=True, default=None, blank=True)
     slug = models.SlugField(unique=True)
@@ -25,6 +28,7 @@ class Membership(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
     role = models.CharField(max_length=12, choices=Role.choices, default=Role.VIEWER)
     permissions = models.JSONField(default=dict)
+    permission_role = models.ForeignKey("PermissionRole", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["user", "unit"], name="membership_unique")]
@@ -53,6 +57,7 @@ class InstanceAccessKey(models.Model):
     issuer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     name = models.CharField(max_length=120)
     role = models.CharField(max_length=12, choices=Membership.Role.choices)
+    export_user_identities = models.BooleanField(default=False)
     secret_hash = models.CharField(max_length=64, editable=False)
     issuance_key = models.CharField(max_length=100, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -124,3 +129,58 @@ class OracleConfiguration(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     checked_at = models.DateTimeField(null=True)
     validation_state = models.CharField(max_length=24, default="not_checked")
+
+
+class PermissionMigration35Backup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    migrated_value = models.CharField(max_length=5)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["model_name", "object_id"], name="permission35_backup_unique")]
+
+
+class PermissionMigration35TypesBackup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    previous = models.JSONField()
+    migrated = models.JSONField()
+
+
+class PermissionMigration35SettingsBackup(models.Model):
+    model_name = models.CharField(max_length=40)
+    object_id = models.CharField(max_length=40)
+    previous = models.JSONField()
+    migrated = models.JSONField()
+
+
+class PermissionRole(models.Model):
+    """Modelo reutilizável; os acessos efetivos continuam no vínculo."""
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=120)
+    permissions = models.JSONField(default=dict)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["unit", "name"], name="permission_role_unit_name")]
+
+
+class SyncedUserIdentity(models.Model):
+    """Identification from one remote unit; never evidence for linking a local account."""
+
+    class State(models.TextChoices):
+        PENDING = "pending", "Pendente de liberação"
+        CONFLICT = "conflict", "Conflito de login"
+        RELEASED = "released", "Liberado"
+
+    connection = models.ForeignKey(RemoteInstance, on_delete=models.PROTECT, related_name="synced_users")
+    remote_user_id = models.CharField(max_length=150)
+    login = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, blank=True)
+    email = models.EmailField(blank=True)
+    last_synced_at = models.DateTimeField()
+    removed_at_origin = models.BooleanField(default=False)
+    state = models.CharField(max_length=12, choices=State.choices, default=State.PENDING)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="synced_identity")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["connection", "remote_user_id"], name="synced_identity_origin_unique")]

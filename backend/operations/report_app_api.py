@@ -10,6 +10,7 @@ from core.permissions import get_unit
 from operations.models import ReportApplicationConnection
 from operations.serializers import model_serializer
 from operations.views import ConfigViewSet
+from operations.report_removal import ReversibleRemovalMixin
 from operations.reporting import is_admin
 
 class AppDataResponseSchema(serializers.Serializer):
@@ -49,12 +50,12 @@ class AppConnectionSerializer(model_serializer(ReportApplicationConnection,["ver
             if enabled and (not remote or not remote.enabled or remote.state!="connected" or remote.remote_role!="admin"):raise ValidationError("Selecione uma instância conectada com chave administrativa.")
         return attrs
 
-class AppConnectionViewSet(ConfigViewSet):
+class AppConnectionViewSet(ReversibleRemovalMixin, ConfigViewSet):
     queryset=ReportApplicationConnection.objects.select_related("local_unit","remote_instance")
     serializer_class=AppConnectionSerializer
 
     def get_queryset(self):
-        return self.queryset.filter(unit=get_unit(self.request,["admin"])).order_by("name")
+        return self.scope_removals(self.queryset.filter(unit=get_unit(self.request,["admin"])).order_by("name"))
 
     @extend_schema(responses=AppConnectionOptionsSchema)
     @action(detail=False,methods=["get"])

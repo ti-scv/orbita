@@ -12,7 +12,7 @@ HANDLER="lives_indicators_v1"
 def fail(message):raise ValidationError(message)
 
 def source(report):
- if report.unit.slug!="scv" or report.code!="legacy123-310" or report.source!="composite":fail("Definição de Vidas Sansaúde incompatível.")
+ if report.unit.slug!="scv" or report.code not in {"legacy123-310","legacy123-271","legacy123-308"} or report.source!="composite":fail("Definição de Vidas Sansaúde incompatível.")
  r=ReportDefinition.objects.filter(unit=report.unit,code=SOURCE,catalog_kind="component",source="sql",enabled=True,reviewed=True).select_related("connection","unit").first()
  if not r or not r.connection or r.connection.unit_id!=report.unit_id or r.connection.engine!="oracle" or r.connection.database!="prdvotu" or not r.connection.enabled or not r.connection.validated:fail("Configure a fonte Oracle de produção de Vidas Sansaúde.")
  return r

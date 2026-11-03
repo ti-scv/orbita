@@ -1,0 +1,2 @@
+FROM orbita-api:rel-39u
+COPY scv-unit-serializers.py /app/core/serializers.py

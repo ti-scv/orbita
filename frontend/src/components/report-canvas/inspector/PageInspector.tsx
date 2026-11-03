@@ -22,6 +22,7 @@ export interface PageInspectorProps {
   xlsxMode?: XlsxMode;
   onSelectBlock: (blockId: string) => void;
   onRemoveBlock: (blockId: string) => void;
+  removalDisabled?: boolean;
   onUpdatePageConfig?: (patch: Partial<CanvasPageConfig>, coalesceKey?: string) => void;
   onRenameActivePage?: (name: string) => void;
   onChangeOutputFormat?: (format: OutputFormat) => void;
@@ -46,7 +47,7 @@ const PAGE_BG_SWATCHES = [
 
 const OUTPUT_FORMAT_OPTIONS = [
   { value: "pdf" as const, label: "PDF" },
-  { value: "xlsx" as const, label: "XLSX" },
+  { value: "xlsx" as const, label: "Excel (XLSX)" },
 ];
 
 const XLSX_MODE_OPTIONS = [
@@ -69,6 +70,7 @@ export default function PageInspector({
   xlsxMode,
   onSelectBlock,
   onRemoveBlock,
+  removalDisabled = false,
   onUpdatePageConfig,
   onRenameActivePage,
   onChangeOutputFormat,
@@ -106,7 +108,8 @@ export default function PageInspector({
         </div>
       </div>
 
-      <div className="cv-inspector-scroll">
+      <div className={`cv-inspector-scroll${!onUpdatePageConfig ? " cv-page-readonly" : ""}`}>
+        {!onUpdatePageConfig && <p className="cv-field-hint">Relatório ativo: crie uma nova versão para editar.</p>}
         <CollapsibleSection title="Página" defaultOpen={true}>
           {activePage && (
             <div className="cv-field">
@@ -207,7 +210,7 @@ export default function PageInspector({
           </div>
 
           <div className="cv-field">
-            <span className="cv-label">Modo de planilha (XLSX)</span>
+            <span className="cv-label">Modo de planilha Excel (XLSX)</span>
             <SegmentedControl
               ariaLabel="Modo de planilha"
               options={XLSX_MODE_OPTIONS}
@@ -215,7 +218,7 @@ export default function PageInspector({
               disabled={!onChangeXlsxMode || outputFormat === "pdf"}
               disabledReason={
                 outputFormat === "pdf"
-                  ? "Modo de planilha só está disponível na exportação em XLSX."
+                  ? "Modo de planilha só está disponível na exportação em Excel (XLSX)."
                   : undefined
               }
               onChange={(mode) => onChangeXlsxMode?.(mode)}
@@ -272,8 +275,9 @@ export default function PageInspector({
                     <button
                       type="button"
                       className="cv-well-btn is-danger"
-                      aria-label={`Remover ${b.title || b.id}`}
-                      title="Excluir bloco"
+                      disabled={removalDisabled}
+                      aria-label={`Remover ${b.title || BLOCK_LABELS[b.type]}`}
+                      title={removalDisabled ? "Relatório ativo: crie uma nova versão para editar." : `Remover ${b.title || BLOCK_LABELS[b.type]}`}
                       onClick={() => onRemoveBlock(b.id)}
                     >
                       <Trash2 size={12} aria-hidden="true" />

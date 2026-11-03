@@ -1,5 +1,8 @@
+import { friendlySourceName, friendlySourceError } from "./sourceName";
+import { formatRowCount } from "./rowCount";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertCircle,
   ChevronRight,
@@ -19,12 +22,16 @@ import type {
   ColumnInfo,
   SourcePreview,
 } from "../model";
+import ColumnOrigin from "./ColumnOrigin";
 import ColumnBadge from "./ColumnBadge";
+import { formatCellValue, formatColumnTypeLabel, inferColumnType } from "./columnTypes";
 import DataDrawer from "./DataDrawer";
 import EmptyState from "../common/EmptyState";
 import { findSourceUsages } from "./sourceOps";
 
 export interface DataPanelProps {
+  stagePreviewStates?: Record<string, SourcePreviewEntry>;
+  onLoadStagePreview?: (sourceId: string, retry?: boolean) => Promise<void>;
   active: boolean;
   sources: CanvasSource[];
   availableSources: CatalogSqlSource[];
@@ -48,10 +55,14 @@ interface SourcePreviewEntry {
   data: SourcePreview | null;
   error: string | null;
   loadedAt: Date | null;
+  httpStatus?: number;
+  elapsedMs?: number;
 }
 
 export default function DataPanel({
   active,
+  stagePreviewStates,
+  onLoadStagePreview,
   sources,
   availableSources,
   layout,
@@ -72,7 +83,8 @@ export default function DataPanel({
     return () => controller.abort();
   }, []);
   const [expandedSourceId, setExpandedSourceId] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<Record<string, SourcePreviewEntry>>({});
+  const [localPreviews, setPreviews] = useState<Record<string, SourcePreviewEntry>>({});
+  const previews = { ...localPreviews, ...stagePreviewStates };
   const [drawerSource, setDrawerSource] = useState<CanvasSource | null>(null);
   const [sourceToDelete, setSourceToDelete] = useState<CanvasSource | null>(null);
   const [activeMenuCol, setActiveMenuCol] = useState<{ sourceId: string; colName: string } | null>(null);
@@ -80,6 +92,10 @@ export default function DataPanel({
   // Load preview for a given source
   const handleLoadPreview = useCallback(
     async (src: CanvasSource, bypassCache = false) => {
+      if (src.type === "report" && onLoadStagePreview) {
+        await onLoadStagePreview(src.id, bypassCache);
+        return;
+      }
       if (!bypassCache) {
         const cached = getCachedSourcePreview(src, (src.type === "report" && src.parameters) || {}, 50, cacheScope);
         if (cached) {
@@ -107,6 +123,7 @@ export default function DataPanel({
       }));
 
       const signal = previewAbortRef.current?.signal;
+      const startedAt = performance.now();
       try {
         const result = await fetchSourcePreviewRequest(
           reportId,
@@ -142,12 +159,19 @@ export default function DataPanel({
             data: null,
             error: unavail ? "Prévia de dados indisponível nesta versão do servidor" : msg,
             loadedAt: null,
+            httpStatus: typeof status === "number" ? status : undefined,
+            elapsedMs: Math.round(performance.now() - startedAt),
           },
         }));
       }
     },
-    [reportId, unit, cacheScope],
+    [reportId, unit, cacheScope, onLoadStagePreview],
   );
+
+  useEffect(() => {
+    if (!active) return;
+    for (const source of sources) if (!previews[source.id]) void handleLoadPreview(source);
+  }, [active, sources, previews, handleLoadPreview]);
 
   const toggleExpand = (src: CanvasSource) => {
     if (expandedSourceId === src.id) {
@@ -306,11 +330,12 @@ export default function DataPanel({
 
             const subtitle =
               src.type === "report"
-                ? `${sqlItem?.name || "Relatório"} › ${src.dataset || "Dados"}`
+                ? sqlItem?.name || "Relatório"
                 : src.type === "inline"
                   ? `Tabela manual (${src.columns.length} colunas)`
-                  : "Metas mensais (year, month, value)";
+                  : "Metas mensais";
 
+            const displayName = friendlySourceName(src, sqlItem);
             const usages = layout ? findSourceUsages(layout, src.id) : [];
 
             return (
@@ -320,23 +345,25 @@ export default function DataPanel({
               >
                 <div
                   className="cv-source-row"
-                  onClick={() => toggleExpand(src)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleExpand(src)}
-                  aria-expanded={isExpanded}
                 >
                   <div className="cv-source-main">
-                    <div className="cv-source-title-line">
+                    <button
+                      type="button"
+                      className="cv-source-title-line cv-btn-compact"
+                      onClick={() => toggleExpand(src)}
+                      aria-expanded={isExpanded}
+                      aria-label={`Colunas de ${displayName}`}
+                      title={isExpanded ? `Recolher colunas de ${displayName}` : `Expandir colunas de ${displayName}`}
+                    >
                       <ChevronRight
                         size={14}
                         className={`cv-source-chevron ${isExpanded ? "open" : ""}`}
                       />
-                      <span className="cv-source-label" title={src.label || src.id}>
-                        {src.label || src.id}
+                      <span className="cv-source-label" title={displayName}>
+                        {displayName}
                       </span>
-                      {src.label && <span className="cv-source-id">#{src.id}</span>}
-                    </div>
+
+                    </button>
                     <span className="cv-source-sub" title={subtitle}>
                       {subtitle}
                     </span>
@@ -352,7 +379,7 @@ export default function DataPanel({
                       {previewState?.status === "error" && (
                         <span
                           className="cv-chip error"
-                          title={previewState.error || "Erro na consulta"}
+                          title={friendlySourceError(previewState.error || "Erro na consulta", src, sqlItem)}
                         >
                           <AlertCircle size={10} /> Erro
                         </span>
@@ -368,12 +395,12 @@ export default function DataPanel({
                       )}
 
                       {previewData && previewState?.status !== "loading" && previewState?.status !== "error" && (
-                        <span className="cv-chip ready">
-                          {previewData.total_rows} linhas
+                        <details className="cv-count-help"><summary className="cv-chip ready">
+                          {previewData.total_rows_exact !== false && previewData.rows.length === previewData.total_rows ? `Mostrando todas as ${previewData.rows.length.toLocaleString("pt-BR")} linhas` : `Mostrando ${formatRowCount(previewData.rows.length, previewData)}`}
                           {previewState?.loadedAt && (
-                            <> · {previewState.loadedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>
+                            <> · {previewState.loadedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })}</>
                           )}
-                        </span>
+                        </summary><p>O total considera os parâmetros atuais (período, unidade, tipo de envio). Mostramos só as 50 primeiras na prévia.</p></details>
                       )}
 
                       {!previewData && !previewState?.status && (
@@ -403,7 +430,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Ver dados reais da fonte"
-                      aria-label={`Ver dados de ${src.label || src.id}`}
+                      aria-label={`Ver dados de ${displayName}`}
                       onClick={() => handleOpenDrawer(src)}
                     >
                       <Eye size={13} />
@@ -412,7 +439,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Atualizar prévia de dados"
-                      aria-label={`Atualizar prévia de ${src.label || src.id}`}
+                      aria-label={`Atualizar prévia de ${displayName}`}
                       disabled={previewState?.status === "loading"}
                       onClick={() => handleLoadPreview(src, true)}
                     >
@@ -422,7 +449,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn"
                       title="Editar fonte de dados"
-                      aria-label={`Editar fonte ${src.label || src.id}`}
+                      aria-label={`Editar fonte ${displayName}`}
                       onClick={() => onEditSource(src)}
                     >
                       <Edit3 size={13} />
@@ -431,7 +458,7 @@ export default function DataPanel({
                       type="button"
                       className="cv-icon-btn danger"
                       title="Remover fonte"
-                      aria-label={`Remover fonte ${src.label || src.id}`}
+                      aria-label={`Remover fonte ${displayName}`}
                       onClick={() => setSourceToDelete(src)}
                     >
                       <Trash2 size={13} />
@@ -439,10 +466,19 @@ export default function DataPanel({
                   </div>
                 </div>
 
+                {isExpanded && (previewState?.status === "error" || (previewState?.status === "idle" && previewState.error)) && (
+                  <div role="alert">
+                    <p>Fonte: {displayName}. {friendlySourceError(previewState.error || "Não foi possível carregar a prévia.", src, sqlItem)}</p>
+                    {previewState.status === "error" && previewState.httpStatus !== 400 && <button type="button" className="cv-btn-compact" onClick={() => void handleLoadPreview(src, true)}>Tentar de novo</button>}
+                    {(previewState.httpStatus === 400 || previewState.status === "idle") && <button type="button" className="cv-btn-compact" onClick={() => onEditSource(src)}>Editar fonte</button>}
+                  </div>
+                )}
                 {/* Lista Expandida de Colunas */}
                 {isExpanded && (
                   <div className="cv-column-list">
-                    {columns.length === 0 ? (
+                    {columns.length === 0 && previewState?.status !== "ready" ? (
+                      <span className="cv-column-hint">Carregue a prévia para ver as colunas.</span>
+                    ) : columns.length === 0 ? (
                       <span className="cv-column-hint">Nenhuma coluna detectada.</span>
                     ) : (
                       <>
@@ -452,7 +488,10 @@ export default function DataPanel({
                           </span>
                         )}
                         {columns.map((col) => {
-                          const sampleVal = col.sample?.[0] ?? "";
+                          const inferred = inferColumnType(col.sample || []);
+                          const shownType = inferred !== "unknown" && (col.type === "unknown" || (col.type === "datetime" && inferred === "date")) ? inferred : col.type;
+                          const rawSample = col.sample?.[0];
+                          const sampleVal = rawSample == null || rawSample === "" ? "" : formatCellValue(rawSample, col.type);
                           const hasPreview = Boolean(previewData);
                           const isMenuOpen =
                             activeMenuCol?.sourceId === src.id &&
@@ -474,30 +513,28 @@ export default function DataPanel({
                                 );
                                 e.dataTransfer.effectAllowed = "copy";
                               }}
-                              title={`Arraste para campos do inspetor ou use o menu. Tipo: ${col.type}`}
+                              title={previewData ? `Arraste para campos do inspetor ou use o menu. Tipo: ${shownType === "unknown" && !(col.sample || []).some(v => v != null && v !== "") ? "Sem valores" : formatColumnTypeLabel(shownType)}` : "Arraste para campos do inspetor ou use o menu."}
                             >
                               <div className="cv-column-left">
-                                <ColumnBadge
-                                  type={hasPreview ? col.type : "unknown"}
-                                  looksLike={col.looks_like}
-                                />
-                                <span className="cv-column-name">{col.name}</span>
+                                {hasPreview && <ColumnBadge type={shownType} looksLike={col.looks_like} />}
+                                <span className="cv-column-name" title={col.name}>{col.name}</span><span className="cv-column-type">{previewState?.status === "loading" || !previewState?.status ? "Carregando tipo…" : !previewData ? "Tipo indisponível" : shownType === "unknown" && !(col.sample || []).some(v => v != null && v !== "") ? "Sem valores" : formatColumnTypeLabel(shownType)}</span>
                               </div>
 
                               {sampleVal && (
                                 <span className="cv-column-sample" title={sampleVal}>
-                                  {sampleVal}
+                                  Exemplo: {sampleVal}
                                 </span>
                               )}
 
+                              <ColumnOrigin source={src} column={col.name} type={shownType} loadedAt={previewState?.loadedAt} />
                               {/* Menu Usar como... */}
                               <div className="cv-use-as-dropdown">
                                 <button
                                   type="button"
                                   className="cv-icon-btn"
                                   style={{ width: 22, height: 22 }}
-                                  title="Usar coluna no bloco selecionado"
-                                  aria-label={`Usar coluna ${col.name}`}
+                                  title="Mais ações da coluna"
+                                  aria-label="Mais ações da coluna"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setActiveMenuCol(isMenuOpen ? null : { sourceId: src.id, colName: col.name });
@@ -571,14 +608,19 @@ export default function DataPanel({
       )}
 
       {/* Gaveta Ver Dados (DataDrawer) */}
-      {drawerSource && (
+      {drawerSource && createPortal(
         <DataDrawer
+          key={drawerSource.id}
           source={drawerSource}
+          datasetName={drawerSource.type === "report" ? availableSources.find(item => item.id === drawerSource.report_id)?.datasets?.find(item => item.id === drawerSource.dataset)?.name : undefined}
+          sourceName={friendlySourceName(drawerSource, drawerSource.type === "report" ? availableSources.find(item => item.id === drawerSource.report_id) : undefined)}
           preview={previews[drawerSource.id]?.data || getCachedSourcePreview(drawerSource, (drawerSource.type === "report" && drawerSource.parameters) || {}, 50, cacheScope) || null}
+          loadedAt={previews[drawerSource.id]?.loadedAt}
           loading={previews[drawerSource.id]?.status === "loading"}
           onClose={() => setDrawerSource(null)}
           onRefresh={() => handleLoadPreview(drawerSource, true)}
-        />
+        />,
+        document.body,
       )}
 
       {/* Confirmação de Remoção com lista de blocos afetados */}
@@ -598,7 +640,7 @@ export default function DataPanel({
             <header className="observation-header">
               <h2 id="confirm-delete-title">Remover fonte de dados</h2>
               <p className="inline-dialog-subtitle">
-                Confirmação de exclusão da fonte "{sourceToDelete.label || sourceToDelete.id}"
+                Confirmação de exclusão da fonte "{friendlySourceName(sourceToDelete, sourceToDelete.type === "report" ? availableSources.find(item => item.id === sourceToDelete.report_id) : undefined)}"
               </p>
             </header>
 

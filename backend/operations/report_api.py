@@ -1,3 +1,4 @@
+from django.conf import settings
 from operations.report_app_api import AppDataResponseSchema
 import base64
 import re
@@ -18,6 +19,7 @@ from core.models import Audit, Membership
 from core.permissions import get_unit
 from operations import models as m
 from operations.report_engine import connect, parameters, seal
+from operations.report_removal import ReversibleRemovalMixin
 from operations.report_canvas.api import CanvasConfigSchema, CanvasPreviewSchema, CanvasPreviewResult, CanvasSourcePreviewSchema, CanvasSourcePreviewResult, CanvasAssetSchema
 from operations.reporting import (
     enqueue,
@@ -95,6 +97,7 @@ class ConnectionSerializer(
             "checked_at",
             "validation_error",
             "legacy",
+            *(["removed_at", "removed_by", "removed_was_enabled"] if settings.REPORT_REMOVAL_ENABLED else []),
         ]
 
     def get_has_password(self, obj) -> bool:
@@ -189,15 +192,23 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
             self.context[key] = parents
         return self.context[key].get(obj.code, [])
     description = serializers.CharField(required=False, allow_blank=True, max_length=16000, trim_whitespace=False)
+    category = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
+    def _save_metadata(self, validated_data, legacy):
+        updates = {}
+        if "description" in validated_data:
+            updates["report_description"] = validated_data.pop("description")
+        if "category" in validated_data:
+            updates["report_category"] = validated_data.pop("category").strip()
+        if updates:
+            validated_data["legacy"] = {**legacy, **validated_data.get("legacy", {}), **updates}
 
     def update(self, instance, validated_data):
-        if "description" in validated_data:
-            validated_data["legacy"] = {**instance.legacy, "report_description": validated_data.pop("description")}
+        self._save_metadata(validated_data, instance.legacy or {})
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        if "description" in validated_data:
-            validated_data["legacy"] = {**validated_data.get("legacy", {}), "report_description": validated_data.pop("description")}
+        self._save_metadata(validated_data, {})
         return super().create(validated_data)
 
     technical_description = serializers.SerializerMethodField()
@@ -238,6 +249,14 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
 
 
     def get_pending_items(self, obj) -> list[str]:
+        if obj.canvas_enabled and getattr(self.context.get("view"), "action", None) == "list":
+            # Reuse the index already needed for technical descriptions instead
+            # of resolving each Canvas source again for every list row.
+            from operations.report_descriptions import index_for
+            key = ("description_index", obj.unit_id)
+            if key not in self.context:
+                self.context[key] = index_for(obj.unit_id)
+            return readiness(obj, canvas_reports=self.context[key]["by_id"])
         return readiness(obj)
 
     def validate(self, attrs):
@@ -285,6 +304,7 @@ class CatalogSerializer(model_serializer(m.ReportDefinition, ["version", "legacy
         from operations.report_parameters import normalized_schema
 
         data["parameter_schema"] = normalized_schema(obj.parameter_schema)
+        data["category"] = (obj.legacy or {}).get("report_category", "")
         if "report_description" in obj.legacy:
             data["description"] = obj.legacy["report_description"]
         elif data.get("technical_description"):
@@ -555,7 +575,7 @@ class Managed(ConfigViewSet):
                     )
 
 
-class ConnectionViewSet(Managed):
+class ConnectionViewSet(ReversibleRemovalMixin, Managed):
     queryset = m.ReportConnection.objects.order_by("name")
     serializer_class = ConnectionSerializer
 
@@ -610,7 +630,7 @@ class ConnectionViewSet(Managed):
         ]
     )
 )
-class CatalogViewSet(ReportViewSet):
+class CatalogViewSet(ReversibleRemovalMixin, ReportViewSet):
     pagination_class = ReportPagination
     @extend_schema(parameters=[OpenApiParameter("metric",str,required=True),OpenApiParameter("start",str),OpenApiParameter("end",str),OpenApiParameter("filters",str)],responses=AppDataResponseSchema)
     @action(detail=False,methods=["get"],url_path="app-data")
@@ -623,6 +643,16 @@ class CatalogViewSet(ReportViewSet):
     def canvas(self, request, pk=None):
         from operations.report_canvas.api import configure
         return configure(self, request)
+
+    @action(detail=True, methods=["post"], url_path="canvas-column-origin")
+    def canvas_column_origin(self, request, pk=None):
+        from operations.report_canvas.origin import column_origin
+        return column_origin(self, request)
+
+    @action(detail=True, methods=["post"], url_path="canvas-validate")
+    def canvas_validate(self, request, pk=None):
+        from operations.report_canvas.api import validate_json
+        return validate_json(self, request)
 
     @extend_schema(request=CanvasPreviewSchema, responses=CanvasPreviewResult)
     @action(detail=True, methods=["post"], url_path="canvas-preview")
@@ -642,7 +672,7 @@ class CatalogViewSet(ReportViewSet):
         from operations.report_canvas.api import assets
         return assets(self, request)
 
-    queryset = m.ReportDefinition.objects.select_related("connection", "unit").order_by(
+    queryset = m.ReportDefinition.objects.select_related("connection", "app_connection", "unit").order_by(
         "name"
     )
     serializer_class = CatalogSerializer
@@ -702,7 +732,7 @@ class CatalogViewSet(ReportViewSet):
                 qs = qs.exclude(query_sql="")
             elif params.get("sql") == "no":
                 qs = qs.filter(query_sql="")
-        return qs
+        return self.scope_removals(qs)
 
     def validate_config(self, obj):
         from operations.reports import HANDLERS
@@ -722,6 +752,11 @@ class CatalogViewSet(ReportViewSet):
             raise ValidationError("Conexão de outra unidade.")
         if obj.app_connection_id and obj.app_connection.unit_id != obj.unit_id:
             raise ValidationError("Conexão do app de outra unidade.")
+        if obj.source == "sql" and obj.connection_id:
+            from operations.operational_sql import is_internal, validate_sql
+            if is_internal(obj.connection):
+                validate_sql(obj.query_sql, obj.connection)
+
         if obj.source not in {
             "app",
             "local",
@@ -786,9 +821,10 @@ class CatalogViewSet(ReportViewSet):
                 headers, rows = run_query(report, request.data.get("parameters", {}))
             except ValidationError:
                 raise
-            except Exception:  # noqa: BLE001 - do not expose driver credentials or source data
+            except Exception as exc:  # noqa: BLE001 - details belong only in the server log
+                from operations.report_canvas.diagnostics import safe_error
                 raise ValidationError(
-                    "Falha na consulta; confira a conexão, SQL e parâmetros."
+                    "Não foi possível testar o relatório. " + safe_error(exc)
                 ) from None
             Audit.objects.create(
                 unit=report.unit,
@@ -961,7 +997,12 @@ class AutomationViewSet(Managed):
         if weekday:
             if not weekday.isdigit() or int(weekday) not in range(7):
                 raise ValidationError("Dia da semana inválido.")
-            qs = qs.filter(weekdays__contains=[int(weekday)])
+            from django.db import connection
+            if connection.vendor == "sqlite":
+                # SQLite não implementa o lookup JSON contains do Django.
+                qs = qs.extra(where=["EXISTS (SELECT 1 FROM json_each(operations_reportautomation.weekdays) WHERE json_each.value = %s)"], params=[int(weekday)])
+            else:
+                qs = qs.filter(weekdays__contains=[int(weekday)])
         times = {}
         for key in ("time_from", "time_to"):
             if params.get(key):

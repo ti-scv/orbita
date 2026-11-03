@@ -1,6 +1,9 @@
+import { formatRowCount } from "../data/rowCount";
+import { previewPeriod, expandedPreviewParameters } from "../hooks/useStagePreviews";
 import PreviewParameters from "../blocks/PreviewParameters";
 import type { StagePreviewState as SourcePreviewState } from "../hooks/useStagePreviews";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import BlockPreview from "../blocks/BlockPreview";
 import type {
@@ -38,6 +41,9 @@ export interface BlockFrameProps {
   onStartResize: (e: ReactPointerEvent, block: CanvasBlock, handle: ResizeHandle) => void;
   onKeyboardResize?: (blockId: string, dx: number, dy: number) => void;
   onFocusBlock: (blockId: string) => void;
+  onToggleBlock?: (blockId: string) => void;
+  onRemoveBlock?: (blockId: string) => void;
+  selectedCount?: number;
 }
 
 const ALL_HANDLES: { handle: ResizeHandle; label: string; className: string }[] = [
@@ -74,8 +80,21 @@ function BlockFrameComponent({
   onStartDrag,
   onStartResize,
   onFocusBlock,
+  onToggleBlock,
+  onRemoveBlock,
+  selectedCount = 1,
   onKeyboardResize,
 }: BlockFrameProps) {
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const openMenu = (element: HTMLElement, x: number, y: number) => {
+    const stage = element.closest(".cv-stage")?.getBoundingClientRect();
+    const left = stage?.left ?? 0;
+    const right = stage?.right ?? window.innerWidth;
+    const top = stage?.top ?? 0;
+    const bottom = stage?.bottom ?? window.innerHeight;
+    setMenuPosition({ x: Math.max(left, Math.min(x, right - 220)), y: Math.max(top, Math.min(y, bottom - 70)) });
+  };
   const currentX = tempGeometry ? tempGeometry.x : block.x;
   const currentY = tempGeometry ? tempGeometry.y : block.y;
   const currentW = tempGeometry ? tempGeometry.width : block.width;
@@ -86,8 +105,12 @@ function BlockFrameComponent({
     [assets],
   );
   const lineage = useMemo(
-    () => describeBlockLineage(block, sources, assetFilenames),
-    [block, sources, assetFilenames],
+    () => describeBlockLineage(block, sources.map(src => {
+      if (src.type !== "report" || (src.label && src.label.toLowerCase() !== "dados")) return src;
+      const catalog = availableSources.find(item => item.id === src.report_id);
+      return {...src, label: `${catalog?.name || "Fonte"} › ${catalog?.datasets?.find(item => item.id === src.dataset)?.name || "Dados"}`};
+    }), assetFilenames),
+    [block, sources, assetFilenames, availableSources],
   );
 
   let originState: "no_source" | "preview" | "sample" = "sample";
@@ -118,7 +141,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${formatRowCount(rowsCount, previewState.data)}` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";
@@ -128,8 +151,8 @@ function BlockFrameComponent({
         }
       }
     } else {
-      originState = "sample";
-      originLabel = "Exemplo";
+      originState = showSampleData ? "sample" : "preview";
+      originLabel = showSampleData ? "Exemplo" : "Texto do relatório";
     }
   } else {
     // table, kpi, bar, line, pie
@@ -149,7 +172,7 @@ function BlockFrameComponent({
         const rowsCount = local?.rows?.length || 0;
         if (!showSampleData && local) {
           originState = "preview";
-          originLabel = `Prévia · ${rowsCount} linhas`;
+          originLabel = previewState?.data ? `Prévia · ${formatRowCount(rowsCount, previewState.data)}` : `Prévia · ${rowsCount} linhas`;
         } else {
           originState = "sample";
           originLabel = "Exemplo";
@@ -167,6 +190,9 @@ function BlockFrameComponent({
     canLoadPreview = false;
   }
 
+  const period = previewPeriod(previewState?.fields, previewState?.values);
+  if (!showSampleData && period) originLabel += ` · período ${period}${previewState?.assumed ? " (padrão)" : ""}`;
+
   const waitingForPreview = !showSampleData && blockSourceId && sources.find(s => s.id === blockSourceId)?.type === "report" && !previewState && !localDatasets.has(blockSourceId);
   const blockDisplayName = block.title || BLOCK_LABELS[block.type];
   const pageLabel = pageName || `página ${pageIndex + 1}`;
@@ -174,10 +200,12 @@ function BlockFrameComponent({
 
   return (
     <div
+      ref={frameRef}
       data-block-id={block.id}
       role="group"
       tabIndex={0}
       aria-label={ariaLabel}
+      title="Use Shift e clique para selecionar mais componentes. Clique com o botão direito para abrir as ações."
       className={`cv-block cv-block-${block.type} ${isSelected ? "is-selected" : ""} ${
         isDragging ? "is-dragging" : ""
       } ${problem ? `has-problem is-${problem.severity}` : ""} ${overlapping ? "is-overlapping" : ""}`.trim()}
@@ -190,15 +218,30 @@ function BlockFrameComponent({
       }}
       onPointerDown={(e) => {
         if ((e.target as HTMLElement).closest("button, input, select, textarea, a, [contenteditable]")) return;
+        if ((e.shiftKey || e.ctrlKey || e.metaKey) && onToggleBlock) { e.preventDefault(); onToggleBlock(block.id); return; }
         onStartDrag(e, block);
       }}
-      onFocus={() => onFocusBlock(block.id)}
+      onFocus={(e) => { if (e.target === e.currentTarget && !isSelected) onFocusBlock(block.id); }}
+      onContextMenu={(e) => { if (!onRemoveBlock) return; e.preventDefault(); if (!isSelected) onFocusBlock(block.id); openMenu(e.currentTarget, e.clientX, e.clientY); }}
+      onKeyDown={(e) => {
+        if ((e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) && onRemoveBlock) { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); openMenu(e.currentTarget, r.left, r.top); }
+        if (e.shiftKey && e.key === " " && onToggleBlock && e.target === e.currentTarget) { e.preventDefault(); e.stopPropagation(); onToggleBlock(block.id); }
+        if (e.key === "Escape" && menuPosition) { e.stopPropagation(); setMenuPosition(null); frameRef.current?.focus(); }
+      }}
     >
+      {menuPosition && onRemoveBlock && frameRef.current?.closest(".cv-root") && createPortal(
+        <div role="menu" className="cv-block-context-menu" style={{ left: menuPosition.x, top: menuPosition.y }}>
+          <button type="button" role="menuitem" title={isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`} autoFocus onClick={(e) => { e.stopPropagation(); setMenuPosition(null); onRemoveBlock(block.id); }}>
+            {isSelected && selectedCount > 1 ? `Remover ${selectedCount} componentes selecionados` : `Remover ${blockDisplayName}`}
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setMenuPosition(null); frameRef.current?.focus(); }}>Cancelar</button>
+        </div>, frameRef.current.closest(".cv-root")!
+      )}
       {overlapping && isSelected && !isDragging && <span className="cv-overlap-warning" role="status">Sobreposição com outro bloco · mova ou redimensione</span>}
       {/* Origin Chip (Top-Left) */}
       <div
         className={`cv-origin-chip is-${originState}`}
-        title={previewState?.data?.truncated && !showSampleData ? `${lineage || "Prévia"} · amostra limitada a ${previewState.data.rows.length} de ${previewState.data.total_rows} linhas` : lineage || (hasMissingSource ? "Nenhuma fonte associada ao bloco" : undefined)}
+        title={previewState?.data?.truncated && !showSampleData ? `${lineage || "Prévia"} · amostra limitada a ${previewState.data.rows.length.toLocaleString("pt-BR")} de ${previewState.data.total_rows.toLocaleString("pt-BR")} linhas (com os parâmetros atuais)` : lineage || (hasMissingSource ? "Nenhuma fonte associada ao bloco" : undefined)}
       >
         <span>{originLabel}</span>
         {canLoadPreview && blockSourceId && onLoadSourcePreview && (
@@ -247,16 +290,17 @@ function BlockFrameComponent({
         </span>
       )}
 
+      {!showSampleData && previewState?.status === "ready" && !!previewState.fields?.length && blockSourceId && <PreviewParameters compact key={JSON.stringify(previewState.values)} fields={previewState.fields} values={previewState.values || {}} onSubmit={parameters => onLoadSourcePreview?.(blockSourceId!, parameters)} />}
       {waitingForPreview ? (
-        <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status">Carregando prévia…</div></div>
+        <div className="cv-block-inner"><div className="cv-block-status-inline" role="status">Carregando prévia…</div></div>
       ) : !showSampleData && previewState && previewState.status !== "ready" ? (
-        <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status">
+        <div className="cv-block-inner"><div className="cv-block-status-inline" role="status">
           <p>{previewState.status === "loading" ? "Carregando prévia…" : previewState.error}</p>
           {previewState.status !== "loading" && !!previewState.fields?.length && blockSourceId && <PreviewParameters key={JSON.stringify(previewState.values)} fields={previewState.fields} values={previewState.values || {}} onSubmit={parameters => onLoadSourcePreview?.(blockSourceId!, parameters)} />}
           {previewState.status !== "loading" && !previewState.fields?.length && blockSourceId && <button type="button" className="cv-btn-compact" onClick={() => onLoadSourcePreview?.(blockSourceId!)}>Tentar de novo</button>}
         </div></div>
       ) : !showSampleData && block.type !== "text" && block.type !== "image" && blockSourceId && localDatasets.has(blockSourceId) && !localDatasets.get(blockSourceId)?.rows.length ? (
-        <div className="cv-block-inner"><div className="cv-block-problem-inline" role="status"><p>A fonte não retornou linhas para estes parâmetros</p>{onLoadSourcePreview && sources.find(s => s.id === blockSourceId)?.type === "report" && <PreviewParameters fields={previewState?.fields || []} values={previewState?.values || {}} onSubmit={parameters => onLoadSourcePreview(blockSourceId!, parameters)} />}</div></div>
+        <div className="cv-block-inner"><div className="cv-block-status-inline" role="status"><p>Nenhuma linha neste período</p>{onLoadSourcePreview && sources.find(s => s.id === blockSourceId)?.type === "report" && <button type="button" className="cv-btn-compact" onClick={() => onLoadSourcePreview(blockSourceId!, expandedPreviewParameters(previewState?.fields || [], previewState?.values || {}))}>Ampliar para 90 dias</button>}</div></div>
       ) : <>
       {/* Block Preview Content or Inline Problem Message */}
       {problem && problem.severity === "error" && hasMissingSource ? (
@@ -312,6 +356,10 @@ function BlockFrameComponent({
 
 export default memo(BlockFrameComponent, (prev, next) => {
   return (
+    prev.onToggleBlock === next.onToggleBlock &&
+    prev.onRemoveBlock === next.onRemoveBlock &&
+    prev.onFocusBlock === next.onFocusBlock &&
+    prev.selectedCount === next.selectedCount &&
     prev.overlapping === next.overlapping &&
     prev.previewState === next.previewState &&
     prev.isSelected === next.isSelected &&

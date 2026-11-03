@@ -137,8 +137,13 @@ def parameters(report, values):
     from decimal import Decimal, InvalidOperation
 
     schema = report.parameter_schema
-    if not isinstance(values, dict) or set(values) - set(schema):
-        raise ValidationError("Parâmetros não cadastrados.")
+    if not isinstance(values, dict):
+        raise ValidationError("Parâmetros devem ser um objeto.")
+    unknown = sorted(set(values) - set(schema))
+    if unknown:
+        labels = {"start": "Data inicial", "end": "Data final", "unidade": "Unidade", "unit": "Unidade", "tipo_envio": "Tipo de envio"}
+        names = ", ".join(str(spec.get("label") or labels.get(name.lower(), name.replace("_", " ").capitalize())) if isinstance(spec, dict) else labels.get(name.lower(), name.replace("_", " ").capitalize()) for name, spec in schema.items()) or "nenhum"
+        raise ValidationError(f'O parâmetro "{unknown[0]}" não existe nesta fonte. Parâmetros disponíveis: {names}.')
     result = {}
     for name, spec in schema.items():
         value = values.get(name, spec.get("default"))
@@ -318,7 +323,7 @@ def connect(connection):
                 c.close()
 
 
-def run_query(report, values, *, session=None, typed=False):
+def run_query(report, values, *, session=None, typed=False, preview_limit=None, preview_offset=0, timings=None, preview_count=False, column_types=None):
     connection = report.connection
     if (
         not connection
@@ -328,20 +333,53 @@ def run_query(report, values, *, session=None, typed=False):
     ):
         raise ValidationError("Conexão desativada ou não validada.")
     sql_contract(report.query_sql, report.parameter_schema, connection.engine)
+    from operations.operational_sql import is_internal, prepare_values, validate_sql
+    if is_internal(connection):
+        validate_sql(report.query_sql, connection)
+        values = prepare_values(report, values)
+    query_sql = report.query_sql
+    if preview_limit is not None and connection.engine == "postgres":
+        if type(preview_limit) is not int or not 1 <= preview_limit <= 501 or type(preview_offset) is not int or not 0 <= preview_offset <= 10000:
+            raise ValidationError("Página da prévia inválida.")
+        if is_internal(connection):
+            from operations.report_canvas.preview_sql import optimize
+            query_sql = optimize(query_sql)
+        # Keep original ordering/filters and fetch one lookahead row; never COUNT the full result.
+        import sqlparse
+        from sqlparse.tokens import Punctuation
+        query_sql = "".join(value for kind, value in sqlparse.lexer.tokenize(query_sql) if not (kind == Punctuation and value == ";"))
+        if preview_count:
+            query_sql = "SELECT COUNT(*) FROM (SELECT 1 FROM (\n" + query_sql + "\n) AS canvas_count_source LIMIT 10001) AS canvas_count"
+        else:
+            query_sql = "SELECT * FROM (\n" + query_sql + "\n) AS canvas_sample LIMIT " + str(preview_limit) + " OFFSET " + str(preview_offset)
     sql, binds = bound_sql(
-        report.query_sql, parameters(report, values), connection.engine
+        query_sql, parameters(report, values), connection.engine
     )
+    # SQL*Plus accepts a trailing delimiter, while Oracle's driver does not.
+    # Remove it only when it is the final non-whitespace character.
+    if connection.engine == "oracle" and sql.rstrip().endswith(";"):
+        sql = sql.rstrip()[:-1]
     with (nullcontext(session) if session is not None else connect(connection)) as c:
         cursor = c.cursor()
         try:
+            query_start = time.perf_counter()
             cursor.execute(sql, binds)
+            if timings is not None:
+                timings["query_ms"] = round((time.perf_counter() - query_start) * 1000, 2)
             if not cursor.description:
                 raise ValidationError("A consulta não retornou colunas.")
             headers = [x[0] for x in cursor.description]
+            if column_types is not None:
+                from operations.report_canvas.sql_columns import description_types
+                column_types.extend(description_types(cursor.description, connection.engine))
             if len(headers) > 100:
                 raise ValidationError("Limite de 100 colunas excedido.")
-            rows = cursor.fetchmany(connection.max_rows + 1)
-            if len(rows) > connection.max_rows:
+            fetch_limit = (1 if preview_count else preview_limit) if preview_limit is not None and connection.engine == "postgres" else connection.max_rows + 1
+            fetch_start = time.perf_counter()
+            rows = cursor.fetchmany(fetch_limit)
+            if timings is not None:
+                timings["fetch_ms"] = round((time.perf_counter() - fetch_start) * 1000, 2)
+            if preview_limit is None and len(rows) > connection.max_rows:
                 raise ValidationError("Limite de linhas excedido; ajuste os filtros.")
             output = []
             size = 0

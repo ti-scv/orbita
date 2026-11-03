@@ -1,13 +1,12 @@
+import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
+import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
-import ReportCanvasPage from "./components/ReportCanvasPage";
-import MetaCosts from "./components/MetaCosts";
 import BrandLogo from "./components/BrandLogo";
 import LegacyLabel from "./components/LegacyLabel";
 import { settingsEntries } from "./settingsDirectory";
 import FormAction from "./components/FormAction";
 import { Badge, Empty, Panel, SearchField } from "./components/ui";
 import OperationalAppointments from "./components/OperationalAppointments";
-import OverviewWorkspace from "./components/OverviewWorkspace";
 import AppointmentGroups from "./components/AppointmentGroups";
 import ExecutionLogs from "./components/ExecutionLogs";
 import MetaConfiguration from "./components/MetaConfiguration";
@@ -26,7 +25,7 @@ import { ThemeToggle } from "./components/ThemeToggle";
 import { ThemeProvider, useTheme } from "./ThemeContext";
 import Login from "./components/Login";
 import type { Modal } from "./types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowRight,
@@ -75,11 +74,18 @@ import type {
   Template,
 } from "./types";
 
+const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
+const MetaCosts = lazy(() => import("./components/MetaCosts"));
+const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
+const SurveysWorkspace = lazy(() => import("./components/SurveysWorkspace"));
+
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "appointments", label: "Agendamentos", icon: CalendarDays },
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
+  { id: "autoagenda", label: "Autoagendamento", icon: CalendarDays },
+  { id: "surveys", label: "Pesquisas", icon: MessageCircle },
   { id: "issues", label: "Pendências", icon: ClipboardList },
   { id: "campaigns", label: "Importa CROSS", icon: Send },
   { id: "reports", label: "Relatórios", icon: Activity },
@@ -109,20 +115,27 @@ export default function App() {
 
 function AppRoot() {
   const [session, setSession] = useState<Session | null>(null),
-    [checking, setChecking] = useState(true);
+    [checking, setChecking] = useState(true),
+    [bootError, setBootError] = useState(false),
+    [bootAttempt, setBootAttempt] = useState(0);
   useEffect(() => {
+    let active = true;
+    setChecking(true); setBootError(false);
+    const timer = window.setTimeout(() => { if (active) { active = false; setChecking(false); setBootError(true); } }, 20000);
     initCsrf()
       .then(() => request<Session>("/api/v1/auth/session/"))
-      .then(setSession)
-      .catch(() => {})
-      .finally(() => setChecking(false));
-  }, []);
+      .then(value => { if (active) setSession(value); })
+      .catch(error => { if (active && error?.status !== 401 && error?.status !== 403) setBootError(true); })
+      .finally(() => { if (active) { window.clearTimeout(timer); setChecking(false); } });
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [bootAttempt]);
   useEffect(() => {
     if (!session) return;
     const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+    window.addEventListener("session-refresh", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); window.removeEventListener("session-refresh", refresh); };
   }, [session?.username]);
   if (checking)
     return (
@@ -131,6 +144,7 @@ function AppRoot() {
         <span>Carregando painel…</span>
       </div>
     );
+  if (bootError) return <div className="boot"><BrandLogo /><p>Não foi possível carregar o painel. Confira a conexão e tente de novo.</p><button className="button" onClick={() => setBootAttempt(value => value + 1)}>Tentar de novo</button></div>;
   if (!session) return <Login onLogin={setSession} />;
   if (!session.units.length) return <div className="boot"><p>Seu usuário não tem acesso a unidades.</p><button className="button" onClick={() => {void request("/api/v1/auth/session/", "POST").finally(()=>setSession(null));}}>Sair</button></div>;
   return (
@@ -215,6 +229,8 @@ function Workspace({
     [selectedAppointment, selectAppointment] = useState<number | null>(null),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
+    [issuesStart, setIssuesStart] = useState(""),
+    [issuesEnd, setIssuesEnd] = useState(""),
     [search, setSearch] = useState(""),
     [state, setState] = useState(""),
     [responseState, setResponseState] = useState(""),
@@ -253,8 +269,12 @@ function Workspace({
   }
   const loadSequence = useRef(0);
   const load = useCallback(async () => {
-    if (canvasId) return;
     const sequence = ++loadSequence.current;
+    // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
+    if (canvasId || page === "reports" || page === "autoagenda" || page === "surveys") {
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -413,49 +433,69 @@ function Workspace({
   }
   const currentTitle = navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
-  const periodFilter = (
-    <div className="date-range">
-      <CalendarDays size={15} />
-      <input
-        type="date"
-        aria-label={
-          page === "appointments"
-            ? "Data inicial do período"
-            : "Data inicial do agendamento"
-        }
-        value={start}
-        onChange={(e) => {
-          setStart(e.target.value);
-          setListPage(1);
-        }}
-      />
-      <span>até</span>
-      <input
-        type="date"
-        aria-label={
-          page === "appointments"
-            ? "Data final do período"
-            : "Data final do agendamento"
-        }
-        value={end}
-        onChange={(e) => {
-          setEnd(e.target.value);
-          setListPage(1);
-        }}
-      />
-      {(start || end) && (
-        <button
-          aria-label="Limpar datas"
-          className="icon-button"
-          onClick={() => {
-            setStart("");
-            setEnd("");
+  function makePeriodFilter(
+    from: string,
+    to: string,
+    setFrom: (value: string) => void,
+    setTo: (value: string) => void,
+    aria: { start: string; end: string },
+  ) {
+    return (
+      <div className="date-range">
+        <CalendarDays size={15} />
+        <PtBrDateInput
+          aria-label={aria.start}
+          value={from}
+          onChange={(value) => {
+            setFrom(value);
+            setListPage(1);
           }}
-        >
-          <X size={14} />
-        </button>
-      )}
-    </div>
+        />
+        <span>até</span>
+        <PtBrDateInput
+          aria-label={aria.end}
+          value={to}
+          onChange={(value) => {
+            setTo(value);
+            setListPage(1);
+          }}
+        />
+        {(from || to) && (
+          <button
+            type="button"
+            aria-label="Limpar datas"
+            title="Limpar datas"
+            className="icon-button"
+            onClick={() => {
+              setFrom("");
+              setTo("");
+            }}
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    );
+  }
+  const periodFilter = makePeriodFilter(start, end, setStart, setEnd, {
+    start:
+      page === "appointments"
+        ? "Data inicial do período"
+        : "Data inicial do agendamento",
+    end:
+      page === "appointments"
+        ? "Data final do período"
+        : "Data final do agendamento",
+  });
+  const issuesPeriodFilter = makePeriodFilter(
+    issuesStart,
+    issuesEnd,
+    setIssuesStart,
+    setIssuesEnd,
+    {
+      start: "Data inicial das pendências",
+      end: "Data final das pendências",
+    },
   );
   const activeList =
     page === "appointments"
@@ -465,7 +505,7 @@ function Workspace({
         : page === "messages"
           ? data?.messages
           : null;
-  if (canvasId) return <ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} />;
+  if (canvasId) return <Suspense fallback={<p role="status">Carregando editor…</p>}><ReportCanvasPage id={canvasId} unit={unit} admin={role === "admin"} /></Suspense>;
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       {mobile && (
@@ -480,7 +520,7 @@ function Workspace({
         className={`sidebar ${mobile ? "open" : ""}`}
       >
         <div className="sidebar-heading">
-          <div className="brand" aria-label="SCV Messenger">
+          <div className="brand" role="img" aria-label="SCV Messenger">
             <BrandLogo wordmark={!sidebarCollapsed} />
           </div>
           <button
@@ -578,8 +618,10 @@ function Workspace({
         <header className="topbar">
           <div>
             <button
+              type="button"
               className="mobile-menu icon-button"
               aria-label="Abrir menu"
+              title="Abrir menu"
               aria-expanded={mobile}
               aria-controls="workspace-navigation"
               onClick={() => setMobile(!mobile)}
@@ -629,8 +671,10 @@ function Workspace({
               <span>Ambiente de teste</span>
             </span>
             <button
+              type="button"
               className="notification icon-button"
               aria-label="Ver pendências"
+              title="Ver pendências"
               onClick={() => navigate("issues")}
             >
               <Bell size={19} />
@@ -650,10 +694,22 @@ function Workspace({
             <div className="inline-error" role="alert">
               <TriangleAlert size={18} />
               <span>{error}</span>
-              <button className="icon-button" onClick={() => setError("")}>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Fechar aviso de erro"
+                title="Fechar aviso de erro"
+                onClick={() => setError("")}
+              >
                 <X size={16} />
               </button>
             </div>
+          )}
+          {page === "autoagenda" && <AutoAgendaWorkspace unit={unit} write={role!=="viewer"} admin={actualRole==="admin"}/> }
+          {page === "surveys" && (
+            <Suspense fallback={<p role="status">Carregando pesquisas…</p>}>
+              <SurveysWorkspace unit={unit} write={role !== "viewer"} admin={actualRole === "admin"} />
+            </Suspense>
           )}
           {["care", "campaigns", "reports"].includes(page) && (
             <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
@@ -681,7 +737,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {!data ? (
+          {page === "reports" || page === "autoagenda" || page === "surveys" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />
@@ -689,8 +745,9 @@ function Workspace({
             </div>
           ) : (
             <>
-              {page === "costs" && <MetaCosts unit={unit} />}
+              {page === "costs" && <Suspense fallback={<p role="status">Carregando custos…</p>}><MetaCosts unit={unit} /></Suspense>}
               {page === "overview" && (
+                <Suspense fallback={<p role="status">Carregando visão geral…</p>}>
                 <OverviewWorkspace
                   data={d!}
                   unit={unit}
@@ -709,6 +766,7 @@ function Workspace({
                     cardNavigate(nextPage, filter || "", isResponse || false);
                   }}
                 />
+                </Suspense>
               )}
               {page === "appointments" && (
                 <OperationalAppointments
@@ -840,8 +898,10 @@ function Workspace({
                               </td>
                               <td className="row-action">
                                 <button
+                                  type="button"
                                   className="icon-button"
                                   aria-label={`Ver mensagem de ${message.patient}`}
+                                  title={`Ver mensagem de ${message.patient}`}
                                 >
                                   <ChevronRight size={16} />
                                 </button>
@@ -876,12 +936,13 @@ function Workspace({
                 <OperationalAppointments
                   key={`${unit}-issues`}
                   unit={unit}
+                  periodFilter={issuesPeriodFilter}
                   role={role}
                   username={session.username}
                   initialId={selectedAppointment}
                   refreshKey={loadSequence.current}
-                  start={start}
-                  end={end}
+                  start={issuesStart}
+                  end={issuesEnd}
                   issuesOnly
                 />
               )}
@@ -1174,8 +1235,10 @@ function Workspace({
                                   >
                                     {role === "admin" && (
                                       <button
+                                        type="button"
                                         className="icon-button"
-                                        aria-label={`Editar ${rule.name}`}
+                                        aria-label={`Editar regra ${rule.name}`}
+                                        title={`Editar regra ${rule.name}`}
                                         onClick={() =>
                                           setModal({
                                             type: "rule",
@@ -1414,7 +1477,13 @@ function Workspace({
         <div className="toast" role="status">
           <Check size={18} />
           {toast}
-          <button className="icon-button" onClick={() => setToast("")}>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="Fechar notificação"
+            title="Fechar notificação"
+            onClick={() => setToast("")}
+          >
             <X size={15} />
           </button>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Image as ImageIcon } from "lucide-react";
 import type { CanvasAssetMeta, CanvasBlock } from "../model";
 
@@ -13,32 +13,41 @@ export default function ImagePreview({ block, assets, assetUrls }: ImagePreviewP
   const blobUrl = block.asset_id ? assetUrls[block.asset_id] : undefined;
   const meta = assets.find((a) => a.id === block.asset_id);
 
+  useEffect(() => {
+    setLoadError(false);
+  }, [block.asset_id, blobUrl]);
+
   const hasImage = Boolean(blobUrl && !loadError);
+  const imageTitle = meta?.filename || block.title || "Imagem do relatório";
 
   return (
-    <div className="cv-block-inner cv-block-image-inner">
+    <div
+      className="cv-block-inner cv-block-image-inner"
+      title={meta ? `Imagem: ${meta.filename}` : "Imagem"}
+    >
       {hasImage ? (
         <div className="cv-image-box">
           <img
             src={blobUrl}
-            alt={meta?.filename || block.title || "Imagem do relatório"}
+            alt={imageTitle}
+            title={imageTitle}
             draggable={false}
             onError={() => setLoadError(true)}
           />
         </div>
       ) : (
-        <div className="cv-image-placeholder" role="status">
+        <div className="cv-image-placeholder" role="status" title={imageTitle}>
           <div className="cv-image-placeholder-icon" aria-hidden="true">
             <ImageIcon size={20} strokeWidth={1.5} />
           </div>
           <div className="cv-image-placeholder-text">
             <span className="cv-image-placeholder-title">
-              {block.asset_id ? (meta?.filename || "Imagem") : "Imagem"}
+              {block.asset_id ? meta?.filename || "Imagem" : "Imagem"}
             </span>
             <span className="cv-image-placeholder-hint">
               {block.asset_id
                 ? loadError
-                  ? "Falha ao carregar imagem"
+                  ? `Falha ao carregar "${meta?.filename || "imagem"}".`
                   : `Carregando ${meta?.filename || "imagem"}…`
                 : "Selecione ou envie uma imagem no painel"}
             </span>

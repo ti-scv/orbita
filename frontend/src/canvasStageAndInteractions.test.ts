@@ -406,8 +406,8 @@ describe("TAREFA 06: Palco, Seleção, Guias, Atalhos, Agrupamento e Recuperaç�
         clear: () => {
           mockStorage = {};
         },
-        key: () => null,
-        length: 0,
+        key: (index: number) => Object.keys(mockStorage)[index] ?? null,
+        get length() { return Object.keys(mockStorage).length; },
       };
 
       vi.stubGlobal("window", {
@@ -444,6 +444,19 @@ describe("TAREFA 06: Palco, Seleção, Guias, Atalhos, Agrupamento e Recuperaç�
       expect(loadDraftFromStorage(unit, reportId, version)).toBeNull();
     });
 
+    it("descarta rascunhos expirados e de versões anteriores", () => {
+      saveDraftToStorage(unit, reportId, version, { layout: mockLayout, enabled: true, outputFormat: "pdf" });
+      expect(loadDraftFromStorage(unit, reportId, version + 1)).toBeNull();
+      expect(loadDraftFromStorage(unit, reportId, version)).toBeNull();
+      saveDraftToStorage(unit, reportId, version, { layout: mockLayout, enabled: true, outputFormat: "pdf" });
+      const key = `orbita:canvas_draft:${unit}:${reportId}:${version}`;
+      const saved = JSON.parse(window.localStorage.getItem(key)!);
+      saved.timestamp = Date.now() - 8 * 24 * 60 * 60 * 1000;
+      window.localStorage.setItem(key, JSON.stringify(saved));
+      expect(loadDraftFromStorage(unit, reportId, version)).toBeNull();
+      expect(window.localStorage.getItem(key)).toBeNull();
+    });
+
     it("detecta quando o rascunho difere do estado atual", () => {
       const draft = {
         layout: mockLayout,
@@ -462,9 +475,9 @@ describe("TAREFA 06: Palco, Seleção, Guias, Atalhos, Agrupamento e Recuperaç�
       ).toBe(false);
     });
 
-    it("formata horário do rascunho em HH:mm", () => {
+    it("formata data e horário do rascunho", () => {
       const timeStr = formatDraftTime(Date.now());
-      expect(timeStr).toMatch(/^\d{2}:\d{2}$/);
+      expect(timeStr).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
     });
   });
 });

@@ -4,6 +4,7 @@ import type { DragEvent, FormEvent } from "react";
 import FormAction from "./FormAction";
 import { query, request } from "../api";
 import {
+  MessageSquare,
   ArrowRight,
   CheckCircle2,
   ChevronDown,
@@ -290,7 +291,7 @@ export function CrossLayoutEditor({
                 setFields(null);
               }}
             >
-              <option value="table">CSV / XLSX</option>
+              <option value="table">Planilha Excel (XLSX) ou texto (CSV)</option>
               <option value="absence_html">Ausentes HTML (.xls)</option>
               <option value="cross_demand_csv">
                 Demanda por recurso CROSS (.csv)
@@ -528,7 +529,7 @@ export function CrossImportForm({
   const formatLayoutType = (fmt?: string) => {
     switch (fmt) {
       case "table":
-        return "Tabela (CSV / XLSX)";
+        return "Tabela (Planilha Excel (XLSX) ou texto (CSV))";
       case "absence_html":
         return "Ausentes HTML (.xls)";
       case "cross_demand_csv":
@@ -642,7 +643,7 @@ export function CrossImportForm({
               {selected && (
                 <div className="cross-field-tags">
                   <span className="cross-badge cross-badge-template">
-                    💬 {paramCount} parâmetro{paramCount === 1 ? "" : "s"}
+                    <MessageSquare size={14} /> {paramCount} parâmetro{paramCount === 1 ? "" : "s"}
                   </span>
                 </div>
               )}

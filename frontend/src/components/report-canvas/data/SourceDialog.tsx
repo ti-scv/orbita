@@ -1,3 +1,10 @@
+import { friendlyColumnName, friendlyParameterName, friendlyParameterValue, collectTestParameters, unitOptionLabel } from "../parameters";
+import { previewParameters } from "../hooks/useStagePreviews";
+import { query, request } from "../../../api";
+import { friendlySourceError, friendlySourceName } from "./sourceName";
+import { displayFixedDate, isDateParameter, maskFixedDate, parseFixedDate } from "./fixedDate";
+import { formatRowCount } from "./rowCount";
+import { formatCellValue } from "./columnTypes";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, ClipboardEvent, FormEvent } from "react";
 import {
@@ -6,7 +13,6 @@ import {
   Database,
   Plus,
   RefreshCw,
-  Search,
   Table,
   Target,
   Trash2,
@@ -33,6 +39,7 @@ export interface SourceDialogProps {
   sourceModal: SourceDialogState | null;
   availableSources: CatalogSqlSource[];
   reportId?: number;
+  sourceEstablishment?: string;
   unit?: string;
   currentReportParameters?: Record<string, any>;
   monthlyGoals?: Array<{ year: number; month: number; value: number }>;
@@ -54,6 +61,7 @@ export default function SourceDialog({
   sourceModal,
   availableSources,
   reportId = 1,
+  sourceEstablishment = "",
   unit = "",
   currentReportParameters = {},
   monthlyGoals = [],
@@ -64,8 +72,27 @@ export default function SourceDialog({
 }: SourceDialogProps) {
   const sourceFormId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentModal = useRef(sourceModal);
+  currentModal.current = sourceModal;
 
-  const [searchCatalog, setSearchCatalog] = useState("");
+  const [schema, setSchema] = useState<Record<string, unknown>>({});
+  const [schemaReportId, setSchemaReportId] = useState("");
+  const [showOtherUnits, setShowOtherUnits] = useState(false);
+  useEffect(() => { if (!sourceModal) setShowOtherUnits(false); }, [sourceModal === null]);
+  const previewAction = useRef<() => void>(() => {});
+  const [schemaStatus, setSchemaStatus] = useState<"loading" | "ready" | "error">("loading");
+  useEffect(() => {
+    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId) return;
+    const controller = new AbortController();
+    setSchemaStatus("loading");
+    request<{parameter_schema?: Record<string, unknown>}>(query(`reports/${sourceModal.reportId}`, {unit}), "GET", undefined, controller.signal)
+      .then(data => { setSchema(data.parameter_schema || {}); setSchemaReportId(String(sourceModal.reportId)); setSchemaStatus("ready"); })
+      .catch(() => { if (!controller.signal.aborted) { setSchema({}); setSchemaStatus("error"); } });
+    return () => controller.abort();
+  }, [sourceModal?.reportId, sourceModal?.type, unit]);
+  const testAbort = useRef<AbortController | null>(null);
+  const latestPreviewSpec = useRef("");
+  latestPreviewSpec.current = JSON.stringify([sourceModal?.parametersJson, sourceModal?.reportId, sourceModal?.dataset]);
   const [testing, setTesting] = useState(false);
   const [autoSlug, setAutoSlug] = useState(true);
   const [showAdvancedId, setShowAdvancedId] = useState(false);
@@ -87,71 +114,37 @@ export default function SourceDialog({
     }
   }, [sourceModal?.columnsJson, sourceModal?.rowsJson, sourceModal?.type]);
 
-  if (!sourceModal) return null;
-
-  const isCreate = sourceModal.mode === "create";
   const idError = useMemo(() => {
+    if (!sourceModal) return null;
     const res = validateSourceId(sourceModal.id, existingSources, sourceModal.originalId);
     return res.ok ? null : res.error;
-  }, [existingSources, sourceModal.id, sourceModal.originalId]);
+  }, [existingSources, sourceModal?.id, sourceModal?.originalId]);
 
-  const selectedCatalog = availableSources.find(
-    (s) => s.id === Number(sourceModal.reportId),
-  );
+  const ownerEstablishment = sourceEstablishment || availableSources.find(s => s.id === reportId)?.establishment;
+  const fallbackUnit = ({"AME Votuporanga":"ame", "AME Jales":"ame-jales", "AME Santa Fé":"ame-santa-fe"} as Record<string,string>)[ownerEstablishment || ""] || "";
+  const filteredCatalog = useMemo(() => availableSources
+    .filter(s => showOtherUnits || !ownerEstablishment || !s.establishment || s.establishment === ownerEstablishment)
+    .sort((a, b) => Number(b.establishment === ownerEstablishment) - Number(a.establishment === ownerEstablishment) || (a.establishment || "").localeCompare(b.establishment || "", "pt-BR") || a.name.localeCompare(b.name, "pt-BR") || a.id - b.id), [availableSources, ownerEstablishment, showOtherUnits]);
+  useEffect(() => {
+    if (!sourceModal || sourceModal.type !== "report" || !sourceModal.reportId || availableSources.find(s => s.id === Number(sourceModal.reportId))?.available === false || schemaStatus !== "ready" || schemaReportId !== String(sourceModal.reportId)) return;
+    try {
+      const params = JSON.parse(sourceModal.parametersJson || "{}");
+      const draft = {id: sourceModal.id || "previa", type: "report" as const, report_id: Number(sourceModal.reportId), parameters: params};
+      const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), sourceModal.mode === "create", fallbackUnit);
+      collectTestParameters(fields, values);
+    } catch { return; }
+    const timer = window.setTimeout(() => previewAction.current(), 500);
+    return () => { clearTimeout(timer); testAbort.current?.abort(); };
+  }, [sourceModal?.type, sourceModal?.reportId, sourceModal?.dataset, sourceModal?.parametersJson, schemaStatus, schemaReportId, schema, unit, fallbackUnit]);
 
-  // Filter available catalog reports
-  const filteredCatalog = useMemo(() => {
-    if (!searchCatalog.trim()) return availableSources;
-    const term = searchCatalog.toLowerCase().trim();
-    return availableSources.filter(
-      (s) =>
-        s.name.toLowerCase().includes(term) ||
-        s.code.toLowerCase().includes(term),
-    );
-  }, [availableSources, searchCatalog]);
-
-  // Handle label change and auto slug
-  const handleLabelChange = (val: string) => {
-    const trimmed = val.slice(0, 60);
-    const updates: Partial<SourceDialogState> = { label: trimmed };
-    if (autoSlug && isCreate) {
-      const generated = slugifySourceName(trimmed);
-      if (generated) updates.id = generated;
-    }
-    onChange({ ...sourceModal, ...updates });
-  };
-
-  const handleIdChange = (val: string) => {
-    setAutoSlug(false);
-    onChange({ ...sourceModal, id: val });
-  };
-
-  // Switch source type
-  const handleTypeChange = (nextType: "report" | "inline" | "goals") => {
-    let nextId = sourceModal.id;
-    if (isCreate) {
-      if (nextType === "goals") nextId = "metas";
-      else if (nextType === "inline" && (!sourceModal.label || autoSlug)) nextId = "tabela_manual";
-    }
-    onChange({
-      ...sourceModal,
-      type: nextType,
-      id: nextId,
-      testPreview: null,
-      testError: null,
-      error: "",
-    });
-  };
-
-  // Parameters list management for "report" source
   const currentParamsMap = useMemo(() => {
     try {
-      const parsed = JSON.parse(sourceModal.parametersJson || "{}");
+      const parsed = JSON.parse(sourceModal?.parametersJson || "{}");
       return typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
     } catch {
       return {};
     }
-  }, [sourceModal.parametersJson]);
+  }, [sourceModal?.parametersJson]);
 
   // Combined parameters: from catalog schema + existing custom parameters
   const paramItems = useMemo<ParsedParamItem[]>(() => {
@@ -183,6 +176,58 @@ export default function SourceDialog({
     return items;
   }, [currentParamsMap]);
 
+  const inferredGridTypes = useMemo(() => {
+    return gridColumns.map((_, colIdx) => {
+      const colValues = gridRows.map((r) => r[colIdx]);
+      return inferColumnType(colValues);
+    });
+  }, [gridColumns, gridRows]);
+
+  if (!sourceModal) return null;
+
+  const isCreate = sourceModal.mode === "create";
+
+  const selectedCatalog = availableSources.find(
+    (s) => s.id === Number(sourceModal.reportId),
+  );
+
+
+  // Handle label change and auto slug
+  const handleLabelChange = (val: string) => {
+    const trimmed = val.slice(0, 60);
+    const updates: Partial<SourceDialogState> = { label: trimmed };
+    if (autoSlug && isCreate) {
+      const generated = slugifySourceName(trimmed);
+      if (generated) updates.id = generated;
+    }
+    onChange({ ...sourceModal, ...updates });
+  };
+
+  const handleIdChange = (val: string) => {
+    setAutoSlug(false);
+    onChange({ ...sourceModal, id: val });
+  };
+
+  // Switch source type
+  const handleTypeChange = (nextType: "report" | "inline" | "goals") => {
+    let nextId = sourceModal.id;
+    if (isCreate) {
+      if (nextType === "goals") nextId = "metas";
+      else if (nextType === "inline" && (!sourceModal.label || autoSlug)) nextId = "tabela_manual";
+    }
+    onChange({
+      ...sourceModal,
+      type: nextType,
+      id: nextId,
+      label: isCreate ? (nextType === "report" ? (selectedCatalog?.name.slice(0, 60) || "") : nextType === "goals" ? "Metas mensais" : "Tabela manual") : sourceModal.label,
+      testPreview: null,
+      testError: null,
+      error: "",
+    });
+  };
+
+  // Parameters list management for "report" source
+
   const updateParameterJson = (items: ParsedParamItem[]) => {
     const obj: Record<string, any> = {};
     for (const item of items) {
@@ -201,7 +246,7 @@ export default function SourceDialog({
         }
       }
     }
-    onChange({ ...sourceModal, parametersJson: JSON.stringify(obj, null, 2) });
+    onChange({ ...sourceModal, parametersJson: JSON.stringify(obj, null, 2), testPreview: null, testError: "Parâmetros alterados. Teste a fonte novamente." });
   };
 
   const handleAddParam = () => {
@@ -220,8 +265,11 @@ export default function SourceDialog({
   };
 
   const handleRemoveParam = (index: number) => {
-    const next = paramItems.filter((_, idx) => idx !== index);
-    updateParameterJson(next);
+    const item = paramItems[index];
+    if (!item || !window.confirm(`Remover o vínculo do parâmetro "${item.key}" desta fonte? A consulta pode passar a usar o valor padrão ou falhar. A alteração só será gravada ao salvar o relatório.`)) return;
+    const next = { ...currentParamsMap };
+    delete next[item.key];
+    onChange({ ...sourceModal, parametersJson: JSON.stringify(next, null, 2), testPreview: null, testError: "Parâmetros alterados. Teste a fonte novamente." });
   };
 
   const handleParamChange = (index: number, patch: Partial<ParsedParamItem>) => {
@@ -356,38 +404,53 @@ export default function SourceDialog({
 
   // Test and load preview
   const handleTestPreview = async () => {
+    if (selectedCatalog?.available === false) return;
+    testAbort.current?.abort();
+    const controller = new AbortController();
+    testAbort.current = controller;
+    performance.mark("canvas-teste-fonte-inicio");
     setTesting(true);
+    const testedSpec = latestPreviewSpec.current;
     onChange({ ...sourceModal, testError: null, testPreview: null });
     try {
-      const draft = constructDraftSource();
+      let draft = constructDraftSource();
+      if (draft.type === "report") {
+        const {fields, values} = previewParameters(draft, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit);
+        draft = {...draft, parameters: {...draft.parameters, ...collectTestParameters(fields, values)} as Extract<CanvasSource, {type: "report"}>["parameters"]};
+      }
       const preview = await fetchSourcePreviewRequest(
         reportId,
         unit,
         draft,
         {},
         10,
+        controller.signal,
       );
-      onChange({ ...sourceModal, testPreview: preview, testError: null });
+      if (testedSpec === latestPreviewSpec.current && currentModal.current) onChange({ ...currentModal.current, testPreview: preview, testError: null });
     } catch (err: any) {
-      const msg = err?.message || "Falha ao carregar prévia.";
-      onChange({ ...sourceModal, testError: msg, testPreview: null });
+      if (controller.signal.aborted) return;
+      const msg = friendlySourceError(err?.message || "Falha ao carregar prévia.", constructDraftSource(), selectedCatalog);
+      if (testedSpec === latestPreviewSpec.current && currentModal.current) onChange({ ...currentModal.current, testError: msg, testPreview: null });
     } finally {
-      setTesting(false);
+      if (testAbort.current === controller) {
+        performance.mark("canvas-teste-fonte-fim");
+        performance.measure("canvas-teste-fonte", "canvas-teste-fonte-inicio", "canvas-teste-fonte-fim");
+        setTesting(false);
+      }
     }
   };
 
+  previewAction.current = () => { void handleTestPreview(); };
+
+  const invalidDate = paramItems.some(param => !param.isBinding && isDateParameter(param.key, param.type) && param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)));
   const draftSource = constructDraftSource();
-  const inferredGridTypes = useMemo(() => {
-    return gridColumns.map((_, colIdx) => {
-      const colValues = gridRows.map((r) => r[colIdx]);
-      return inferColumnType(colValues);
-    });
-  }, [gridColumns, gridRows]);
+  const sourceColumns = selectedCatalog?.datasets?.find(d => d.id === (sourceModal.dataset || selectedCatalog.datasets?.[0]?.id))?.columns || selectedCatalog?.columns || [];
+  const columnLabels = sourceColumns.map(c => friendlyParameterName(c));
 
   return (
     <InlineDialog
       title={isCreate ? "Adicionar fonte de dados" : "Editar fonte de dados"}
-      subtitle="Fontes integradas ao relatório para alimentar tabelas, gráficos e KPIs"
+      subtitle="Escolha a origem e configure a fonte."
       className="cv-subdialog cv-root"
       onClose={onClose}
       footer={
@@ -399,91 +462,58 @@ export default function SourceDialog({
             type="button"
             className="cv-btn-compact"
             onClick={handleTestPreview}
-            disabled={testing || Boolean(idError)}
-            title="Executar consulta e verificar dados retornados"
+            disabled={testing || Boolean(idError) || invalidDate || (sourceModal.type === "goals" && !monthlyGoals.length) || (sourceModal.type === "report" && (!sourceModal.reportId || schemaStatus !== "ready"))}
+            title={sourceModal.type === "goals" && !monthlyGoals.length ? "Cadastre metas mensais antes de testar esta fonte." : "Executar consulta e verificar dados retornados"}
           >
             <RefreshCw size={12} className={testing ? "spin" : ""} />
-            {testing ? "Testando…" : "Testar e carregar prévia"}
+            {testing ? "Carregando…" : "Recarregar"}
           </button>
           <button
             type="submit"
             form={sourceFormId}
             className="cv-btn-compact primary"
-            disabled={Boolean(idError)}
+            disabled={Boolean(idError) || invalidDate || !sourceModal.label?.trim() || (sourceModal.type === "goals" && !monthlyGoals.length)}
+            title={!sourceModal.label?.trim() ? "Informe o nome da fonte." : sourceModal.type === "goals" && !monthlyGoals.length ? "Cadastre metas mensais antes de adicionar esta fonte." : undefined}
           >
-            {sourceModal.testError ? "Salvar sem testar" : "Salvar fonte"}
+            {isCreate ? "Adicionar" : "Salvar"}
           </button>
         </>
       }
     >
-      <form id={sourceFormId} className="cv-subform" onSubmit={onSubmit}>
+      <form id={sourceFormId} className="cv-subform" onSubmit={event => {
+        if (invalidDate || !sourceModal.label?.trim() || (sourceModal.type === "goals" && !monthlyGoals.length) || (sourceModal.type === "report" && (!selectedCatalog || schemaStatus !== "ready"))) {
+          event.preventDefault();
+          onChange({...sourceModal, error: !selectedCatalog && sourceModal.type === "report" ? "Escolha um relatório." : "Confira os campos obrigatórios antes de adicionar."});
+          event.currentTarget.querySelector<HTMLElement>(!selectedCatalog && sourceModal.type === "report" ? '[role=combobox]' : 'input[required]')?.focus();
+          return;
+        }
+        if (sourceModal.type === "report") {
+          try { const {fields, values} = previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit); collectTestParameters(fields, values); }
+          catch (error) { event.preventDefault(); onChange({...sourceModal, error: (error as Error).message}); event.currentTarget.querySelector<HTMLElement>('.cv-params-section input, .cv-params-section select')?.focus(); return; }
+        }
+        onSubmit(event);
+      }}>
         {sourceModal.error && (
           <p className="inline-error" role="alert">
             <AlertCircle size={14} />
-            {sourceModal.error}
+            {friendlySourceError(sourceModal.error, constructDraftSource(), selectedCatalog)}
           </p>
         )}
 
-        {/* 1. Nome amigável e Identificador técnico */}
-        <div className="cv-grid-2">
-          <label className="op-field">
-            <span>Nome da fonte</span>
-            <input
-              type="text"
-              maxLength={60}
-              placeholder="Ex.: Faturamento Mensal"
-              value={sourceModal.label || ""}
-              onChange={(e) => handleLabelChange(e.target.value)}
-              autoFocus
-            />
-          </label>
-
-          <label className="op-field">
-            <span style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Identificador técnico</span>
-              {!showAdvancedId && (
-                <button
-                  type="button"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--cv-accent)",
-                    cursor: "pointer",
-                    fontSize: "11px",
-                    padding: 0,
-                  }}
-                  onClick={() => setShowAdvancedId(true)}
-                >
-                  Editar id
-                </button>
-              )}
-            </span>
-            <input
-              type="text"
-              required
-              maxLength={50}
-              className="cv-font-mono"
-              placeholder="Ex.: faturamento_mensal"
-              value={sourceModal.id}
-              onChange={(e) => handleIdChange(e.target.value)}
-              disabled={!showAdvancedId && isCreate}
-            />
-            {idError && (
-              <span className="inline-error" style={{ fontSize: "11px", marginTop: "2px" }}>
-                {idError}
-              </span>
-            )}
-          </label>
-        </div>
-
         {/* 2. Tipo de Fonte (Segmented control) */}
         <div className="op-field">
-          <span>Tipo de dados</span>
-          <div className="cv-segmented" role="tablist">
+          <span>1. De onde vêm os dados?</span>
+          <div className="cv-segmented cv-source-tabs" role="tablist" aria-label="Origem dos dados" onKeyDown={e => {
+            const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=tab]"));
+            const index = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            const next = e.key === "ArrowRight" ? (index + 1) % tabs.length : e.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : -1;
+            if (next >= 0) { e.preventDefault(); tabs[next].focus(); }
+          }}>
             <button
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "report"}
+              tabIndex={sourceModal.type === "report" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "report" ? "active" : ""}`}
               onClick={() => handleTypeChange("report")}
             >
@@ -494,6 +524,7 @@ export default function SourceDialog({
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "inline"}
+              tabIndex={sourceModal.type === "inline" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "inline" ? "active" : ""}`}
               onClick={() => handleTypeChange("inline")}
             >
@@ -504,6 +535,7 @@ export default function SourceDialog({
               type="button"
               role="tab"
               aria-selected={sourceModal.type === "goals"}
+              tabIndex={sourceModal.type === "goals" ? 0 : -1}
               className={`cv-segmented-btn ${sourceModal.type === "goals" ? "active" : ""}`}
               onClick={() => handleTypeChange("goals")}
             >
@@ -513,54 +545,34 @@ export default function SourceDialog({
           </div>
         </div>
 
-        {/* 3. Conteúdo para Relatório Existente */}
+        {sourceModal.type === "report" && selectedCatalog && (
+          <p className="cv-source-sub" title={`${selectedCatalog.name}. ${columnLabels.join(", ")}`}>
+            Origem: {selectedCatalog.name}. {columnLabels.length ? `${columnLabels.length} colunas: ${columnLabels.slice(0, 3).join(", ")}${columnLabels.length > 3 ? ` e mais ${columnLabels.length - 3}` : ""}` : "A prévia será carregada ao preencher os parâmetros."}
+          </p>
+        )}
+
+        {sourceModal.type === "report" && selectedCatalog?.available === false && <p className="cv-source-sub" role="status">Esta fonte pertence à unidade {unit.toUpperCase()}, mas está em revisão e ainda não está disponível para uso. {friendlySourceError(selectedCatalog.unavailable_reason || "", constructDraftSource(), selectedCatalog)}</p>}
+        <h3>2. Escolha os dados</h3>
+        {/* Conteúdo para Relatório Existente */}
         {sourceModal.type === "report" && (
           <>
             <div className="cv-grid-2">
               <label className="op-field">
                 <span>Relatório cadastrado na unidade</span>
-                <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
-                  <div style={{ position: "relative", flex: 1 }}>
-                    <Search
-                      size={12}
-                      style={{
-                        position: "absolute",
-                        left: 8,
-                        top: 8,
-                        color: "var(--cv-text-3)",
-                      }}
-                    />
-                    <input
-                      type="search"
-                      placeholder="Buscar por nome ou código..."
-                      value={searchCatalog}
-                      onChange={(e) => setSearchCatalog(e.target.value)}
-                      style={{ paddingLeft: 26, height: "28px", fontSize: "12px", width: "100%" }}
-                    />
-                  </div>
-                </div>
-                <Select
-                  required
-                  value={sourceModal.reportId}
-                  onChange={(e) =>
-                    onChange({
-                      ...sourceModal,
-                      reportId: e.target.value,
-                      dataset: undefined,
-                      testPreview: null,
-                    })
-                  }
-                >
-                  <option value="">Selecione um relatório</option>
-                  {filteredCatalog.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} · {s.code}
-                    </option>
-                  ))}
+                <small>Unidade selecionada: {unit.toUpperCase()}. Este relatório foi classificado no estabelecimento {ownerEstablishment || "não identificado"} com base nos dados legados.</small>
+                <Select className="cv-report-select" aria-label="Relatório cadastrado na unidade" required value={sourceModal.reportId} onChange={e => {
+                  const chosen = availableSources.find(item => item.id === Number(e.target.value));
+                  onChange({...sourceModal, reportId: e.target.value, dataset: undefined,
+                    label: chosen && isCreate ? chosen.name.slice(0, 60) : sourceModal.label,
+                    parametersJson: "{}", testPreview: null, testError: null});
+                }}>
+                  <option value="">Escolha um relatório</option>
+                  {filteredCatalog.map(s => <option key={s.id} value={s.id} data-group={s.establishment === ownerEstablishment ? `Relatórios deste estabelecimento (${unit.toUpperCase()})` : "Relatórios de outros estabelecimentos"}>{s.name} · {s.establishment || "Unidade atual"} · ID {s.id}{s.available === false ? " · Em revisão" : ""}</option>)}
                 </Select>
               </label>
 
-              {!!selectedCatalog?.datasets?.length && (
+              <label className="op-field"><span><input type="checkbox" checked={showOtherUnits} onChange={e => setShowOtherUnits(e.target.checked)} /> Mostrar outros estabelecimentos</span></label>
+            {!!selectedCatalog?.datasets?.length && (
                 <label className="op-field">
                   <span>Conjunto de dados</span>
                   <Select
@@ -579,8 +591,23 @@ export default function SourceDialog({
               )}
             </div>
 
+            {sourceModal.reportId && schemaStatus === "loading" && <p role="status">Carregando opções do relatório…</p>}
+            {sourceModal.reportId && schemaStatus === "error" && <p role="alert">Não foi possível carregar as opções do relatório. Feche a janela e tente novamente.</p>}
+            {sourceModal.reportId && schemaStatus === "ready" && (() => {
+              const {fields, values} = previewParameters(constructDraftSource(), schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit);
+              return fields.length ? <div className="cv-params-section"><strong>Valores para a prévia</strong>
+                {fields.map(field => <label className="op-field" key={field.name}>
+                  <span>{field.label}{field.required !== false ? " * (obrigatório)" : " (opcional)"}</span>
+                  {field.required !== false && <small>Se ficar vazio, a consulta não poderá ser executada.</small>}
+                  {/^(?:wpa_)?(unit|unidade|unit_slug)$/i.test(field.name) && unit && field.options && !field.options.some(option => option.value === unit) && values[field.name] && <small>Usamos {unitOptionLabel(field.name, values[field.name], field.options.find(option => option.value === values[field.name])?.label || values[field.name])} porque a unidade {unit.toUpperCase()} não está disponível nesta fonte.</small>}
+                  {field.options ? <Select value={values[field.name] || ""} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: e.target.value}, null, 2), testPreview: null, testError: null})}>
+                    {!field.options.some(option => option.value === "") && <option value="">Selecione</option>}{field.options.map(option => <option key={option.value} value={option.value}>{unitOptionLabel(field.name, option.value, option.label)}</option>)}
+                  </Select> : <input value={values[field.name] || ""} placeholder={field.type === "date" ? "DD/MM/AAAA" : "Informe um valor"} onChange={e => onChange({...sourceModal, parametersJson: JSON.stringify({...currentParamsMap, [field.name]: field.type === "date" ? (parseFixedDate(e.target.value) || e.target.value) : e.target.value}, null, 2), testPreview: null, testError: null})} />}
+                </label>)}
+              </div> : <p className="cv-hint">Este relatório não exige valores adicionais.</p>;
+            })()}
             {/* Seção de Parâmetros */}
-            <div className="cv-params-section">
+            <details className="cv-params-section"><summary>Outras opções de parâmetros</summary>
               <div className="cv-params-head">
                 <span className="cv-params-title">Parâmetros da consulta</span>
                 <button
@@ -603,14 +630,15 @@ export default function SourceDialog({
                   {paramItems.map((param, idx) => (
                     <div key={idx} className="cv-param-card">
                       <div className="cv-param-row">
+                        <details><summary>{friendlyParameterName(param.key) || "Novo parâmetro"}</summary><label>Identificador técnico (avançado)
                         <input
                           type="text"
-                          placeholder="Nome (ex.: start)"
+                          placeholder="Identificador técnico"
                           value={param.key}
                           onChange={(e) => handleParamChange(idx, { key: e.target.value })}
                           className="cv-font-mono"
                           style={{ height: "28px", fontSize: "12px" }}
-                        />
+                        /></label></details>
 
                         {param.isBinding ? (
                           <Select
@@ -621,20 +649,23 @@ export default function SourceDialog({
                             <option value="">Selecione parâmetro atual</option>
                             {Object.keys(currentReportParameters).map((pKey) => (
                               <option key={pKey} value={pKey}>
-                                Parâmetro do relatório: {pKey}
+                                Parâmetro do relatório: {friendlyParameterName(pKey)}
                               </option>
                             ))}
                           </Select>
+                        ) : isDateParameter(param.key, param.type) ? (
+                          <div>
+                            <input type="text" inputMode="numeric" aria-label={`Valor de ${friendlyParameterName(param.key)}`}
+                              aria-invalid={param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue))}
+                              placeholder="DD/MM/AAAA" value={displayFixedDate(param.fixedValue)}
+                              onChange={(e) => { const masked = maskFixedDate(e.target.value); handleParamChange(idx, { fixedValue: parseFixedDate(masked) || masked }); }}
+                              style={{ height: "28px", fontSize: "12px" }} />
+                            {param.fixedValue !== "" && !parseFixedDate(displayFixedDate(param.fixedValue)) && <span className="inline-error" role="alert">Informe uma data válida no formato DD/MM/AAAA.</span>}
+                          </div>
                         ) : (
-                          <input
-                            type="text"
-                            placeholder="Valor fixo"
-                            value={param.fixedValue}
-                            onChange={(e) =>
-                              handleParamChange(idx, { fixedValue: e.target.value })
-                            }
-                            style={{ height: "28px", fontSize: "12px" }}
-                          />
+                          <input type="text" aria-label={`Valor de ${friendlyParameterName(param.key)}`} title="Valor fixo" placeholder="Valor fixo"
+                            value={friendlyParameterValue(param.key, param.fixedValue) === "—" ? "" : friendlyParameterValue(param.key, param.fixedValue)} onChange={(e) => handleParamChange(idx, { fixedValue: /^(unidade|unit)$/i.test(param.key) && e.target.value.toLowerCase() === "ame votuporanga" ? "ame" : param.key === "tipo_envio" && e.target.value === "Agendamento" ? "appointment" : e.target.value })}
+                            style={{ height: "28px", fontSize: "12px" }} />
                         )}
 
                         <button
@@ -672,7 +703,7 @@ export default function SourceDialog({
                   ))}
                 </div>
               )}
-            </div>
+            </details>
           </>
         )}
 
@@ -744,6 +775,7 @@ export default function SourceDialog({
                               style={{ width: 20, height: 20 }}
                               onClick={() => handleRemoveColumn(cIdx)}
                               title="Remover coluna"
+                              aria-label="Remover coluna"
                             >
                               <Trash2 size={11} />
                             </button>
@@ -787,6 +819,7 @@ export default function SourceDialog({
                             style={{ width: 20, height: 20 }}
                             onClick={() => handleRemoveRow(rIdx)}
                             title="Remover linha"
+                            aria-label="Remover linha"
                           >
                             <Trash2 size={11} />
                           </button>
@@ -807,8 +840,7 @@ export default function SourceDialog({
         {sourceModal.type === "goals" && (
           <div className="cv-table-editor">
             <p className="cv-hint" style={{ margin: "4px 0" }}>
-              Utiliza as metas mensais cadastradas neste relatório com as colunas fixas:{" "}
-              <code>year</code>, <code>month</code> e <code>value</code>.
+              Utiliza as metas mensais cadastradas neste relatório: ano, mês e valor.
             </p>
             {monthlyGoals.length > 0 ? (
               <div className="cv-table-editor-scroll" style={{ maxHeight: 160 }}>
@@ -833,13 +865,31 @@ export default function SourceDialog({
               </div>
             ) : (
               <p className="cv-hint" style={{ color: "var(--cv-warning)" }}>
-                Nenhuma meta cadastrada nas configurações do relatório.
+                Nenhuma meta cadastrada. Cadastre metas nas configurações do relatório para adicionar esta fonte.
               </p>
             )}
           </div>
         )}
 
-        {/* 6. Test Preview dentro do Diálogo */}
+        <h3>3. Nome da fonte e opções</h3>
+        <div className="cv-grid-2">
+          <label className="op-field">
+            <span>Nome da fonte</span>
+            <input
+              type="text"
+              required
+              maxLength={60}
+              placeholder="Ex.: Faturamento Mensal"
+              value={sourceModal.mode === "edit" && sourceModal.label ? friendlySourceName({...constructDraftSource(), label: sourceModal.label}, selectedCatalog) : sourceModal.label || ""}
+              onChange={(e) => handleLabelChange(e.target.value)}
+            />
+          </label>
+
+        </div>
+
+        {!sourceModal.label?.trim() && <p className="cv-hint">Informe o nome da fonte para adicionar.</p>}
+
+        {/* Prévia */}
         {testing && (
           <div className="cv-test-preview" style={{ textAlign: "center", padding: "16px" }}>
             <RefreshCw size={14} className="spin" style={{ marginRight: 6 }} />
@@ -848,9 +898,9 @@ export default function SourceDialog({
         )}
 
         {sourceModal.testError && (
-          <div className="cv-test-preview" style={{ borderColor: "var(--cv-danger-line)" }}>
-            <p className="inline-error" style={{ margin: 0 }}>
-              <AlertCircle size={14} />
+          <div className="cv-test-preview" style={{ borderColor: sourceModal.testError.startsWith("Parâmetros alterados.") ? "var(--cv-line)" : "var(--cv-danger-line)" }}>
+            <p className={sourceModal.testError.startsWith("Parâmetros alterados.") ? undefined : "inline-error"} style={{ margin: 0 }}>
+              <AlertCircle size={14} style={{ marginRight: 6, verticalAlign: "middle" }} />
               {sourceModal.testError}
             </p>
           </div>
@@ -861,13 +911,19 @@ export default function SourceDialog({
             <div className="cv-test-preview-head">
               <span>
                 <strong>Prévia confirmada:</strong> {sourceModal.testPreview.columns.length} colunas ·{" "}
-                {sourceModal.testPreview.rows.length} de {sourceModal.testPreview.total_rows} linhas{" "}
+                {formatRowCount(sourceModal.testPreview.rows.length, sourceModal.testPreview)}{" "}
                 {sourceModal.testPreview.elapsed_ms != null ? `(${sourceModal.testPreview.elapsed_ms} ms)` : ""}
               </span>
-              <span className="cv-chip ready">
+              {sourceModal.testPreview.rows.length ? <span className="cv-chip ready">
                 <Check size={10} /> Teste com sucesso
-              </span>
+              </span> : <span role="status">A consulta funcionou, mas não trouxe nenhuma linha para esses filtros. Confira unidade e período.</span>}
             </div>
+
+            {sourceModal.testPreview.effective_parameters != null && <div className="cv-applied-parameters">
+              <strong>Parâmetros aplicados:</strong>{" "}
+              {sourceModal.testPreview.effective_parameters.length ? sourceModal.testPreview.effective_parameters.map(p => `${friendlyParameterName(p.name)}: ${(previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label ? unitOptionLabel(p.name, String(p.value), previewParameters(draftSource, schema, currentReportParameters, unit, new Date(), isCreate, fallbackUnit).fields.find(f => f.name === p.name)?.options?.find(o => o.value === String(p.value))?.label || "") : friendlyParameterValue(p.name, p.value))}${p.default ? " (padrão)" : ""}`).join(" · ") : "Nenhum"}
+            </div>}
+            {sourceModal.type === "report" && sourceModal.testPreview.effective_parameters == null && <p>Os valores efetivos desta origem não estão disponíveis na prévia.</p>}
 
             <div style={{ overflowX: "auto", maxHeight: 180 }}>
               <table className="cv-preview-table">
@@ -876,8 +932,8 @@ export default function SourceDialog({
                     {sourceModal.testPreview.columns.map((col, idx) => (
                       <th key={idx}>
                         <div className="cv-table-th-content">
-                          <ColumnBadge type={col.type} looksLike={col.looks_like} />
-                          <span>{col.name}</span>
+                          <ColumnBadge type={col.type} looksLike={col.looks_like} estimated={col.estimated} />
+                          <span>{friendlyColumnName(col.name)}{col.estimated && <small> · tipo estimado</small>}</span>
                         </div>
                       </th>
                     ))}
@@ -888,7 +944,7 @@ export default function SourceDialog({
                     <tr key={rIdx}>
                       {sourceModal.testPreview!.columns.map((col, cIdx) => (
                         <td key={cIdx} className={col.type === "number" ? "cell-number" : ""}>
-                          {row[cIdx] === null || row[cIdx] === undefined ? "—" : String(row[cIdx])}
+                          {formatCellValue(row[cIdx], col.type)}
                         </td>
                       ))}
                     </tr>
@@ -901,7 +957,44 @@ export default function SourceDialog({
 
         {/* 7. Detalhes avançados (JSON somente leitura) */}
         <details className="cv-details-advanced">
-          <summary>Detalhes avançados (JSON da especificação)</summary>
+          <summary>Detalhes avançados</summary>
+          <label className="op-field">
+            <span style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Identificador técnico (avançado)</span>
+              {!showAdvancedId && (
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--cv-accent)",
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    padding: 0,
+                  }}
+                  onClick={() => setShowAdvancedId(true)}
+                >
+                  Editar id
+                </button>
+              )}
+            </span>
+            <input
+              type="text"
+              required={showAdvancedId}
+              maxLength={50}
+              className="cv-font-mono"
+              placeholder="Ex.: faturamento_mensal"
+              value={sourceModal.id || sourceModal.originalId || ""}
+              onChange={(e) => handleIdChange(e.target.value)}
+              readOnly={!showAdvancedId}
+            />
+            {idError && (
+              <span className="inline-error" style={{ fontSize: "11px", marginTop: "2px" }}>
+                {idError}
+              </span>
+            )}
+          </label>
+
           <pre className="cv-json-preview">{JSON.stringify(draftSource, null, 2)}</pre>
         </details>
       </form>

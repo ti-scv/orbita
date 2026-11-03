@@ -42,6 +42,7 @@ export interface DataFieldsProps {
   sources: CanvasSource[];
   availableSources?: readonly CatalogSqlSource[];
   monthlyGoals?: ReadonlyArray<{ year: number; month: number; value: number }>;
+  previewPeriod?: string;
   preview?: SourcePreview | null;
   previewLoading?: boolean;
   previewError?: string | null;
@@ -72,6 +73,7 @@ export default function DataFields({
   availableSources = [],
   monthlyGoals,
   preview = null,
+  previewPeriod = "",
   previewLoading = false,
   previewError = null,
   previewUnavailable = false,
@@ -431,7 +433,7 @@ export default function DataFields({
                   </>
                 ) : isSourceMissing ? (
                   <>
-                    <span className="cv-col-select-name">{block.source_id}</span>
+                    <span className="cv-col-select-name">Fonte indisponível</span>
                     <span className="cv-col-missing-tag">Ausente</span>
                   </>
                 ) : (
@@ -443,7 +445,7 @@ export default function DataFields({
           </div>
           {isSourceMissing && (
             <p id="insp-source-missing-err" className="cv-field-error" role="alert">
-              A fonte &ldquo;{block.source_id}&rdquo; foi removida. Escolha outra fonte.
+              A fonte selecionada foi removida. Escolha outra fonte.
             </p>
           )}
         </div>
@@ -474,7 +476,8 @@ export default function DataFields({
                       type="button"
                       role="option"
                       aria-selected={selected}
-                      className={`cv-col-option ${idx === activeIdx ? "is-active" : ""}`.trim()}
+                      className={`cv-col-option cv-source-option ${idx === activeIdx ? "is-active" : ""}`.trim()}
+                      title={`${opt.title} › ${opt.subtitle}`}
                       onMouseEnter={() => setActiveIdx(idx)}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleChooseSource(opt.id)}
@@ -483,11 +486,11 @@ export default function DataFields({
                         className="cv-col-option-left"
                         style={{ flexDirection: "column", alignItems: "flex-start", gap: "1px" }}
                       >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        <span className="cv-source-option-title">
                           {opt.source && <SourceTypeIcon type={opt.source.type} />}
-                          <span style={{ fontWeight: 500 }}>{opt.title}</span>
+                          <span className="cv-col-select-name" title={opt.title}>{opt.title}</span>
                         </span>
-                        <span className="cv-col-option-reason">{opt.subtitle}</span>
+                        <span className="cv-col-option-reason" title={opt.subtitle}>{opt.subtitle}</span>
                       </span>
                       {selected && <Check size={13} aria-hidden="true" />}
                     </button>
@@ -580,6 +583,7 @@ export default function DataFields({
               type="button"
               className="cv-lineage-btn"
               title={`${lineageText} — Clique para abrir os dados`}
+              aria-label={`${lineageText} — Abrir dados`}
               onClick={() => {
                 setDrawerOpen(true);
                 if (!rowsMeta.hasRows && !previewLoading && !previewUnavailable && onLoadPreview) {
@@ -656,14 +660,15 @@ export default function DataFields({
             ) : undefined
           }
         >
+          {preview && <p className="cv-field-hint">Prévia · {preview.rows.length} linhas{previewPeriod ? ` · período ${previewPeriod}` : ""}</p>}
           {rowsMeta.hasRows && miniPreviewCols.length > 0 ? (
             <>
-              <div className="cv-mini-preview-wrap">
+              <div className="cv-mini-preview-wrap" tabIndex={0} role="region" aria-label="Amostra da fonte">
                 <table className="cv-mini-preview-table" aria-label="Mini-prévia das colunas">
                   <thead>
                     <tr>
                       {miniPreviewCols.map((col) => (
-                        <th key={col.name}>
+                        <th scope="col" key={col.name}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             <ColumnBadge type={col.type} looksLike={col.looks_like} />
                             <span>{col.name}</span>

@@ -3,7 +3,14 @@ import type { FormEvent } from "react";
 import { query, request } from "../api";
 import type { Paginated, Unit } from "../types";
 import FormAction from "./FormAction";
-import { Building2, Trash2, Upload } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  ClipboardList,
+  MessageSquare,
+  Pause,
+  Upload,
+} from "lucide-react";
 
 type UnitRow = Unit & { timezone: string; version: number };
 
@@ -20,26 +27,19 @@ function processImage(file: File): Promise<string> {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 512;
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
+        const size = 512;
+        const side = Math.min(img.width, img.height);
+        const sx = Math.round((img.width - side) / 2);
+        const sy = Math.round((img.height - side) / 2);
         const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           resolve(String(reader.result || ""));
           return;
         }
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
         resolve(canvas.toDataURL("image/webp", 0.92));
       };
       img.onerror = () => resolve(String(reader.result || ""));
@@ -64,11 +64,11 @@ function UnitLogoUploader({
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) {
-      setUploadError("Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WEBP).");
+      setUploadError("Selecione um arquivo de imagem válido (PNG, JPG, SVG, WEBP).");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError("O arquivo de imagem excede o limite máximo de 5 MB.");
+      setUploadError("A imagem excede o limite máximo de 5 MB.");
       return;
     }
     setUploadError("");
@@ -76,18 +76,19 @@ function UnitLogoUploader({
       const dataUrl = await processImage(file);
       setLogo(dataUrl);
     } catch {
-      setUploadError("Não foi possível carregar a imagem selecionada.");
+      setUploadError("Não foi possível carregar a imagem.");
     }
   };
 
-  const clearLogo = () => {
+  const clearLogo = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setLogo("");
     setUploadError("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <div className="unit-logo-uploader-card">
+    <div className="unit-logo-compact-wrapper">
       <input type="hidden" name="logo" value={logo} />
       <input
         ref={fileInputRef}
@@ -99,79 +100,67 @@ function UnitLogoUploader({
           if (f) void handleFile(f);
         }}
       />
-      <div className="unit-logo-preview-row">
-        <div
-          className={`unit-logo-majestic-avatar ${dragOver ? "drag-over" : ""} ${logo ? "has-image" : ""}`}
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => {
+      <div
+        className={`unit-logo-avatar-box ${dragOver ? "drag-over" : ""} ${logo ? "has-image" : ""}`}
+        onClick={() => fileInputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files?.[0]) void handleFile(e.dataTransfer.files[0]);
+        }}
+        title="Clique para alterar a logo"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            if (e.dataTransfer.files?.[0]) void handleFile(e.dataTransfer.files[0]);
-          }}
-          title="Clique ou arraste uma imagem para carregar a logo"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              fileInputRef.current?.click();
-            }
-          }}
-        >
-          {logo ? (
-            <img src={logo} alt={unitName ? `Logo de ${unitName}` : "Logo"} className="unit-logo-preview-img" />
-          ) : (
-            <div className="unit-logo-placeholder">
-              <Building2 size={26} className="unit-placeholder-icon" />
-              <span className="unit-placeholder-text">Logo</span>
-            </div>
-          )}
-          <div className="unit-logo-hover-badge">
-            <Upload size={14} />
+            fileInputRef.current?.click();
+          }
+        }}
+      >
+        {logo ? (
+          <img
+            src={logo}
+            alt={unitName ? `Logo de ${unitName}` : "Logo"}
+            className="unit-logo-avatar-img"
+          />
+        ) : (
+          <div className="unit-logo-placeholder">
+            <Building2 size={24} />
+            <span>Logo</span>
           </div>
-        </div>
-
-        <div className="unit-logo-info">
-          <div className="unit-logo-info-title">
-            <span>Identidade Visual da Unidade</span>
-            {logo && <span className="unit-logo-active-tag">Logo ativa</span>}
-          </div>
-          <div className="unit-logo-info-hint">
-            Exibida com destaque na barra lateral, seletor de unidades e listagens.
-          </div>
-          <div className="unit-logo-btn-row">
-            <button
-              type="button"
-              className="button unit-logo-action-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={13} />
-              <span>{logo ? "Alterar logo" : "Carregar logo"}</span>
-            </button>
-            {logo && (
-              <button
-                type="button"
-                className="button unit-logo-remove-btn"
-                onClick={clearLogo}
-                title="Remover logo personalizada e voltar ao ícone padrão"
-              >
-                <Trash2 size={13} />
-                <span>Remover</span>
-              </button>
-            )}
-          </div>
+        )}
+        <div className="unit-logo-avatar-hover">
+          <Upload size={14} />
         </div>
       </div>
-      {uploadError && (
-        <p className="inline-error" style={{ margin: "8px 0 0" }}>
-          {uploadError}
-        </p>
-      )}
+      <div className="unit-logo-compact-actions">
+        <button
+          type="button"
+          className="unit-logo-link-btn"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {logo ? "Alterar" : "Adicionar"}
+        </button>
+        {logo && (
+          <>
+            <span className="unit-logo-action-sep">·</span>
+            <button
+              type="button"
+              className="unit-logo-link-btn danger"
+              onClick={clearLogo}
+            >
+              Remover
+            </button>
+          </>
+        )}
+      </div>
+      {uploadError && <p className="inline-error">{uploadError}</p>}
     </div>
   );
 }
@@ -228,6 +217,7 @@ export default function UnitDirectory({
     try {
       await request(query("units", { unit }), "POST", values);
       setRevision((v) => v + 1);
+      window.dispatchEvent(new Event("session-refresh"));
       if (onChanged) await onChanged();
       else window.location.reload();
     } catch (e) {
@@ -243,18 +233,22 @@ export default function UnitDirectory({
     setBusy(true);
     setError("");
     try {
-      await request(query(`units/${row.id}/configure`, { unit }), "POST", {
+      await request(query(`units/${row.id}/configure`, { unit: row.slug }), "POST", {
         version: row.version,
         name: values.get("name"),
         timezone: values.get("timezone"),
         response_hours: Number(values.get("response_hours")),
         paused: values.get("paused") === "on",
+        checkin_enabled: values.get("checkin_enabled") === "on",
+        autoagenda_enabled: values.get("autoagenda_enabled") === "on",
+        surveys_enabled: values.get("surveys_enabled") === "on",
         authorized_recipients: String(values.get("authorized_recipients") || "")
           .split(/[\s,;]+/)
           .filter(Boolean),
         logo: String(values.get("logo") || ""),
       });
       setRevision((v) => v + 1);
+      window.dispatchEvent(new Event("session-refresh"));
       await onChanged?.();
     } catch (e) {
       setError((e as Error).message);
@@ -281,41 +275,45 @@ export default function UnitDirectory({
               version={revision}
               busy={busy}
               error={error}
+              className="unit-modal-dialog"
             >
               <form className="op-form unit-form" onSubmit={create}>
-                <UnitLogoUploader unitName="Nova Unidade" />
-
-                <div className="unit-form-grid">
-                  <label className="op-field unit-field-full">
-                    <span>Nome</span>
-                    <input
-                      name="name"
-                      required
-                      maxLength={150}
-                      autoComplete="off"
-                      placeholder="Ex.: Unidade Central"
-                    />
-                  </label>
-                  <label className="op-field">
-                    <span>Identificador</span>
-                    <input
-                      name="slug"
-                      required
-                      maxLength={50}
-                      pattern="[a-z0-9-]+"
-                      autoComplete="off"
-                      placeholder="ex.: central"
-                    />
-                  </label>
-                  <label className="op-field">
-                    <span>Fuso horário</span>
-                    <input
-                      name="timezone"
-                      required
-                      defaultValue="America/Sao_Paulo"
-                      placeholder="Ex.: America/Sao_Paulo"
-                    />
-                  </label>
+                <div className="unit-modal-identity-row">
+                  <UnitLogoUploader unitName="Nova Unidade" />
+                  <div className="unit-modal-identity-fields">
+                    <label className="op-field unit-field-full">
+                      <span>Nome da unidade</span>
+                      <input
+                        name="name"
+                        required
+                        maxLength={150}
+                        autoComplete="off"
+                        placeholder="Ex.: Unidade Central"
+                      />
+                    </label>
+                    <div className="unit-modal-duo-fields">
+                      <label className="op-field">
+                        <span>Identificador (slug)</span>
+                        <input
+                          name="slug"
+                          required
+                          maxLength={50}
+                          pattern="[a-z0-9-]+"
+                          autoComplete="off"
+                          placeholder="ex.: central"
+                        />
+                      </label>
+                      <label className="op-field">
+                        <span>Fuso horário</span>
+                        <input
+                          name="timezone"
+                          required
+                          defaultValue="America/Sao_Paulo"
+                          placeholder="America/Sao_Paulo"
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
                 <button type="submit" className="button primary">
                   Criar unidade
@@ -384,67 +382,164 @@ export default function UnitDirectory({
                   <td className="unit-col-actions">
                     {editable && (
                       <FormAction
-                        title={`Editar ${row.name}`}
+                        key={`${row.id}:${row.version}`}
+                        title={`Configurar ${row.name}`}
                         label="Editar"
                         version={revision}
                         busy={busy}
                         error={error}
+                        className="unit-modal-dialog"
                       >
                         <form
                           className="op-form unit-form"
                           onSubmit={(e) => void configure(e, row)}
                         >
-                          <UnitLogoUploader initialLogo={row.logo || ""} unitName={row.name} />
+                          <div className="unit-modal-identity-row">
+                            <UnitLogoUploader initialLogo={row.logo || ""} unitName={row.name} />
+                            <div className="unit-modal-identity-fields">
+                              <label className="op-field unit-field-full">
+                                <span>Nome da unidade</span>
+                                <input
+                                  name="name"
+                                  required
+                                  maxLength={150}
+                                  defaultValue={row.name}
+                                  placeholder="Nome da unidade"
+                                />
+                              </label>
+                              <div className="unit-modal-duo-fields">
+                                <label className="op-field">
+                                  <span>Fuso horário</span>
+                                  <input
+                                    name="timezone"
+                                    required
+                                    defaultValue={row.timezone}
+                                    placeholder="America/Sao_Paulo"
+                                  />
+                                </label>
+                                <label className="op-field">
+                                  <span>Prazo de resposta (horas)</span>
+                                  <input
+                                    name="response_hours"
+                                    type="number"
+                                    required
+                                    min={1}
+                                    max={168}
+                                    defaultValue={row.response_hours}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>
 
-                          <div className="unit-form-grid">
-                            <label className="op-field unit-field-full">
-                              <span>Nome</span>
-                              <input
-                                name="name"
-                                required
-                                maxLength={150}
-                                defaultValue={row.name}
-                              />
+                          <div className="unit-form-section">
+                            <div className="unit-section-header">
+                              <span className="unit-section-title">Módulos da Unidade</span>
+                              <span className="unit-section-desc">Ative ou desative os serviços disponíveis</span>
+                            </div>
+                            <div className="unit-modules-grid">
+                              <label className="unit-module-card">
+                                <div className="unit-module-header">
+                                  <div className="unit-module-header-left">
+                                    <CheckCircle2 size={16} className="unit-module-icon" />
+                                    <span className="unit-module-title">Check-in</span>
+                                  </div>
+                                  <div className="unit-toggle-switch">
+                                    <input
+                                      className="unit-toggle-input"
+                                      role="switch"
+                                      name="checkin_enabled"
+                                      type="checkbox"
+                                      defaultChecked={row.checkin_enabled}
+                                    />
+                                    <span className="unit-toggle-slider" />
+                                  </div>
+                                </div>
+                                <p className="unit-module-desc">Confirmações e presença</p>
+                              </label>
+
+                              <label className="unit-module-card">
+                                <div className="unit-module-header">
+                                  <div className="unit-module-header-left">
+                                    <MessageSquare size={16} className="unit-module-icon" />
+                                    <span className="unit-module-title">Autoagendamento</span>
+                                  </div>
+                                  <div className="unit-toggle-switch">
+                                    <input
+                                      className="unit-toggle-input"
+                                      role="switch"
+                                      name="autoagenda_enabled"
+                                      type="checkbox"
+                                      defaultChecked={row.autoagenda_enabled}
+                                    />
+                                    <span className="unit-toggle-slider" />
+                                  </div>
+                                </div>
+                                <p className="unit-module-desc">Atendimento via chat</p>
+                              </label>
+
+                              <label className="unit-module-card">
+                                <div className="unit-module-header">
+                                  <div className="unit-module-header-left">
+                                    <ClipboardList size={16} className="unit-module-icon" />
+                                    <span className="unit-module-title">Pesquisas</span>
+                                  </div>
+                                  <div className="unit-toggle-switch">
+                                    <input
+                                      className="unit-toggle-input"
+                                      role="switch"
+                                      name="surveys_enabled"
+                                      type="checkbox"
+                                      defaultChecked={row.surveys_enabled}
+                                    />
+                                    <span className="unit-toggle-slider" />
+                                  </div>
+                                </div>
+                                <p className="unit-module-desc">Satisfação pós-atendimento</p>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="unit-form-section">
+                            <div className="unit-section-header">
+                              <span className="unit-section-title">Operação e Envios</span>
+                            </div>
+
+                            <label className="unit-pause-banner">
+                              <div className="unit-pause-info">
+                                <div className="unit-pause-title-row">
+                                  <Pause size={16} className="unit-pause-icon" />
+                                  <span className="unit-pause-title">Pausar envios da unidade</span>
+                                </div>
+                                <span className="unit-pause-desc">
+                                  Suspende temporariamente as mensagens automáticas
+                                </span>
+                              </div>
+                              <div className="unit-toggle-switch">
+                                <input
+                                  className="unit-toggle-input"
+                                  role="switch"
+                                  name="paused"
+                                  type="checkbox"
+                                  defaultChecked={row.paused}
+                                />
+                                <span className="unit-toggle-slider" />
+                              </div>
                             </label>
-                            <label className="op-field">
-                              <span>Fuso horário</span>
-                              <input
-                                name="timezone"
-                                required
-                                defaultValue={row.timezone}
-                              />
-                            </label>
-                            <label className="op-field">
-                              <span>Prazo de resposta (horas)</span>
-                              <input
-                                name="response_hours"
-                                type="number"
-                                required
-                                min={1}
-                                max={168}
-                                defaultValue={row.response_hours}
+
+                            <label className="op-field unit-test-recipients-field">
+                              <span>Destinatários autorizados para teste</span>
+                              <textarea
+                                name="authorized_recipients"
+                                defaultValue={
+                                  row.effective_recipients?.join("\n") || ""
+                                }
+                                rows={2}
+                                placeholder="5517992714448 (separados por vírgula ou uma linha por número)"
                               />
                             </label>
                           </div>
-                          <label className="checkbox-label unit-checkbox-label">
-                            <input
-                              name="paused"
-                              type="checkbox"
-                              defaultChecked={row.paused}
-                            />
-                            <span>Envios pausados</span>
-                          </label>
-                          <label className="op-field unit-field-full">
-                            <span>Destinatários autorizados para teste</span>
-                            <textarea
-                              name="authorized_recipients"
-                              defaultValue={
-                                row.effective_recipients?.join("\n") || ""
-                              }
-                              rows={4}
-                              placeholder="Insira um destinatário por linha ou separados por vírgula"
-                            />
-                          </label>
+
                           <button
                             type="submit"
                             className="button primary"
