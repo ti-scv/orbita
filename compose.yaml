@@ -65,7 +65,7 @@ services:
     env_file: .env
     volumes: ["./data/report_sources:/app/report_sources:ro", "./files:/app/files:ro"]
     environment: *backend_environment
-    command: ["celery", "-A", "config", "beat", "--loglevel=warning", "--schedule=/tmp/celerybeat-schedule"]
+    command: ["celery", "-A", "config", "beat", "--loglevel=warning", "--scheduler=django_celery_beat.schedulers:DatabaseScheduler"]
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped

@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "operations",
     "autoagenda",
     "surveys",
+    "django_celery_beat",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -143,6 +144,7 @@ CELERY_TASK_IGNORE_RESULT = True
 ASYNC_TASKS = bool(os.getenv("REDIS_URL"))
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TASK_DEFAULT_QUEUE = "priority"
 CELERY_TASK_ROUTES = {
     # Fila prioritária: disparo de WhatsApp, regras operacionais e crons de alta frequência
