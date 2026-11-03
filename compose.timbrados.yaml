@@ -1,0 +1,29 @@
+services:
+  api:
+    image: orbita-api:timbrados-20261103
+    environment:
+      CHECKIN_SCHEDULER_ENABLED: "1"
+      CHECKIN_ORACLE_SCHEDULER_ENABLED: "1"
+  autoagenda-api:
+    image: orbita-api:timbrados-20261103
+  worker:
+    image: orbita-api:timbrados-20261103
+    environment:
+      CHECKIN_SCHEDULER_ENABLED: "1"
+      CHECKIN_ORACLE_SCHEDULER_ENABLED: "1"
+  worker-reports:
+    image: orbita-api:timbrados-20261103
+  scheduler:
+    image: orbita-api:timbrados-20261103
+    command: ["celery", "-A", "config", "beat", "--loglevel=warning", "--scheduler=django_celery_beat.schedulers:DatabaseScheduler"]
+    environment:
+      CHECKIN_SCHEDULER_ENABLED: "1"
+      CHECKIN_ORACLE_SCHEDULER_ENABLED: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; assert b'beat' in Path('/proc/1/cmdline').read_bytes(); import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE','config.settings'); import django; django.setup(); from django.db import connection; connection.ensure_connection()"]
+      interval: 60s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+  panel:
+    image: orbita-panel:timbrados-20261103

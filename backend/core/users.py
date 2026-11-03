@@ -20,7 +20,7 @@ from core.access import (
     role_permissions,
     validate_permissions,
 )
-from core.models import Audit, Membership, RemoteInstance, RemoteMembership, Unit, UserAccessProfile
+from core.models import Audit, Membership, PermissionRole, RemoteInstance, RemoteMembership, SyncedUserIdentity, Unit, UserAccessProfile
 from core.permissions import get_unit
 
 
@@ -28,7 +28,7 @@ def scope_options(user):
     units = Unit.objects.all() if user.is_superuser else Unit.objects.filter(membership__user=user)
     options = []
     for unit in units.order_by("name"):
-        level = local_permissions(user, unit)["users"]
+        level = local_permissions(user, unit)["settings"]
         if level == "none":
             continue
         options.append(
@@ -48,6 +48,7 @@ def scope_options(user):
                     "name": remote.remote_unit.get("name", remote.name),
                     "remote": True,
                     "instance_name": remote.name,
+                    "local_unit": unit.slug,
                     "enabled": remote.enabled,
                     "editable": level == "write",
                     "max_role": remote.remote_role,
@@ -61,11 +62,32 @@ def scope_options(user):
     return options
 
 
+def template_policy(role, template):
+    levels = template.permissions
+    overrides = {section: "none" for section in SECTIONS}
+    overrides.update({
+        "overview": levels.get("overview", levels["messages"]), "messages": levels["messages"],
+        "groups": levels.get("groups", levels["messages"]), "issues": levels.get("issues", levels["messages"]),
+        "settings": levels["settings"], "reports": levels["reports"],
+        "reportWhatsApp": levels["reportWhatsApp"],
+    })
+    return role_permissions(role, overrides)
+
+
+def role_output(membership):
+    template = membership.permission_role
+    return {
+        "permission_role": {"id": template.pk, "name": template.name} if template else None,
+        "permission_role_outdated": bool(template and
+            role_permissions(membership.role, membership.permissions) != template_policy(membership.role, template)),
+    }
+
+
 def user_output(user, options, actor):
     available = {o["slug"]: o for o in options}
     grants = []
     outside = False
-    for membership in Membership.objects.filter(user=user).select_related("unit"):
+    for membership in Membership.objects.filter(user=user).select_related("unit", "permission_role"):
         slug = membership.unit.slug
         if slug not in available:
             outside = True
@@ -77,6 +99,7 @@ def user_output(user, options, actor):
                 "unit": slug,
                 "role": membership.role,
                 "permissions": role_permissions(membership.role, membership.permissions),
+                **role_output(membership),
             }
         )
     for membership in RemoteMembership.objects.filter(user=user).select_related("connection"):
@@ -91,6 +114,7 @@ def user_output(user, options, actor):
                 "unit": slug,
                 "role": membership.role,
                 "permissions": role_permissions(membership.role, membership.permissions),
+                "permission_role": None, "permission_role_outdated": False,
             }
         )
     profile = UserAccessProfile.objects.filter(user=user).first()
@@ -105,7 +129,8 @@ def user_output(user, options, actor):
                 )
                 role, policy = remote_access(user, connection)
                 if role:
-                    grants.append({"unit": option["slug"], "role": role, "permissions": policy})
+                    grants.append({"unit": option["slug"], "role": role, "permissions": policy,
+                                   "permission_role": None, "permission_role_outdated": False})
     editable = user.pk != actor.pk and not user.is_superuser and any(o["editable"] for o in options)
     return {
         "id": user.pk,
@@ -125,6 +150,7 @@ class GrantInput(serializers.Serializer):
     unit = serializers.CharField(max_length=100)
     role = serializers.ChoiceField(choices=Membership.Role.choices)
     permissions = serializers.JSONField(default=dict, validators=[validate_permissions])
+    permission_role = serializers.IntegerField(required=False, allow_null=True, min_value=1)
 
 
 class UserInput(serializers.Serializer):
@@ -136,13 +162,21 @@ class UserInput(serializers.Serializer):
     grants = GrantInput(many=True)
 
 
+class GrantOutput(serializers.Serializer):
+    unit = serializers.CharField()
+    role = serializers.CharField()
+    permissions = serializers.JSONField()
+    permission_role = serializers.JSONField(allow_null=True)
+    permission_role_outdated = serializers.BooleanField()
+
+
 class UserOutput(serializers.Serializer):
     id = serializers.IntegerField()
     username = serializers.CharField()
     full_name = serializers.CharField()
     active = serializers.BooleanField()
     version = serializers.IntegerField()
-    grants = GrantInput(many=True)
+    grants = GrantOutput(many=True)
     editable = serializers.BooleanField()
     global_editable = serializers.BooleanField()
     has_other_units = serializers.BooleanField()
@@ -191,6 +225,65 @@ class UserViewSet(viewsets.GenericViewSet):
         get_unit(request)
         return Response({"units": scope_options(request.user), "sections": SECTIONS})
 
+    @action(detail=False, methods=["get"], url_path="synced")
+    def synced(self, request):
+        anchor = get_unit(request, ["admin"])
+        identities = SyncedUserIdentity.objects.filter(connection__local_unit=anchor).select_related("connection").order_by("login", "id")
+        return Response([{"id": item.pk, "connection": str(item.connection_id),
+                          "unit": item.connection.remote_unit.get("name") or item.connection.name, "remote_user_id": item.remote_user_id,
+                          "login": item.login, "name": item.name, "email": item.email,
+                          "state": item.state, "removed_at_origin": item.removed_at_origin,
+                          "user_id": item.user_id, "existing_user": (get_user_model().objects.filter(username=item.login).values("username", "first_name").first() if item.state == SyncedUserIdentity.State.CONFLICT else None), "last_synced_at": item.last_synced_at}
+                         for item in identities])
+
+    @action(detail=True, methods=["post"], url_path="resolve-sync-conflict")
+    def resolve_sync_conflict(self, request, pk=None):
+        anchor = get_unit(request, ["admin"])
+        decision = request.data.get("decision", "separate")
+        if decision not in ("separate", "pending"):
+            raise ValidationError("Decisão inválida.")
+        login = request.data.get("username", "")
+        if decision == "separate":
+            login = serializers.RegexField(r"^[\w.@+-]{3,150}$").run_validation(login)
+        with transaction.atomic():
+            item = get_object_or_404(SyncedUserIdentity.objects.select_for_update(),
+                                     pk=pk, connection__local_unit=anchor)
+            if item.state != SyncedUserIdentity.State.CONFLICT or item.removed_at_origin:
+                raise ValidationError("O conflito não está disponível para decisão.")
+            if decision == "pending":
+                Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_deferred", object_id=str(item.pk), details={"login": item.login, "unit": item.connection.remote_unit.get("name") or item.connection.name, "decision": "pending"})
+                return Response({"id": item.pk, "state": item.state})
+            if get_user_model().objects.filter(username=login).exists():
+                raise ValidationError("Login indisponível.")
+            user = get_user_model()(username=login, first_name=item.name, email=item.email, is_active=False)
+            user.set_unusable_password()
+            user.save()
+            UserAccessProfile.objects.create(user=user, managing_unit=anchor, explicit_units=True)
+            item.user, item.state = user, SyncedUserIdentity.State.PENDING
+            item.save(update_fields=["user", "state"])
+            Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.conflict_resolved",
+                                 object_id=str(item.pk), details={"user_id": user.pk, "login": item.login, "new_login": user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name, "decision": "separate"})
+        return Response({"id": item.pk, "user_id": user.pk, "state": item.state})
+
+    @action(detail=True, methods=["post"], url_path="release-synced")
+    def release_synced(self, request, pk=None):
+        anchor = get_unit(request, ["admin"])
+        with transaction.atomic():
+            item = get_object_or_404(SyncedUserIdentity.objects.select_for_update(),
+                                     pk=pk, connection__local_unit=anchor)
+            if item.state != SyncedUserIdentity.State.PENDING or item.removed_at_origin or not item.user_id:
+                raise ValidationError("Usuário não está disponível para liberação.")
+            if not request.data.get("password") or not request.data.get("active") or not request.data.get("grants"):
+                raise ValidationError("Informe senha, acesso ativo e ao menos uma unidade.")
+            self._releasing_synced = item.user_id
+            result = self.configure_user(request, str(item.user_id))
+            access_audit = Audit.objects.filter(unit=anchor, actor=request.user, action="user.access_configured", object_id=str(item.user_id)).order_by("-pk").first()
+            item.state = SyncedUserIdentity.State.RELEASED
+            item.save(update_fields=["state"])
+            Audit.objects.create(unit=anchor, actor=request.user, action="user_sync.released",
+                                 object_id=str(item.pk), details={"user_id": item.user_id, "login": item.user.username, "unit": item.connection.remote_unit.get("name") or item.connection.name, "access": (access_audit.details or {}).get("access", []) if access_audit else []})
+            return result
+
     @extend_schema(request=UserInput, responses=UserOutput)
     def create(self, request):
         return self.configure_user(request)
@@ -210,14 +303,42 @@ class UserViewSet(viewsets.GenericViewSet):
         grants = data["grants"]
         if len(grants) > 200 or len({g["unit"] for g in grants}) != len(grants):
             raise ValidationError("Selecione unidades únicas; limite de 200 acessos por operação.")
+        limitations = []
         for grant in grants:
             if grant["unit"] not in writable:
                 raise PermissionDenied("Você não pode conceder ou alterar acesso nesta unidade.")
             option = writable[grant["unit"]]
+            role_id = grant.get("permission_role")
+            if role_id is not None:
+                if option["remote"]:
+                    raise ValidationError("Tipos de acesso só podem ser aplicados à unidade local.")
+                template = PermissionRole.objects.filter(pk=role_id, unit__slug=grant["unit"]).first()
+                if not template:
+                    raise ValidationError("Tipo de acesso não encontrado nesta unidade.")
+                levels = template.permissions
+                grant["permissions"] = {
+                    "overview": levels.get("overview", levels["messages"]), "messages": levels["messages"],
+                    "groups": levels.get("groups", levels["messages"]), "issues": levels.get("issues", levels["messages"]),
+                    "settings": levels["settings"], "reports": levels["reports"],
+                    "reportWhatsApp": levels["reportWhatsApp"],
+                }
             from core.federation_auth import RANK
 
+            if option["remote"]:
+                changes = []
+                if RANK[grant["role"]] > RANK[option["max_role"]]:
+                    grant["role"] = option["max_role"]
+                    changes.append("perfil")
+                role_ceiling = role_permissions(grant["role"], {"reportWhatsApp": "write"})
+                for section, level in grant["permissions"].items():
+                    ceiling = min(option["permissions"].get(section, "none"), role_ceiling[section], key=lambda v: LEVELS[v])
+                    if LEVELS[level] > LEVELS[ceiling]:
+                        grant["permissions"][section] = ceiling
+                        changes.append(SECTIONS[section])
+                if changes:
+                    limitations.append({"unit": option["name"], "sections": changes})
             if RANK[grant["role"]] > RANK[option["max_role"]]:
-                raise ValidationError("O perfil excede a permissão da conexão remota.")
+                raise ValidationError(f"O perfil excede a permissão disponível na unidade {option['name']}.")
             policy = role_permissions(
                 grant["role"], {**{section: "none" for section in SECTIONS}, **grant["permissions"]}
             )
@@ -229,7 +350,7 @@ class UserViewSet(viewsets.GenericViewSet):
                         "Edição administrativa exige perfil Administrativo; Consulta não permite edição."
                     )
                 if LEVELS[level] > LEVELS[option["permissions"].get(section, "none")]:
-                    raise ValidationError("A seção excede as permissões disponíveis na unidade remota.")
+                    raise ValidationError(f"A seção {SECTIONS[section]} excede as permissões disponíveis na unidade {option['name']}.")
             grant["permissions"] = policy
         if data.get("password"):
             try:
@@ -241,6 +362,11 @@ class UserViewSet(viewsets.GenericViewSet):
             if pk:
                 target = get_object_or_404(self.scoped_users(request, options), pk=pk)
                 user = get_user_model().objects.select_for_update().get(pk=target.pk)
+                identity = SyncedUserIdentity.objects.filter(user=user).first()
+                if identity and (identity.removed_at_origin or
+                                 (identity.state != SyncedUserIdentity.State.RELEASED and
+                                  getattr(self, "_releasing_synced", None) != user.pk)):
+                    raise PermissionDenied("Identidade pendente ou removida na origem.")
                 if user.pk == request.user.pk or user.is_superuser:
                     raise PermissionDenied("Esta conta administrativa não pode ser alterada por esta tela.")
                 profile = UserAccessProfile.objects.select_for_update().filter(user=user).first()
@@ -295,10 +421,19 @@ class UserViewSet(viewsets.GenericViewSet):
                         defaults={"role": grant["role"], "permissions": grant["permissions"]},
                     )
                 else:
+                    existing = Membership.objects.filter(user=user, unit__slug=grant["unit"]).first()
+                    if "permission_role" in grant:
+                        selected_role_id = grant["permission_role"]
+                    elif (existing and existing.role == grant["role"] and
+                          role_permissions(existing.role, existing.permissions) == grant["permissions"]):
+                        selected_role_id = existing.permission_role_id
+                    else:
+                        selected_role_id = None
                     Membership.objects.update_or_create(
                         user=user,
                         unit=Unit.objects.get(slug=grant["unit"]),
-                        defaults={"role": grant["role"], "permissions": grant["permissions"]},
+                        defaults={"role": grant["role"], "permissions": grant["permissions"],
+                                  "permission_role_id": selected_role_id},
                     )
             profile = profile or UserAccessProfile(user=user, version=0, managing_unit=anchor)
             profile.version += 1
@@ -311,11 +446,13 @@ class UserViewSet(viewsets.GenericViewSet):
                 object_id=str(user.pk),
                 details={
                     "version": profile.version,
+                    "login": user.username,
+                    "access": [{"unit": writable[g["unit"]]["name"], "role": g["role"], "type": (PermissionRole.objects.filter(pk=g.get("permission_role")).values_list("name", flat=True).first() if g.get("permission_role") else "Permissões individuais")} for g in grants],
                     "units": [g["unit"] for g in grants],
                     "active": user.is_active,
                 },
             )
-            return user_output(user, options, request.user)
+            return {**user_output(user, options, request.user), "limitations": limitations}
 
         import hashlib
         import hmac

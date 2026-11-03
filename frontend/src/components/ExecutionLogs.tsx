@@ -1,3 +1,4 @@
+import PtBrDateInput from "./PtBrDateInput";
 import Select from "./Select";
 import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
@@ -20,6 +21,7 @@ type LogEntry = {
   error_code: string;
   count: number;
   completed_at: string | null;
+  detail?: string;
 };
 const categories: Record<string, string> = {
   imports: "Consultas às fontes",
@@ -122,18 +124,16 @@ export default function ExecutionLogs({ unit }: { unit: string }) {
         </label>
         <label>
           De
-          <input
-            type="date"
+          <PtBrDateInput
             value={start}
-            onChange={(e) => change(setStart, e.target.value)}
+            onChange={(value) => change(setStart, value)}
           />
         </label>
         <label>
           Até
-          <input
-            type="date"
+          <PtBrDateInput
             value={end}
-            onChange={(e) => change(setEnd, e.target.value)}
+            onChange={(value) => change(setEnd, value)}
           />
         </label>
         <label className="execution-log-search">
@@ -239,6 +239,7 @@ export default function ExecutionLogs({ unit }: { unit: string }) {
               Registro: selected.id,
               Data: dateTime(selected.occurred_at),
               Execução: selected.title,
+              Detalhes: selected.detail || "—",
               Situação: statuses[selected.status] || selected.status,
               Responsável: selected.actor,
               Referência: selected.reference || "—",

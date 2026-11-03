@@ -1,4 +1,5 @@
 export type PageName =
+  | "checkin"
   | "autoagenda"
   | "surveys"
   | "groups"
@@ -186,6 +187,7 @@ export interface ImportRun {
   started_at: string;
 }
 export interface Audit {
+  details?: Record<string, unknown>;
   id: number;
   actor_name: string;
   action: string;

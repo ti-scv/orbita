@@ -10,6 +10,10 @@ from core.models import Audit, Unit
 
 class UnitSerializer(serializers.ModelSerializer):
     effective_recipients = serializers.SerializerMethodField()
+    feature_warnings = serializers.SerializerMethodField()
+
+    def get_feature_warnings(self, obj):
+        return []
 
     def get_effective_recipients(self, obj) -> list[str]:
         from messaging.pilot import authorized_recipients
@@ -54,12 +58,22 @@ class UnitSerializer(serializers.ModelSerializer):
 
 class AppointmentSerializer(serializers.ModelSerializer):
     tracking = serializers.SerializerMethodField()
+    checkin = serializers.SerializerMethodField()
+
+    def get_checkin(self, obj):
+        request = self.context.get("request")
+        if not request or getattr(self.context.get("view"), "action", None) != "retrieve":
+            return None
+        from checkin.api import source_label
+        return source_label(obj, request)
 
     def get_tracking(self, obj) -> dict:
         event = getattr(obj, "sourceevent", None)
         case = next((c for c in event.cases.all() if c.purpose == "appointment"), None) if event else None
         messages = list(obj.messages.all())
-        current = [m for m in messages if m.appointment_revision == obj.revision]
+        request = self.context.get("request")
+        group = request.query_params.get("group") if request else None
+        current = [m for m in messages if m.appointment_revision == obj.revision and (not group or str(m.group_id) == group)]
         phones = obj.phone_numbers or [obj.phone]
         actions = (
             sorted(case.interactions.all(), key=lambda i: (i.occurred_at, i.pk), reverse=True) if case else []
@@ -137,6 +151,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "professional",
             "city",
             "tracking",
+            "checkin",
             "procedure",
             "procedure_code",
             "appointment_type",

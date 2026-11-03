@@ -1,3 +1,4 @@
+from checkin.api import CheckInViewSet, ConfigurationView as CheckInConfigurationView
 from autoagenda import api as autoagenda
 from surveys import api as surveys_api
 from operations.report_app_api import AppConnectionViewSet
@@ -13,14 +14,17 @@ from core.federation import (
     ManifestView,
     RemoteInstanceViewSet,
     RemoteProxyView,
+    UserIdentitiesExportView,
 )
 from core.logs import LogViewSet
 from core.oracle_config import OracleConfigurationViewSet
 from core.users import UserViewSet
+from core.permission_roles import PermissionRoleViewSet
 from messaging.costs import MetaCostView
 from messaging.groups import AppointmentGroupViewSet
 from messaging.meta_config import MetaConfigurationViewSet
 from operations import snapshot_api
+from operations.letterheads import LetterheadViewSet
 from operations import report_api
 from operations import views as operations
 from operations.members import MemberViewSet
@@ -33,9 +37,11 @@ from scheduling.agenda_api import OracleAgendaViewSet
 
 router = DefaultRouter()
 for prefix, view in [
+    ("checkins", CheckInViewSet),
     ("oracle-agendas", OracleAgendaViewSet),
     ("oracle-configuration", OracleConfigurationViewSet),
     ("users", UserViewSet),
+    ("permission-roles", PermissionRoleViewSet),
     ("instance-keys", InstanceKeyViewSet),
     ("remote-instances", RemoteInstanceViewSet),
     ("meta-configuration", MetaConfigurationViewSet),
@@ -59,6 +65,7 @@ for prefix, view in [
     ("sheet-imports", operations.SheetViewSet),
     ("campaigns", operations.CampaignViewSet),
     ("reports", report_api.CatalogViewSet),
+    ("letterheads", LetterheadViewSet),
     ("report-access", operations.ReportAccessViewSet),
     ("report-connections", report_api.ConnectionViewSet),
     ("report-app-connections", AppConnectionViewSet),
@@ -80,6 +87,7 @@ for prefix, view in [
     router.register(prefix, view, basename=prefix)
 
 urlpatterns = [
+    path("api/v1/checkin-configuration/",CheckInConfigurationView.as_view()),
     path("api/v1/autoagenda/config/", autoagenda.ConfigurationView.as_view()),
     path("api/v1/autoagenda/check/", autoagenda.ConnectionCheck.as_view()),
     path("api/v1/autoagenda/console/", autoagenda.ConsoleView.as_view()),
@@ -99,6 +107,7 @@ urlpatterns = [
     path("api/v1/meta-costs/", MetaCostView.as_view()),
     path("api/v1/", include(router.urls)),
     path("api/v1/federation/manifest/", ManifestView.as_view()),
+    path("api/v1/federation/user-identities/", UserIdentitiesExportView.as_view()),
     path(
         "api/v1/remote/<uuid:connection_id>/<path:resource>", RemoteProxyView.as_view()
     ),

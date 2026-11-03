@@ -6,6 +6,7 @@ export interface BannerMessage {
   tone: "error" | "conflict" | "ok";
   text: string;
   details?: string;
+  floating?: boolean;
   localVersion?: number;
   remoteVersion?: number;
 }
@@ -84,7 +85,7 @@ export default function Banner({
 
   return (
     <div
-      className={`cv-banner cv-banner-${banner.tone}`}
+      className={`cv-banner cv-banner-${banner.tone}${banner.floating ? " cv-banner-floating" : ""}`}
       role={banner.tone === "ok" ? "status" : "alert"}
       aria-live={banner.tone === "ok" ? "polite" : "assertive"}
     >

@@ -87,12 +87,12 @@ def test_recipient_edit_resets_verification_and_preserves_history(setup):
 def test_operator_cannot_escalate_or_create_users(setup):
     Membership.objects.filter(user=setup["user"]).update(role="operator")
     assert post(setup, "users", {"version": 0, "grants": []}).status_code == 403
-    assert setup["client"].get("/api/v1/users/options/?unit=ame").status_code == 403
+    assert setup["client"].get("/api/v1/users/options/?unit=ame").status_code == 200
 
 
 @pytest.mark.django_db
 def test_user_manager_cannot_delegate_sections_outside_own_permissions(setup):
-    Membership.objects.filter(user=setup["user"]).update(permissions={"settings": "none", "users": "write"})
+    Membership.objects.filter(user=setup["user"]).update(permissions={"settings": "write", "reports": "none"})
     result = post(
         setup,
         "users",
@@ -100,7 +100,7 @@ def test_user_manager_cannot_delegate_sections_outside_own_permissions(setup):
             "version": 0,
             "username": "escalation",
             "password": "Safe-test-password-2026!",
-            "grants": [{"unit": "ame", "role": "admin", "permissions": {"settings": "write"}}],
+            "grants": [{"unit": "ame", "role": "admin", "permissions": {"reports": "write"}}],
         },
     )
     assert result.status_code == 400
@@ -134,3 +134,31 @@ def test_authorized_test_recipients_edit_and_empty_list_revokes(setup, settings)
     )
     unit.refresh_from_db()
     assert authorized_recipients(unit) == ()
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("role", ["operator", "admin"])
+def test_template_with_remote_ceiling_and_descriptive_error(setup, role):
+    from core.models import PermissionRole, RemoteInstance
+    Membership.objects.filter(user=setup["user"], unit=setup["unit"]).update(permissions={"reportWhatsApp": "write"})
+    remote = RemoteInstance.objects.create(
+        local_unit=setup["unit"], name="Conexão QA", base_url="https://example.org",
+        key_ciphertext="test", remote_instance_id=uuid4(), remote_unit_slug="remote",
+        remote_unit={"name": "Unidade QA"}, remote_role="operator",
+        remote_permissions={"reports": "read", "reportWhatsApp": "none"},
+    )
+    template = PermissionRole.objects.create(unit=setup["unit"], name="QA",
+        permissions={"messages":"read", "settings":"none", "reports":"write", "reportWhatsApp":"read"})
+    body = {"version":0, "username":"qa35e" + role, "password":"Different-test-password-2026!",
+        "grants":[{"unit":"ame", "role":role, "permissions":{}, "permission_role":template.pk},
+                  {"unit":"remote:"+str(remote.pk), "role":"operator", "permissions":{"reports":"read", "reportWhatsApp":"none"}}]}
+    result = post(setup, "users", body)
+    assert result.status_code == 200, result.data
+    grants = {g["unit"]: g for g in result.data["grants"]}
+    assert grants["ame"]["permissions"]["reports"] == "write"
+    assert grants["remote:"+str(remote.pk)]["permissions"]["reports"] == "read"
+    body["username"] += "x"
+    body["grants"][1]["permissions"]["reportWhatsApp"] = "read"
+    result = post(setup, "users", body)
+    assert result.status_code == 200
+    assert result.data["limitations"] == [{"unit": "Unidade QA", "sections": ["WhatsApp dos relatórios"]}]
+    assert next(g for g in result.data["grants"] if g["unit"].startswith("remote:"))["permissions"]["reportWhatsApp"] == "none"

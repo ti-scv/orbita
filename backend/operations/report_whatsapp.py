@@ -124,7 +124,7 @@ class ReportWhatsAppView(APIView):
 
     @extend_schema(responses=ChannelOutput)
     def get(self, request):
-        unit = get_unit(request, ["admin"])
+        unit = get_unit(request)
         config, _ = ReportWhatsAppConfiguration.objects.get_or_create(unit=unit)
         try:
             status = service(unit)
@@ -151,7 +151,7 @@ class ReportWhatsAppView(APIView):
 
     @extend_schema(request=ChannelActionInput, responses=ChannelActionOutput)
     def post(self, request):
-        unit = get_unit(request, ["admin"])
+        unit = get_unit(request)
         inp = ChannelActionInput(data=request.data)
         inp.is_valid(raise_exception=True)
 

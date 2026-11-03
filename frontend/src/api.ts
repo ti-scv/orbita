@@ -93,9 +93,10 @@ export async function request<T>(
   }
   return data as T;
 }
-export async function initCsrf() {
-  csrfToken = (await request<{ csrfToken: string }>("/api/v1/auth/csrf/"))
-    .csrfToken;
+export async function initCsrf(signal?: AbortSignal) {
+  const result = await request<{ csrfToken: string; authenticated?: boolean }>("/api/v1/auth/csrf/", "GET", undefined, signal);
+  csrfToken = result.csrfToken;
+  return result.authenticated;
 }
 export async function signIn(username: string, password: string) {
   await initCsrf();

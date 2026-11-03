@@ -118,6 +118,25 @@ export default function PageConfigDialog({
               </select>
             </label>
 
+            <label className="cv-dialog-field">
+              <span>Orientação</span>
+              <select
+                aria-label="Orientação da página"
+                value={Number(width) > Number(height) ? "landscape" : "portrait"}
+                onChange={(e) => {
+                  const w = Number(width), h = Number(height);
+                  if ((e.target.value === "landscape" && w < h) ||
+                      (e.target.value === "portrait" && w > h)) {
+                    setWidth(height);
+                    setHeight(width);
+                  }
+                }}
+              >
+                <option value="portrait">Vertical (retrato)</option>
+                <option value="landscape">Horizontal (paisagem)</option>
+              </select>
+            </label>
+
             <div className="cv-dialog-grid-2">
               <label className="cv-dialog-field">
                 <span>Largura (px)</span>

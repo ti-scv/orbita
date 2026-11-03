@@ -298,6 +298,7 @@ class ReportConnection(models.Model):
         removed_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
         removed_was_enabled = models.BooleanField(null=True, blank=True)
     unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
+    letterhead = models.ForeignKey("Letterhead", null=True, blank=True, on_delete=models.SET_NULL)
     name = models.CharField(max_length=150)
     engine = models.CharField(
         max_length=20,
@@ -739,3 +740,16 @@ class ReportSnapshotDataRow(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["run", "record_key"], name="snapshot_data_run_key")]
+
+
+class Letterhead(models.Model):
+    unit = models.ForeignKey("core.Unit", on_delete=models.PROTECT)
+    name = models.CharField(max_length=150)
+    active = models.BooleanField(default=True)
+    background = models.BinaryField(blank=True, default=bytes)
+    background_landscape = models.BinaryField(blank=True, default=bytes)
+    margins = models.JSONField(default=dict)
+    fields = models.JSONField(default=list)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

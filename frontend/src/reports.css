@@ -386,6 +386,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 10px 14px;
   background: var(--table-th-bg, #f8fafc);
@@ -437,25 +438,27 @@
 }
 .report-parameter-table th:nth-child(1),
 .report-parameter-table td:nth-child(1) {
-  width: 24%;
+  width: 20%;
   min-width: 140px;
   max-width: none;
 }
 .report-parameter-table th:nth-child(2),
 .report-parameter-table td:nth-child(2) {
-  width: 17%;
+  width: 15%;
   min-width: 105px;
 }
 .report-parameter-table th:nth-child(3),
 .report-parameter-table td:nth-child(3) {
-  width: 24%;
+  width: 20%;
   min-width: 130px;
 }
 .report-parameter-table th:nth-child(4),
 .report-parameter-table td:nth-child(4) {
-  width: 35%;
+  width: 31%;
   min-width: 190px;
 }
+.report-parameter-table th:nth-child(5),
+.report-parameter-table td:nth-child(5) { width: 14%; min-width: 100px; }
 .report-param-type {
   display: block;
   font-weight: 500;
@@ -1011,13 +1014,6 @@
   border-top-color: var(--border-strong, #383838);
   color: #8593a6;
 }
-[data-theme="dark"] .report-workspace .op-pager .button:disabled,
-[data-theme="dark"] .snapshot-workspace > .report-actions .button:disabled {
-  opacity: 0.5;
-  color: #64748b;
-  border-color: #334155;
-  background: #1e293b;
-}
 
 
 /* Keep actions together; wrap filters before their selected labels are cut. */
@@ -1032,3 +1028,15 @@
 /* Keep origin and database names readable at browser zoom levels. */
 .report-workspace .report-table td:nth-child(2) { min-width: 145px; word-break: normal; overflow-wrap: normal; }
 .report-workspace .report-table td:nth-child(2) small { word-break: normal; overflow-wrap: normal; }
+
+.report-composition { margin: 1rem 0; min-width: 0; }
+.report-composition h3 { font-size: 1rem; margin: 1rem 0 .5rem; }
+.report-composition-list { margin: .5rem 0; padding: 0; list-style-position: inside; }
+.report-composition-list li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem; border-bottom: 1px solid var(--border, #8886); }
+.report-composition-list li > span { min-width: 0; overflow-wrap: anywhere; }
+.report-composition-list small { opacity: .75; }
+.report-composition-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+.letterhead-preview { position: relative; width: min(100%, 320px); aspect-ratio: 210 / 297; margin: 16px auto; background: white center / 100% 100% no-repeat; border: 1px solid #888; color: #111; overflow: hidden; }
+.letterhead-workarea { position: absolute; border: 1px dashed #555; }
+.letterhead-preview span { position: absolute; white-space: nowrap; }

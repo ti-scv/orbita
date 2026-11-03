@@ -90,7 +90,7 @@ def display_date(value):
         raise ValidationError("Data inválida no resultado de Estoque.") from None
 
 
-def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
+def render_stock_pdf(headers, rows, values, *, environment, generated_at=None, margins=None):
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_RIGHT
     from reportlab.lib.pagesizes import A4
@@ -107,7 +107,12 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
     records = [dict(zip(keys, row)) for row in rows]
     records.sort(key=lambda r: str(r["DS_FORNECEDOR"]).casefold())
     out = io.BytesIO()
-    width = A4[0] - 56
+    from reportlab.lib.units import mm
+    left = margins["left"] * mm if margins else 28
+    right_margin = margins["right"] * mm if margins else 28
+    top = margins["top"] * mm if margins else 30
+    bottom = margins["bottom"] * mm if margins else 36
+    width = A4[0] - left - right_margin - (12 if margins else 0)
     body = ParagraphStyle("stock_body", fontName="Helvetica", fontSize=7.5, leading=10)
     bold = ParagraphStyle("stock_bold", parent=body, fontName="Helvetica-Bold")
     right = ParagraphStyle("stock_right", parent=body, alignment=TA_RIGHT)
@@ -120,7 +125,7 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
              Spacer(1, 6), para(period), para("Ambiente: " + env, bold), Spacer(1, 8),
              para("Estoque atual: posição no momento da consulta; não representa o saldo no fim do período.", small), Spacer(1, 10)]
     column_labels = [para(x, bold) for x in ("Tipo", "Data", "Código", "Produto", "Unidade", "Qtde.", "Est. atual", "Localização")]
-    weights = [72,48,42,135,44,48,55,95]
+    weights = [72,70,42,120,44,48,55,95] if margins else [72,48,42,135,44,48,55,95]
     widths = [width*v/sum(weights) for v in weights]
     base_styles = [("BACKGROUND", (0,1),(-1,1), colors.HexColor("#ededed")), ("VALIGN", (0,0),(-1,-1), "TOP"),
               ("LEFTPADDING", (0,0),(-1,-1), 4), ("RIGHTPADDING", (0,0),(-1,-1), 4),
@@ -163,9 +168,9 @@ def render_stock_pdf(headers, rows, values, *, environment, generated_at=None):
     def footer(canvas, doc):
         canvas.saveState();canvas.setFont("Helvetica",7)
         canvas.setFillColor(colors.HexColor("#595959"))
-        canvas.drawString(28,22,"SCV Messenger | " + env + " | " + generated_at.strftime("%d/%m/%Y %H:%M"))
-        canvas.drawRightString(A4[0]-28,22,"Página " + str(doc.page));canvas.restoreState()
-    SimpleDocTemplate(out,pagesize=A4,leftMargin=28,rightMargin=28,topMargin=30,bottomMargin=36,
+        canvas.drawString(left, bottom + 2 if margins else 22,"SCV Messenger | " + env + " | " + generated_at.strftime("%d/%m/%Y %H:%M"))
+        canvas.drawRightString(A4[0]-right_margin, bottom + 2 if margins else 22,"Página " + str(doc.page));canvas.restoreState()
+    SimpleDocTemplate(out,pagesize=A4,leftMargin=left,rightMargin=right_margin,topMargin=top,bottomMargin=bottom,
                       title="Estoque - entrada e saída de empréstimos",author="SCV Messenger").build(story,onFirstPage=footer,onLaterPages=footer)
     return out.getvalue()
 
@@ -174,5 +179,6 @@ def generate(job):
     check_snapshot(job)
     headers,rows=run_query(job.report,job.parameters)
     content=render_stock_pdf(headers,rows,job.parameters,environment=job.snapshot["stock_loans"]["environment"],
-        generated_at=timezone.localtime(timezone.now(),ZoneInfo(job.unit.timezone)))
+        generated_at=timezone.localtime(timezone.now(),ZoneInfo(job.unit.timezone)),
+        margins=job.snapshot.get("letterhead", {}).get("margins"))
     return base64.b64encode(content).decode(),len(rows)

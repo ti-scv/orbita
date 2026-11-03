@@ -6,6 +6,7 @@ from core.serializers import UnitSerializer
 
 
 class CsrfOutput(serializers.Serializer):
+    authenticated = serializers.BooleanField()
     csrfToken = serializers.CharField()
 
 
@@ -43,6 +44,7 @@ class SessionOutput(serializers.Serializer):
     units = SessionUnitOutput(many=True)
     roles = serializers.DictField(child=serializers.CharField())
     permissions = serializers.DictField(child=serializers.DictField(child=serializers.CharField()))
+    permission_types = serializers.DictField(child=serializers.DictField(child=serializers.CharField()))
     mode = serializers.CharField()
 
 

@@ -1,3 +1,4 @@
+import CheckInWorkspace from "./components/CheckInWorkspace";
 import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
@@ -85,6 +86,7 @@ const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
   { id: "autoagenda", label: "Autoagendamento", icon: CalendarDays },
+  {id:"checkin",label:"Check-in",icon:CalendarDays},
   { id: "surveys", label: "Pesquisas", icon: MessageCircle },
   { id: "issues", label: "Pendências", icon: ClipboardList },
   { id: "campaigns", label: "Importa CROSS", icon: Send },
@@ -271,7 +273,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (canvasId || page === "reports" || page === "autoagenda" || page === "surveys") {
+    if (canvasId || page === "reports" || page === "autoagenda" || page === "surveys" || page === "checkin") {
       setBusy(false);
       return;
     }
@@ -705,6 +707,7 @@ function Workspace({
               </button>
             </div>
           )}
+          {page === "checkin" && <CheckInWorkspace unit={unit} write={role!=="viewer"}/> }
           {page === "autoagenda" && <AutoAgendaWorkspace unit={unit} write={role!=="viewer"} admin={actualRole==="admin"}/> }
           {page === "surveys" && (
             <Suspense fallback={<p role="status">Carregando pesquisas…</p>}>
@@ -737,7 +740,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {page === "reports" || page === "autoagenda" || page === "surveys" ? null : !data ? (
+          {page === "reports" || page === "autoagenda" || page === "surveys" || page === "checkin" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />

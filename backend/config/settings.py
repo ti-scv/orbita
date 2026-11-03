@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "operations",
     "autoagenda",
     "surveys",
+    "checkin",
     "django_celery_beat",
 ]
 MIDDLEWARE = [
@@ -170,6 +171,13 @@ CELERY_BEAT_SCHEDULE = {
     "operations": {"task": "operations.tick", "schedule": 60.0, "options": {"queue": "priority"}},
     "surveys": {"task": "surveys.tick", "schedule": 60.0, "options": {"queue": "priority"}},
 }
+USER_SYNC_INTERVAL_SECONDS = int(os.getenv("USER_SYNC_INTERVAL_SECONDS", "0"))
+if USER_SYNC_INTERVAL_SECONDS > 0:
+    CELERY_BEAT_SCHEDULE["sync-remote-users"] = {"task": "core.sync_remote_users", "schedule": USER_SYNC_INTERVAL_SECONDS}
+CHECKIN_SCHEDULER_ENABLED = os.getenv("CHECKIN_SCHEDULER_ENABLED", "0") == "1"
+CHECKIN_ORACLE_SCHEDULER_ENABLED = os.getenv("CHECKIN_ORACLE_SCHEDULER_ENABLED", "0") == "1"
+CHECKIN_ORACLE_VIEW = os.getenv("CHECKIN_ORACLE_VIEW", "")
+CHECKIN_ORACLE_KEY_COLUMN = os.getenv("CHECKIN_ORACLE_KEY_COLUMN", "")
 SEND_MODE = os.getenv("SEND_MODE", "simulated")
 META_REAL_ENABLED = os.getenv("META_REAL_ENABLED", "0") == "1"
 META_PILOT_TEMPLATE = os.getenv("META_PILOT_TEMPLATE", "")
@@ -210,3 +218,5 @@ REPORT_BAILEYS_ALLOW_SENDS = os.getenv("REPORT_BAILEYS_ALLOW_SENDS", "0") == "1"
 
 # Ative somente depois de aplicar a migração 0031 no banco correspondente.
 REPORT_REMOVAL_ENABLED = os.getenv("REPORT_REMOVAL_ENABLED", "0") == "1"
+
+CELERY_BEAT_SCHEDULE.update({"checkin":{"task":"checkin.tick","schedule":60.0,"options":{"queue":"priority"}},"checkin-oracle":{"task":"checkin.reconcile_oracle","schedule":300.0,"options":{"queue":"priority"}}})

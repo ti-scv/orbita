@@ -409,9 +409,10 @@ def test_real_http_handshake_and_relay_without_replication(federation):
         response = f["client"].get(f"/api/v1/remote/{connection_id}/appointments/?page=1")
         assert response.status_code == 200 and response.json()["results"][0]["id"] == 555
         assert observed[0]["path"] == MANIFEST
-        assert "unit=remote-clinic" in observed[1]["path"]
+        assert observed[1]["path"] == "/api/v1/federation/user-identities/"
+        assert "unit=remote-clinic" in observed[2]["path"]
         assert all(item["authorization"] == "Bearer " + f["key"]["key"] for item in observed)
-        assert observed[1]["role"] == "operator"
+        assert observed[2]["role"] == "operator"
         assert counts == (Unit.objects.count(), Appointment.objects.count(), Message.objects.count())
     finally:
         server.shutdown()
@@ -436,3 +437,81 @@ def test_existing_connection_cannot_be_rebound_to_another_namespace(connected):
         )
     assert response.status_code == 400
     assert str(RemoteInstance.objects.get().remote_instance_id) == f["manifest"]["instance_id"]
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("resource,method,action,section", [
+    ("reports/", "get", None, "reports"),
+    ("report-access/", "get", None, "reports"),
+    ("report-requests/", "get", None, "reports"),
+    ("report-schedules/", "get", None, "reports"),
+    ("report-recipients/", "get", None, "reports"),
+    ("report-grants/", "get", None, "reports"),
+    ("report-executions/", "get", None, "reports"),
+    ("report-connections/", "get", None, "reports"),
+    ("report-automations/", "get", None, "reports"),
+    ("report-whatsapp/", "get", None, "reportWhatsApp"),
+    ("report-whatsapp/", "post", "connect", "reportWhatsApp"),
+    ("report-whatsapp/", "post", "disconnect", "reportWhatsApp"),
+])
+@pytest.mark.parametrize("level", ["none", "read", "write"])
+def test_remote_report_sections_enforce_independent_levels(connected, resource, method, action, section, level):
+    f = connected
+    opposite = "reports" if section == "reportWhatsApp" else "reportWhatsApp"
+    policy = {section: level, opposite: "write"}
+    Membership.objects.filter(user=f["user"], unit=f["unit"]).update(permissions=policy)
+    RemoteInstance.objects.filter(pk=f["connection"]["id"]).update(remote_permissions=policy)
+    with patch("core.federation.remote_http", return_value=(200, {"Content-Type": "application/json"}, b"{}")) as network:
+        if method == "get":
+            response = f["client"].get(f["proxy"] + resource)
+        else:
+            response = f["client"].post(f["proxy"] + resource, {"action": action}, format="json", HTTP_IDEMPOTENCY_KEY="qa-35g-action")
+    allowed = level == "write" or (method == "get" and level == "read")
+    assert response.status_code == (200 if allowed else 403)
+    assert network.call_count == int(allowed)
+
+@pytest.mark.parametrize("resource,allowed", [
+    ("agenda-items/filter_options/?operational_pending=true", False),
+    ("agenda-items/types/?operational_pending=true", True),
+])
+def test_remote_pending_agenda_scope(connected, resource, allowed):
+    f = connected
+    policy = {"appointments": "none", "issues": "read", "groups": "none"}
+    Membership.objects.filter(user=f["user"], unit=f["unit"]).update(permissions=policy)
+    RemoteInstance.objects.filter(pk=f["connection"]["id"]).update(remote_permissions=policy)
+    with patch("core.federation.remote_http", return_value=(200, {"Content-Type": "application/json"}, b"[]")) as network:
+        response = f["client"].get(f["proxy"] + resource)
+    assert response.status_code == (200 if allowed else 403)
+    assert network.call_count == int(allowed)
+
+
+def test_identity_export_requires_explicit_admin_key_and_only_returns_identification(federation, settings):
+    from django.contrib.auth import get_user_model
+
+    f = federation
+    path = "/api/v1/federation/user-identities/"
+    assert f["bearer"].get(path).status_code == 403
+    assert f["client"].get(path).status_code == 403
+    other = get_user_model().objects.create_user(
+        "remote-person", password="Secret-Password-2026!", first_name="Pessoa", email="p@example.org"
+    )
+    Membership.objects.create(user=other, unit=f["unit"], role="viewer", permissions={"messages": "read"})
+    inactive = get_user_model().objects.create_user("inactive", is_active=False)
+    Membership.objects.create(user=inactive, unit=f["unit"])
+    issued = f["client"].post(
+        KEYS, {"name": "Sincronização", "role": "admin", "export_user_identities": True},
+        format="json", HTTP_IDEMPOTENCY_KEY="identity-export-key-001",
+    )
+    assert issued.status_code == 201 and issued.json()["export_user_identities"] is True
+    scoped = APIClient()
+    scoped.credentials(HTTP_AUTHORIZATION="Bearer " + issued.json()["key"])
+    result = scoped.get(path)
+    assert result.status_code == 200
+    assert result["Cache-Control"] == "no-store"
+    payload = result.json()
+    assert payload["instance_id"] == str(settings.ORBITA_INSTANCE_ID)
+    assert payload["unit"] == f["unit"].slug
+    person = next(row for row in payload["users"] if row["id"] == other.pk)
+    assert person == {"id": other.pk, "username": "remote-person", "first_name": "Pessoa", "email": "p@example.org"}
+    assert not any(row["id"] == inactive.pk for row in payload["users"])
+    assert "password" not in result.content.decode() and "permissions" not in result.content.decode()
+    assert scoped.get(path, HTTP_X_ORBITA_ROLE_LIMIT="viewer").status_code == 403

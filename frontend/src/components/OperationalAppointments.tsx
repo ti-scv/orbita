@@ -306,11 +306,11 @@ export default function OperationalAppointments({
   const [typeOptions, setTypeOptions] = useState<{value: string; label: string; group: string}[]>([]);
   useEffect(() => {
     let active = true;
-    request<{value: string; label: string; group: string}[]>(query("agenda-items/types", {unit}))
+    request<{value: string; label: string; group: string}[]>(query("agenda-items/types", {unit, operational_pending: issuesOnly ? "true" : "", group: groupId || ""}))
       .then(options => {if (active) setTypeOptions(options);})
       .catch(error => {if (active) setError(error.message);});
     return () => {active = false;};
-  }, [unit, refreshKey]);
+  }, [unit, refreshKey, issuesOnly, groupId]);
   const [issueFilter, setIssueFilter] = useState("all");
   const handleIssueFilterChange = (value: string) => {
     setIssueFilter(value);
@@ -417,7 +417,7 @@ export default function OperationalAppointments({
   useEffect(() => {
     if (!initialId) return;
     let active = true;
-    request<Appointment>(query(`agenda-items/${initialId}`, { unit }))
+    request<Appointment>(query(`agenda-items/${initialId}`, { unit, operational_pending: issuesOnly ? "true" : "", group: groupId || "" }))
       .then((item) => {
         if (active) select(item.tracking?.id || null);
       })
@@ -425,14 +425,14 @@ export default function OperationalAppointments({
     return () => {
       active = false;
     };
-  }, [initialId, unit]);
+  }, [initialId, unit, issuesOnly, groupId]);
   const act = useCallback(
     async (path: string, data: unknown) => {
       setBusy(true);
       setError("");
       try {
         const result = await request(
-          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}`,
+          `/api/v1/${path}/?unit=${encodeURIComponent(unit)}${groupId && /^(cases|contacts|movements)(\/|$)/.test(path) ? `&group=${encodeURIComponent(groupId)}` : ""}`,
           "POST",
           data,
         );
@@ -445,7 +445,7 @@ export default function OperationalAppointments({
         setBusy(false);
       }
     },
-    [unit],
+    [unit, groupId],
   );
   function filter(key: keyof typeof filters, value: string) {
     setFilters((v) => ({ ...v, [key]: value, ...(key === "kind" ? {response: "", outcome: ""} : {}) }));
@@ -577,6 +577,7 @@ export default function OperationalAppointments({
         <AppointmentDetail
           key={`${unit}:${selected}`}
           id={selected}
+          groupId={groupId}
           unit={unit}
           username={username}
           operate={role === "admin" || role === "operator"}
@@ -591,7 +592,7 @@ export default function OperationalAppointments({
           <div className="op-heading">
             <div className="appointment-heading-info">
               <span className="appointment-result-count">
-                <strong>{items.count}</strong>{" "}
+                {items.count}{" "}
                 {issuesOnly
                   ? items.count === 1
                     ? "pendência"

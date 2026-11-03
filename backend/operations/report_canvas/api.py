@@ -96,7 +96,7 @@ class CanvasAssetSchema(serializers.Serializer):
 
 
 def context_report(view, request):
-    unit = get_unit(request, ["admin"])
+    unit = get_unit(request)
     try:
         return get_object_or_404(ReportDefinition, pk=view.kwargs["pk"], unit=unit, **active_conditions())
     except Http404:
@@ -157,6 +157,12 @@ def response(report):
         if child.pk in existing:continue
         pending=catalog_contract(child)
         if pending:sources.append(pending)
+    # Drafts can be composed, but runtime validation still enforces availability.
+    existing = {item["id"] for item in sources}
+    for child in ReportDefinition.objects.filter(unit=report.unit, catalog_kind="report", **active_conditions()).exclude(pk=report.pk):
+        if child.pk not in existing:
+            sources.append({"id": child.pk, "name": child.name, "code": child.code,
+                            "available": False, "unavailable_reason": "Fonte ainda não homologada para execução."})
     establishments = {child.pk: source_establishment(child) for child in ReportDefinition.objects.filter(pk__in=[item["id"] for item in sources]).select_related("unit")}
     for item in sources:
         item["establishment"] = establishments[item["id"]]
@@ -282,6 +288,8 @@ def preview(view, request):
     report = context_report(view, request)
     layout = validate_layout(request.data.get("layout", report.canvas_layout))
     validate_complete(layout)
+    from operations.checkin_report_access import check_report
+    check_report(report, request=request, layout=layout)
     definition_snapshot(report, layout)
     values = request.data.get("parameters", {})
     validate_values(report, values)

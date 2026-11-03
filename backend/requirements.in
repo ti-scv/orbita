@@ -13,3 +13,6 @@ gunicorn>=23,<24; sys_platform != 'win32'
 PyMySQL>=1.1,<2
 firebird-driver>=2,<3
 sqlglot>=26,<27
+
+PyMuPDF>=1.26,<1.27
+defusedxml>=0.7,<0.8

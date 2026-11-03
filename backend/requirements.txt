@@ -60,3 +60,6 @@ firebird-driver==2.0.3
 sqlglot==26.33.0
 
 pypdf>=5,<7
+
+PyMuPDF==1.26.7
+defusedxml==0.7.1

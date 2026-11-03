@@ -56,6 +56,15 @@ def issue_once(message, code, description):
 
 
 def send_guard(message):
+    if message.purpose == "checkin":
+        from checkin.deliveries import dispatch_error
+        error=dispatch_error(message, timezone.now())
+        if error:return error
+        if message.unit.paused:return "paused"
+        if settings.SEND_MODE != "simulated":
+            from checkin.support import transport_guard
+            return transport_guard(message)
+        return ""
     if message.snapshot.get("oracle_agenda"):
         return "oracle_agenda_preview_only"
 
@@ -365,6 +374,9 @@ def dispatch(message_id, transport=None, now=None):
         attempt.completed_at = now
         attempt.save()
         message.save()
+        if message.purpose == "checkin" and failure is None:
+            from checkin.deliveries import record_acceptance
+            record_acceptance(message, now)
         Audit.objects.create(
             unit=unit,
             action="message." + attempt.outcome,

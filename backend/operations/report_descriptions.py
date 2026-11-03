@@ -49,7 +49,7 @@ def describe(report,index):
   codes=["vidas-sansaude-production-oracle"]
  elif current=="exams_per_attendance_v1":
   codes=["exams-attendance-exams-source","exams-attendance-visits-source"]
- else:codes=[p.get("code") for p in parts if isinstance(p,dict) and p.get("code")]
+ else:codes=[p.get("code") for p in parts if isinstance(p,dict) and p.get("code") and "report_id" not in p]
  for src in (report.canvas_layout or {}).get("sources",[]):
   if src.get("type")=="report" and src.get("report_id")!=report.pk:
    child=index["by_id"].get(src.get("report_id"))

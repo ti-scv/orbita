@@ -142,7 +142,7 @@ def apply_reply(event, unit):
             response_state__in=["pending", "no_response", "review"],
             created_at__gte=event.occurred_at - timedelta(days=30),
         )
-        candidates = candidates.exclude(case__state="closed")
+        candidates = candidates.exclude(case__state="closed").exclude(purpose="checkin")
         choices, seen = [], set()
         for candidate in candidates.order_by("-created_at"):
             identity = candidate.case_id or candidate.pk
@@ -152,6 +152,10 @@ def apply_reply(event, unit):
             if len(choices) == 2:
                 break
         message = choices[0] if len(choices) == 1 else None
+    if message and message.purpose == "checkin":
+        from checkin.replies import apply_checkin_reply
+        apply_checkin_reply(event, unit, message)
+        return
     from operations.services import apply_outcome, contextual_classify
 
     classification = contextual_classify(

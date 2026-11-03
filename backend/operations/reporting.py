@@ -30,6 +30,49 @@ def is_admin(user, unit):
     )
 
 
+def composition_child(report, entry):
+    if not isinstance(entry, dict):
+        return None
+    qs = ReportDefinition.objects.select_related("unit", "connection")
+    if "report_id" in entry:
+        if type(entry["report_id"]) is not int:
+            return None
+        return qs.filter(pk=entry["report_id"], code=entry.get("code", "")).first()
+    return qs.filter(unit=report.unit, code=entry.get("code", "")).first()
+
+
+def can_use_component(user, report):
+    if not user or not user.is_active:
+        return False
+    if not user.is_superuser and not Membership.objects.filter(user=user, unit=report.unit).exists():
+        return False
+    if local_permissions(user, report.unit).get("reports", "none") == "none":
+        return False
+    if is_admin(user, report.unit):
+        return True
+    from operations.models import ReportAccess
+    return report.catalog_kind == "report" and (
+        ReportGrant.objects.filter(unit=report.unit, report=report, active=True, manual=True,
+            recipient__active=True, recipient__manual_enabled=True,
+            recipient__verified_at__isnull=False, recipient__user=user).exists()
+        or ReportAccess.objects.filter(unit=report.unit, user=user, active=True,
+            verified_at__isnull=False, reports=report).exists())
+
+
+def check_composition_access(report, user, seen=None):
+    seen = set(seen or ())
+    if report.pk in seen:
+        raise PermissionDenied("Composição circular.")
+    seen.add(report.pk)
+    if report.source != "composite":
+        return
+    for entry in report.components:
+        child = composition_child(report, entry)
+        if not child or (child.unit_id != report.unit_id and not can_use_component(user, child)):
+            raise PermissionDenied("Componente indisponível ou não autorizado.")
+        check_composition_access(child, user, seen)
+
+
 def readiness(report, seen=None, *, check_external_file=True, canvas_reports=None):
     seen = set(seen or ())
     if report.pk in seen:
@@ -84,18 +127,10 @@ def readiness(report, seen=None, *, check_external_file=True, canvas_reports=Non
             missing.append("Definir componentes da composição")
         elif report.reviewed:
             for entry in report.components:
-                child = (
-                    ReportDefinition.objects.filter(
-                        unit=report.unit, code=entry.get("code", "")
-                    )
-                    .select_related("connection")
-                    .first()
-                    if isinstance(entry, dict)
-                    else None
-                )
+                child = composition_child(report, entry)
                 if not child or not child.enabled or readiness(child, seen):
                     missing.append(
-                        "Componente pendente: " + str(entry.get("code", "?"))
+                        ("Componente pendente" if "report_id" in entry else "Componente pendente: " + str(entry.get("code", "?")))
                         if isinstance(entry, dict)
                         else "Componente inválido"
                     )
@@ -150,6 +185,8 @@ def grant_for(report, recipient, mode):
 
 def execution_access(job, *, for_download=False):
     r = job.report
+    from operations.checkin_report_access import check_report
+    check_report(r, user=job.requester)
     if r.handler == "occupancy_indicators_v1" and job.origin == "automatic":
         raise PermissionDenied("Programação automática de Informativos ainda não homologada.")
     if (
@@ -160,6 +197,8 @@ def execution_access(job, *, for_download=False):
         or readiness(r, check_external_file=job.state != "ready")
     ):
         raise PermissionDenied("Relatório desativado, alterado ou com pendências.")
+    if not r.canvas_enabled and r.handler not in {"bed_snapshots_v1", "stock_loans_v1", "medical_indicators_v1"}:
+        check_composition_access(r, job.requester)
     if r.canvas_enabled:
         from operations.report_canvas.engine import check_snapshot
         check_snapshot(job)
@@ -241,6 +280,7 @@ def make_execution(
     origin="panel",
     run_date=None,
     transport=None,
+    letterhead_id="default",
 ):
     if getattr(report, "removed_at", None) is not None:
         raise ValidationError("Relatório removido.")
@@ -354,6 +394,15 @@ def make_execution(
     if report.canvas_enabled:
         from operations.report_canvas.engine import definition_snapshot
         job.snapshot["canvas"] = definition_snapshot(report)
+    if report.output_format == "pdf" and letterhead_id is not None:
+        from operations.letterhead_pdf import snapshot as letterhead_snapshot
+        from operations.models import Letterhead
+        candidates = Letterhead.objects.filter(unit=report.unit, active=True)
+        letterhead = candidates.filter(pk=report.connection.letterhead_id).first() if letterhead_id == "default" and report.connection_id else (candidates.filter(pk=letterhead_id).first() if letterhead_id != "default" else None)
+        if letterhead_id != "default" and letterhead is None:
+            raise ValidationError("Timbrado indisponível nesta unidade.")
+        if letterhead:
+            job.snapshot["letterhead"] = letterhead_snapshot(letterhead)
     execution_access(job)
     job.save()
     return job
@@ -372,7 +421,9 @@ def collect(report, values, seen=None):
     if report.source == "composite":
         output = []
         for entry in report.components:
-            child = ReportDefinition.objects.get(unit=report.unit, code=entry["code"])
+            child = composition_child(report, entry)
+            if not child:
+                raise ValidationError("Componente indisponível.")
             child_values = {
                 **{k: v for k, v in values.items() if k in child.parameter_schema},
                 **entry.get("parameters", {}),
@@ -401,15 +452,18 @@ def execute_report(job_id):
         job.save(update_fields=["state"])
     try:
         execution_access(job)
+        already_laid_out = False
         if job.report.canvas_enabled:
             from operations.report_canvas.engine import generate as generate_canvas
             result, count = generate_canvas(job)
+            already_laid_out = True
         elif job.report.handler == "bed_snapshots_v1":
             from operations.bed_snapshots import generate as generate_bed_history
             result, count = generate_bed_history(job)
         elif job.report.handler == "stock_loans_v1":
             from operations.stock_loans import generate as generate_stock_loans
             result, count = generate_stock_loans(job)
+            already_laid_out = True
         elif job.report.handler == "medical_indicators_v1":
             if job.format != "pdf":
                 raise ValidationError("Indicadores Médicos exigem formato PDF.")
@@ -421,11 +475,13 @@ def execute_report(job_id):
         elif job.report.source == "local":
             from operations.models import ReportRequest
             from operations.reports import generate
+            margins = job.snapshot.get("letterhead", {}).get("margins") if job.format == "pdf" else None
+            already_laid_out = bool(margins)
 
             if job.recipient_id and job.snapshot.get("transport") == "baileys":
                 from operations.reports import local_report_content
 
-                result, count = local_report_content(job)
+                result, count = local_report_content(job, margins=margins) if margins else local_report_content(job)
             else:
                 if not job.requester:
                     raise ValidationError(
@@ -439,13 +495,15 @@ def execute_report(job_id):
                     format=job.format,
                     definition_version=job.definition_version,
                 )
-                generate(original.pk)
+                generate(original.pk, margins=margins) if margins else generate(original.pk)
                 original.refresh_from_db()
                 if original.state != "ready":
                     raise ValidationError("Falha no relatório operacional.")
                 result, count = original.result, 0
         else:
             sections = collect(job.report, job.parameters)
+            already_laid_out = True
+            margins = job.snapshot.get("letterhead", {}).get("margins") if job.format == "pdf" else None
             count = sum(len(x[2]) for x in sections)
             if job.format == "pdf" and len(sections) > 1:
                 import io
@@ -457,7 +515,7 @@ def execute_report(job_id):
                     writer.append(
                         PdfReader(
                             io.BytesIO(
-                                base64.b64decode(render(name, headers, rows, "pdf"))
+                                base64.b64decode(render(name, headers, rows, "pdf", margins=margins))
                             )
                         )
                     )
@@ -469,12 +527,21 @@ def execute_report(job_id):
                 result = render_workbook(sections)
             elif len(sections) == 1:
                 name, headers, rows = sections[0]
-                result = render(name, headers, rows, job.format)
+                result = render(name, headers, rows, job.format, margins=margins)
             else:
                 result = "\n\n".join(
                     name + "\n" + render(name, headers, rows, job.format)
                     for name, headers, rows in sections
                 )
+        if job.format == "pdf" and job.snapshot.get("letterhead"):
+            from operations.letterhead_pdf import apply as apply_letterhead
+            result = base64.b64encode(apply_letterhead(
+                base64.b64decode(result), job.snapshot["letterhead"],
+                title=job.snapshot["name"], unit=job.unit.name,
+                user=job.requester.get_username() if job.requester else "",
+                parameters=job.parameters, generated_at=job.created_at,
+                already_laid_out=already_laid_out,
+            )).decode()
         no_data = count == 0 and job.snapshot.get("transport") == "baileys"
         if no_data:
             result = ""
@@ -482,6 +549,14 @@ def execute_report(job_id):
             raise ValidationError("Resultado excede 10 MB.")
         job.refresh_from_db()
         execution_access(job)
+        if job.report.source == "external_file" and job.snapshot.get("letterhead"):
+            import hashlib
+
+            rendered = base64.b64decode(result)
+            job.snapshot["external_pdf"]["rendered"] = {
+                "size_bytes": len(rendered), "sha256": hashlib.sha256(rendered).hexdigest()
+            }
+            job.save(update_fields=["snapshot"])
         if no_data:
             job.snapshot["no_data"] = True
             job.save(update_fields=["snapshot"])

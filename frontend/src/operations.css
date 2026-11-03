@@ -1615,7 +1615,7 @@
 }
 
 .access-grant { min-width:0; margin:0; padding:16px; border:1px solid var(--border, #dce5ee); border-radius:12px; }
-.access-grant legend { padding:0 8px; }
+.modal.inline-dialog .access-grant > .checkbox-label { margin-bottom: 16px; }
 .execution-log-filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; margin-bottom:20px; padding:0 24px; }
 .execution-log-filters label { display:flex; flex-direction:column; gap:6px; min-width:140px; font-size:12px; font-weight:600; }
 .execution-log-filters input, .execution-log-filters select { min-width:0; width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:8px; background:var(--input-bg); color:inherit; font:inherit; }
@@ -3052,3 +3052,15 @@
 
 .operational-overview .overview-toolbar > .filter-select { width: 240px; flex: 0 1 240px; min-width: 190px; max-width: 100%; }
 .operational-overview .operational-table th { text-transform: none; letter-spacing: normal; }
+
+.access-grant > .op-field + .op-field { margin-top: 16px; }
+
+.access-grant > .op-field { display: flex; flex-direction: column; }
+.access-grant > .op-field + .op-field { margin-top: 24px; }
+[data-theme="dark"] .access-grant .directory-table td,
+[data-theme="dark"] .panel .directory-table td { color: #d7e1ed; }
+
+.modal.inline-dialog .access-grant > label.op-field + label.op-field { margin-top: 20px; }
+
+.directory-sync:not(:empty) { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }
+.directory-sync p { margin: 0; }

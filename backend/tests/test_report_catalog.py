@@ -398,7 +398,7 @@ def test_readonly_sqlite_transaction_prevents_mutation(report_env):
             c.execute("INSERT INTO totals VALUES ('C',30)")
 
 
-def test_readonly_role_cannot_edit_and_operator_cannot_list_connections(report_env):
+def test_readonly_permission_cannot_edit_but_can_list_connections(report_env):
     e = report_env
     operator = get_user_model().objects.create_user("reader", password="x")
     Membership.objects.create(
@@ -406,7 +406,7 @@ def test_readonly_role_cannot_edit_and_operator_cannot_list_connections(report_e
     )
     e["client"].force_authenticate(operator)
     assert post(e["client"], "reports", {"code": "x", "name": "x"}).status_code == 403
-    assert e["client"].get("/api/v1/report-connections/?unit=ame").status_code == 403
+    assert e["client"].get("/api/v1/report-connections/?unit=ame").status_code == 200
 
 
 def test_recipient_users_endpoint_scoped(report_env):
@@ -991,3 +991,108 @@ def test_sql_parser_cache_never_reuses_parameter_contract_or_mutable_results():
     with pytest.raises(ValidationError):sql_contract("DELETE FROM DUAL",schema,"oracle")
     with pytest.raises(ValidationError):sql_contract([],schema,"oracle")
     assert sql_contract("SELECT 1 FROM DUAL",{},"oracle")==set()
+
+
+
+def test_parameter_audit_removal_persists_restores_and_checks_version(report_env):
+    e = report_env
+    report = e["report"]
+    report.query_sql += " AND value < :maximo"
+    report.save()
+    path = f"reports/{report.pk}/parameter-audit"
+    detail = lambda: e["client"].get(f"/api/v1/reports/{report.pk}/?unit=ame")
+    audit = detail().data["parameter_audit"]
+    assert {item["name"] for item in audit["items"]} == {"minimo", "maximo"}
+    key = next(item["audit_key"] for item in audit["items"] if item["name"] == "minimo")
+    response = post(e["client"], path, {"version": report.version, "operation": "remove", "key": key})
+    assert response.status_code == 200
+    assert [item["name"] for item in detail().data["parameter_audit"]["items"]] == ["maximo"]
+    report.refresh_from_db()
+    assert report.parameter_schema == {"minimo": {"type": "integer"}}
+    assert post(e["client"], path, {"version": 1, "operation": "restore"}).status_code == 409
+    response = post(e["client"], path, {"version": report.version, "operation": "remove_all"})
+    assert response.status_code == 200 and response.data["parameter_audit"]["hidden_all"]
+    report.refresh_from_db()
+    assert detail().data["parameter_audit"]["items"] == []
+    response = post(e["client"], path, {"version": report.version, "operation": "restore"})
+    assert response.status_code == 200
+    assert {item["name"] for item in detail().data["parameter_audit"]["items"]} == {"minimo", "maximo"}
+    assert not response.data["parameter_audit"]["has_exclusions"]
+    assert post(e["client"], path, {"version": response.data["version"], "operation": "remove", "key": "invalid"}).status_code == 400
+    Membership.objects.filter(user=e["user"], unit=e["unit"]).update(role="operator")
+    assert post(e["client"], path, {"version": response.data["version"], "operation": "remove_all"}).status_code == 403
+
+
+def test_composition_catalog_is_scoped_and_configuration_preserves_parts(report_env):
+    e = report_env
+    child = e["report"]
+    child.name = "Mesmo nome"
+    child.catalog_kind = "component"
+    child.save()
+    second = ReportDefinition.objects.create(unit=e["unit"], code="second", name="Mesmo nome", source="sql")
+    other_unit = Unit.objects.create(slug="outra33e", name="Outra unidade")
+    other = ReportDefinition.objects.create(unit=other_unit, code="outside", name="Mesmo nome", source="sql")
+    parent = ReportDefinition.objects.create(unit=e["unit"], code="comp33e", name="Composto", source="composite", components=[{"code": child.code, "parameters": {"minimo": 3}}])
+    listing = e["client"].get("/api/v1/reports/?unit=ame&section=all")
+    ids = {r["id"] for r in listing.data["results"]}
+    assert {child.pk, second.pk, parent.pk} <= ids
+    assert other.pk not in ids
+    parts = [{"code": second.code}, {"code": child.code, "parameters": {"minimo": 3}}]
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 200, response.data
+    parent.refresh_from_db()
+    assert parent.components == parts
+
+
+def test_cross_unit_composition_catalog_resolution_and_revocation(report_env):
+    from operations.reporting import composition_child, check_composition_access, collect
+    e = report_env
+    other_unit = Unit.objects.create(slug="outra33i", name="Outra unidade")
+    conn = ReportConnection.objects.create(unit=other_unit, name="Fonte", engine="sqlite",
+        database=e["connection"].database, enabled=True, validated=True)
+    child = ReportDefinition.objects.create(unit=other_unit, code=e["report"].code, name="Totais",
+        source="sql", connection=conn, reviewed=True, enabled=True,
+        query_sql="SELECT name,value FROM totals WHERE value >= :minimo",
+        parameter_schema={"minimo": {"type": "integer"}})
+    parent = ReportDefinition.objects.create(unit=e["unit"], code="parent33i", name="Composto",
+        source="composite", reviewed=True, enabled=False, components=[])
+    path = "/api/v1/reports/composition-catalog/?unit=ame"
+    assert child.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+    parts = [{"code": child.code, "report_id": child.pk}]
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 400
+    Membership.objects.create(user=e["user"], unit=other_unit, role="admin")
+    assert child.pk in {r["id"] for r in e["client"].get(path).data["results"]}
+    parent.refresh_from_db()
+    response = post(e["client"], f"reports/{parent.pk}/configure", {"version": parent.version, "components": parts})
+    assert response.status_code == 200, response.data
+    parent.refresh_from_db()
+    assert composition_child(parent, parts[0]).pk == child.pk
+    assert composition_child(parent, {"code": child.code}).pk == e["report"].pk
+    parent.enabled = True
+    parent.save()
+    check_composition_access(parent, e["user"])
+    assert collect(parent, {"minimo": 0})[0][2] == [["A", "10"], ["B", "20"]]
+    Membership.objects.filter(user=e["user"], unit=other_unit).delete()
+    with pytest.raises(PermissionDenied):
+        check_composition_access(parent, e["user"])
+    detail = e["client"].get(f"/api/v1/reports/{parent.pk}/?unit=ame")
+    assert detail.data["components"] == [{"unavailable": True}]
+    assert child.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+
+
+def test_composition_catalog_report_search_respects_unit_access(report_env):
+    e = report_env
+    other_unit = Unit.objects.create(slug="search33n", name="Unidade 33n")
+    report = ReportDefinition.objects.create(unit=other_unit, code="r33n", name="Alvo 33n", source="sql")
+    component = ReportDefinition.objects.create(unit=other_unit, code="c33n", name="Alvo componente", source="sql", catalog_kind="component")
+    path = "/api/v1/reports/composition-catalog/?unit=ame&kind=report&search=alvo"
+    assert report.pk not in {r["id"] for r in e["client"].get(path).data["results"]}
+    Membership.objects.create(user=e["user"], unit=other_unit, role="admin")
+    results = e["client"].get(path).data["results"]
+    assert [(r["id"], r["unit_slug"], r["unit_name"]) for r in results] == [(report.pk, "search33n", "Unidade 33n")]
+    assert component.pk not in {r["id"] for r in results}
+    Membership.objects.filter(user=e["user"], unit=other_unit).delete()
+    e["user"].is_superuser = True
+    e["user"].save()
+    assert report.pk in {r["id"] for r in e["client"].get(path).data["results"]}

@@ -28,6 +28,9 @@ LOCAL_COLUMNS=["Paciente","Telefone","Finalidade","Data","Resposta","Resultado",
 LOCAL_COLUMN_TYPES={name: ("date" if name == "Data" else "text") for name in LOCAL_COLUMNS}
 
 def datasets(report):
+ if report.handler == "checkin_summary_v1":
+  from operations.checkin_report import COLUMNS
+  return {"rows": COLUMNS}
  if report.handler=="app_operational_v1":
   from operations.app_reporting import spec,METRICS
   return {"rows":METRICS[spec(report)["metric"]]}
@@ -130,6 +133,11 @@ def medical_tables(data):
  return tables
 
 def read(ctx, report, dataset, values):
+ if report.handler == "checkin_summary_v1":
+  from operations.checkin_report import collect
+  from .sources import Dataset
+  if dataset != "rows": fail("Conjunto de dados não disponível para este relatório.")
+  return Dataset(*collect(report, values))
  if report.handler=="app_operational_v1":
   from operations.app_reporting import collect
   from .sources import Dataset

@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import re
 from contextvars import ContextVar
 
@@ -34,6 +35,7 @@ RESOURCES = {
     "sheet-imports",
     "campaigns",
     "reports",
+    "letterheads",
     "report-access",
     "report-requests",
     "report-schedules",
@@ -120,6 +122,19 @@ class InstanceKeyAuthentication(BaseAuthentication):
         if limit not in RANK:
             raise PermissionDenied("Limite de permissão inválido.")
         key.effective_role = limited_role(role, limit)
+        key.section_limit = None
+        section_limit = request.headers.get("X-Orbita-Section-Limit")
+        if section_limit is not None:
+            from core.access import LEVELS, SECTIONS
+            try:
+                parsed = json.loads(section_limit)
+                if not isinstance(parsed, dict) or set(parsed) != set(SECTIONS) or any(
+                    not isinstance(v, str) or v not in LEVELS for v in parsed.values()
+                ):
+                    raise ValueError
+            except (ValueError, TypeError):
+                raise PermissionDenied("Limite de seções inválido.") from None
+            key.section_limit = parsed
         if (
             request.method not in {"GET", "HEAD", "OPTIONS"}
             and key.effective_role == "viewer"

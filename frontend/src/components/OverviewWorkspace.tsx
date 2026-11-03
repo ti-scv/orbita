@@ -1,3 +1,4 @@
+import PtBrDateInput from "./PtBrDateInput";
 import { useMemo } from "react";
 import { CalendarDays } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -59,8 +60,8 @@ export default function OverviewWorkspace({data,start,end,kind,kinds,onFilterCha
         {(start||end||kind)&&<button type="button" onClick={()=>onFilterChange("","","")}>Limpar</button>}
       </div>
       <div className="date-range"><CalendarDays size={15} aria-hidden="true" />
-        <input type="date" aria-label="Data inicial" value={start} onChange={e=>onFilterChange(kind,e.target.value,end)} />
-        <span>até</span><input type="date" aria-label="Data final" value={end} onChange={e=>onFilterChange(kind,start,e.target.value)} />
+        <PtBrDateInput aria-label="Data inicial" value={start} onChange={value=>onFilterChange(kind,value,end)} />
+        <span>até</span><PtBrDateInput aria-label="Data final" value={end} onChange={value=>onFilterChange(kind,start,value)} />
       </div>
     </div>
     <div className="operational-totals">

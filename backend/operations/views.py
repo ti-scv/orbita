@@ -47,7 +47,12 @@ class ScopedRead(viewsets.ReadOnlyModelViewSet):
                 unit,
                 request.user,
                 request.headers.get("Idempotency-Key"),
-                {"path": request.path, "data": request.data},
+                {
+                    "path": request.path,
+                    "data": request.data,
+                    **({"group": request.query_params.get("group", "")}
+                       if isinstance(self, (CaseViewSet, ContactViewSet, MovementViewSet)) else {}),
+                },
                 execute,
             )
         )
@@ -61,14 +66,16 @@ class CaseViewSet(ScopedRead):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        from core.access import local_permissions
+        from core.access import LEVELS, effective_permissions
 
-        policy = local_permissions(self.request.user, get_unit(self.request))
-        if policy["campaigns"] == "none":
+        policy = effective_permissions(self.request, get_unit(self.request))
+        level = 1 if self.request.method in {"GET", "HEAD", "OPTIONS"} else 2
+        if not self.request.query_params.get("group") and LEVELS[policy["campaigns"]] < level:
             allowed = ["appointment", "absence", "movement"]
-            if policy["appointments"] != "none":
+            if LEVELS[policy["appointments"]] >= level:
                 allowed += ["waitlist", "summons", "postoperative"]
             qs = qs.filter(purpose__in=allowed)
+        qs = group_appointment_scope(self.request, qs, "event__appointment")
         for field in [
             "state",
             "purpose",
@@ -230,13 +237,17 @@ class CaseViewSet(ScopedRead):
         from responses.models import Reply
 
         case = self.get_object()
+        messages = case.messages.all()
+        if request.query_params.get("group"):
+            messages = messages.filter(group_id=request.query_params["group"], appointment_id=case.event.appointment_id, appointment_revision=F("appointment__revision"))
+        message_scope = messages
         messages = (
-            case.messages.select_related("appointment", "template", "rule")
+            messages.select_related("appointment", "template", "rule")
             .prefetch_related("attempts", "replies__event")
             .order_by("-created_at")[:100]
         )
         replies = (
-            Reply.objects.filter(message__case=case)
+            Reply.objects.filter(message__in=message_scope)
             .select_related("event", "message__appointment")
             .order_by("-event__occurred_at")[:100]
         )
@@ -303,6 +314,8 @@ class CaseViewSet(ScopedRead):
                 messages = case.messages.filter(
                     recipient=phone, appointment_revision=case.event.revision
                 )
+                if request.query_params.get("group"):
+                    messages = messages.filter(group_id=request.query_params["group"])
                 message = (
                     messages.filter(pk=data["message_id"]).first()
                     if data.get("message_id")
@@ -542,20 +555,37 @@ class ConfigViewSet(ScopedRead, viewsets.GenericViewSet):
         return self.once(request, execute)
 
 
+def group_appointment_scope(request, qs, appointment_path):
+    group_value = request.query_params.get("group")
+    if not group_value:
+        return qs
+    from rest_framework import serializers
+    from messaging.models import AppointmentGroup
+
+    group_id = serializers.UUIDField().run_validation(group_value)
+    group = get_object_or_404(AppointmentGroup, pk=group_id, unit=get_unit(request))
+    return qs.filter(**{
+        f"{appointment_path}__unit": get_unit(request),
+        f"{appointment_path}__messages__group": group,
+        f"{appointment_path}__messages__appointment_revision": F(f"{appointment_path}__revision"),
+    }).distinct()
+
+
 class ContactViewSet(ScopedRead):
     queryset = m.Contact.objects.select_related("event").order_by("id")
     serializer_class = s.ContactSerializer
 
     def get_queryset(self):
         qs = super().get_queryset()
-        from core.access import local_permissions
+        from core.access import LEVELS, effective_permissions
 
-        if all(
-            local_permissions(self.request.user, get_unit(self.request))[section]
-            == "none"
-            for section in ["campaigns", "appointments"]
+        policy = effective_permissions(self.request, get_unit(self.request))
+        level = 1 if self.request.method in {"GET", "HEAD", "OPTIONS"} else 2
+        if not self.request.query_params.get("group") and all(
+            LEVELS[policy[section]] < level for section in ["campaigns", "appointments"]
         ):
             qs = qs.filter(event__appointment__isnull=False)
+        qs = group_appointment_scope(self.request, qs, "event__appointment")
         return (
             qs.filter(event_id=self.request.query_params["event"])
             if self.request.query_params.get("event")
@@ -565,6 +595,10 @@ class ContactViewSet(ScopedRead):
     @extend_schema(request=None)
     @action(detail=True, methods=["post"])
     def review(self, request, pk=None):
+        if request.query_params.get("group"):
+            from core.access import check_resource, effective_permissions
+            check_resource(effective_permissions(request, get_unit(request)), "contacts/review", "POST", {})
+
         def execute():
             obj = self.get_object()
             status = request.data.get("status")
@@ -615,6 +649,7 @@ class MovementViewSet(ScopedRead):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = group_appointment_scope(self.request, qs, "case__event__appointment")
         return (
             qs.filter(case_id=self.request.query_params["case"])
             if self.request.query_params.get("case")
@@ -627,6 +662,12 @@ class MovementViewSet(ScopedRead):
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             case = serializer.validated_data["case"]
+            scoped_cases = group_appointment_scope(
+                request, m.Case.objects.filter(unit=unit), "event__appointment"
+            )
+            if not scoped_cases.filter(pk=case.pk).exists():
+                from rest_framework.exceptions import NotFound
+                raise NotFound()
             lock_case(case, request.data.get("case_version"))
             if not case.event.appointment_id:
                 raise ValidationError("Movimentação exige um agendamento vinculado.")
@@ -1317,6 +1358,8 @@ class ReportRequestViewSet(ScopedRead):
             unit = get_unit(request, ["admin", "operator"])
             data = values.validated_data
             report = get_object_or_404(m.ReportDefinition, unit=unit, pk=data["report"], **active_conditions())
+            from operations.checkin_report_access import check_report
+            check_report(report, request=request)
             params = validate_parameters(data["parameters"])
             job = m.ReportRequest(
                 unit=unit,
@@ -1353,6 +1396,8 @@ class ReportRequestViewSet(ScopedRead):
     def download(self, request, pk=None):
         job = self.get_object()
         check_access(job)
+        from operations.checkin_report_access import check_report
+        check_report(job.report, request=request)
         if job.state != "ready":
             raise ValidationError("Relatório ainda não está disponível.")
         result = base64.b64decode(job.result) if job.format == "pdf" else job.result

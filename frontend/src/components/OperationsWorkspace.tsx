@@ -205,6 +205,7 @@ export default function OperationsWorkspace({
   username,
   userAccess = false,
   administrationCategory,
+  reportAccess = true, whatsappRead = false, whatsappWrite = false, reportAdmin = false,
 }: {
   page: PageName;
   unit: string;
@@ -212,6 +213,7 @@ export default function OperationsWorkspace({
   username: string;
   userAccess?: boolean;
   administrationCategory?: string;
+  reportAccess?: boolean; whatsappRead?: boolean; whatsappWrite?: boolean; reportAdmin?: boolean;
 }) {
   const [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
@@ -282,6 +284,7 @@ export default function OperationsWorkspace({
             unit={unit}
             admin={role === "admin" && operate}
             operate={operate}
+            reportAccess={reportAccess} whatsappRead={whatsappRead} whatsappWrite={whatsappWrite} whatsappConfigure={reportAdmin}
           />
         )}
         {page === "operationsAdmin" && (
@@ -323,6 +326,7 @@ export function AppointmentDetail({
   ...props
 }: Common & {
   id: string;
+  groupId?: string;
   username: string;
   operate: boolean;
   onBack: () => void;
@@ -330,10 +334,10 @@ export function AppointmentDetail({
   const [item, setItem] = useState<CareCase | null>(null);
   useEffect(() => {
     setItem(null);
-    request<CareCase>(query(`cases/${id}`, { unit: props.unit }))
+    request<CareCase>(query(`cases/${id}`, { unit: props.unit, group: props.groupId || "" }))
       .then(setItem)
       .catch((e) => props.onError(e.message));
-  }, [id, props.unit, props.onError]);
+  }, [id, props.unit, props.groupId, props.onError]);
   return item ? (
     <CaseDetail item={item} {...props} />
   ) : (
@@ -344,6 +348,7 @@ export function AppointmentDetail({
 function CaseDetail({
   item,
   unit,
+  groupId,
   operate,
   revision,
   act,
@@ -352,6 +357,7 @@ function CaseDetail({
   onBack,
 }: Common & {
   item: CareCase;
+  groupId?: string;
   username: string;
   operate: boolean;
   onBack: () => void;
@@ -397,17 +403,18 @@ function CaseDetail({
   useEffect(() => {
     let active = true;
     Promise.all([
-      request<CareCase>(query(`cases/${item.id}`, { unit })),
+      request<CareCase>(query(`cases/${item.id}`, { unit, group: groupId || "" })),
       request<Paginated<Interaction>>(
         query(`cases/${item.id}/timeline`, {
           unit,
           page: String(timelinePage),
+          group: groupId || "",
         }),
       ),
-      request<typeof comms>(query(`cases/${item.id}/communications`, { unit })),
-      request<Paginated<Row>>(query("movements", { unit, case: item.id })),
+      request<typeof comms>(query(`cases/${item.id}/communications`, { unit, group: groupId || "" })),
+      request<Paginated<Row>>(query("movements", { unit, case: item.id, group: groupId || "" })),
       request<Paginated<(typeof contacts)[number]>>(
-        query("contacts", { unit, event: String(item.event.id) }),
+        query("contacts", { unit, event: String(item.event.id), group: groupId || "" }),
       ),
     ])
       .then(([current, history, communications, moves, numbers]) => {
@@ -424,7 +431,7 @@ function CaseDetail({
     return () => {
       active = false;
     };
-  }, [item.id, item.event.id, unit, revision, timelinePage, onError]);
+  }, [item.id, item.event.id, unit, groupId, revision, timelinePage, onError]);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
@@ -1227,6 +1234,7 @@ function Administration({
                   </tr>
                 </thead>
                 <tbody>
+                  {!reportDefinitions.length && <tr><td colSpan={4} className="directory-empty">Nenhum relatório encontrado.</td></tr>}
                   {reportDefinitions.map((record) => (
                     <tr key={record.id}>
                       <td>{record.name}</td>
@@ -1283,6 +1291,7 @@ function Administration({
                   </tr>
                 </thead>
                 <tbody>
+                  {!policies.length && <tr><td colSpan={3} className="directory-empty">Nenhum prazo de resposta encontrado.</td></tr>}
                   {policies.map((record) => (
                     <tr key={record.id}>
                       <td>{purposes[record.purpose || ""]}</td>

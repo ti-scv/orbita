@@ -1,3 +1,4 @@
+import { syncCounts } from "./syncCounts";
 import Select from "./Select";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { FormEvent } from "react";
@@ -101,6 +102,7 @@ export default function RemoteInstances({
           name: form.get("name"),
           role: form.get("role"),
           validity_days: Number(form.get("validity_days")),
+          export_user_identities: form.get("export_user_identities") === "on",
         },
       );
       setIssued(data);
@@ -121,7 +123,7 @@ export default function RemoteInstances({
     setError("");
     setNotice("");
     try {
-      await request(
+      const result = await request<{ user_sync?: { ok: boolean; error?: string } }>(
         query(
           editing
             ? `remote-instances/${editing.id}/configure`
@@ -140,9 +142,9 @@ export default function RemoteInstances({
       setEditing(null);
       await load();
       await onChanged();
-      setNotice(
-        "Conexão validada. A unidade remota está disponível no seletor com o ícone de nuvem.",
-      );
+      setNotice(result.user_sync && !result.user_sync.ok
+        ? "Conexão cadastrada. Não foi possível sincronizar usuários; tente novamente."
+        : "Conexão validada. A unidade remota está disponível no seletor.");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -154,7 +156,8 @@ export default function RemoteInstances({
     setError("");
     setNotice("");
     try {
-      await request(query(path, { unit }), "POST", body);
+      const result = await request<{ok?: boolean; new?: number; updated?: number; removed?: number; conflicts?: number}>(query(path, { unit }), "POST", body);
+      if (path.endsWith("/sync-users")) setNotice(`Sincronização concluída: ${syncCounts(result)}.`);
       await load();
       await onChanged();
     } catch (e) {
@@ -273,6 +276,12 @@ export default function RemoteInstances({
                         <RefreshCw size={13} />
                         <span>Verificar</span>
                       </button>
+                      {c.enabled && (
+                        <button type="button" className="button secondary" disabled={busy}
+                          onClick={() => void action(`remote-instances/${c.id}/sync-users`)}>
+                          Sincronizar usuários
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="button secondary"
@@ -518,6 +527,10 @@ export default function RemoteInstances({
                       <option value="operator">Operador</option>
                       <option value="admin">Administrador</option>
                     </Select>
+                  </label>
+                  <label>
+                    <input type="checkbox" name="export_user_identities" />
+                    Permitir exportação de identidades de usuários (exige perfil Administrador)
                   </label>
                   <label className="op-field">
                     Validade em dias

@@ -77,13 +77,14 @@ class KeySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = InstanceAccessKey
-        fields = ["id", "name", "role", "created_at", "expires_at", "revoked_at", "last_used_at", "active"]
+        fields = ["id", "name", "role", "export_user_identities", "created_at", "expires_at", "revoked_at", "last_used_at", "active"]
 
 
 class KeyInput(serializers.Serializer):
     name = serializers.CharField(max_length=120)
     role = serializers.ChoiceField(choices=Membership.Role.choices, default="viewer")
     validity_days = serializers.IntegerField(min_value=1, max_value=365, default=90)
+    export_user_identities = serializers.BooleanField(default=False)
 
 
 class IssuedKeyOutput(KeySerializer):
@@ -129,6 +130,7 @@ class InstanceKeyViewSet(viewsets.ReadOnlyModelViewSet):
                 issuer=request.user,
                 name=data["name"],
                 role=data["role"],
+                export_user_identities=data["export_user_identities"],
                 issuance_key=receipt,
                 expires_at=timezone.now() + timedelta(days=data["validity_days"]),
             )
@@ -274,7 +276,11 @@ class RemoteInstanceViewSet(viewsets.ReadOnlyModelViewSet):
                 object_id=str(connection.pk),
                 details={"version": connection.version},
             )
-            return RemoteSerializer(connection).data
+            result = RemoteSerializer(connection).data
+            if not pk:
+                from core.user_sync import sync_users
+                result["user_sync"] = sync_users(connection, request.user)
+            return result
 
         return Response(
             idempotent(
@@ -294,6 +300,13 @@ class RemoteInstanceViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"])
     def configure(self, request, pk=None):
         return self.configure_connection(request, pk)
+
+    @action(detail=True, methods=["post"], url_path="sync-users")
+    def sync_users(self, request, pk=None):
+        connection = self.get_object()
+        from core.user_sync import sync_users
+        result = sync_users(connection, request.user)
+        return Response(result, status=200 if result["ok"] else 502)
 
     @extend_schema(request=InstanceVersionInput, responses=RemoteSerializer)
     @action(detail=True, methods=["post"])
@@ -367,6 +380,9 @@ class ManifestOutput(serializers.Serializer):
     role = serializers.CharField()
     sending_enabled = serializers.BooleanField()
     permissions = serializers.DictField(child=serializers.CharField())
+    group_object_scope = serializers.BooleanField()
+    cases_section_limit = serializers.BooleanField()
+    contacts_movements_section_limit = serializers.BooleanField()
 
 
 class ManifestView(APIView):
@@ -383,13 +399,35 @@ class ManifestView(APIView):
                 "unit": UnitSerializer(get_unit(request)).data,
                 "role": request.auth.effective_role,
                 "sending_enabled": False,
+                "group_object_scope": True,
+                "cases_section_limit": True,
+                "contacts_movements_section_limit": True,
                 "permissions": intersect_permissions(
                     local_permissions(request.user, get_unit(request)),
-                    role_permissions(request.auth.effective_role),
+                    role_permissions(request.auth.effective_role, {"reportWhatsApp": "write"}),
                 ),
             },
             headers={"Cache-Control": "no-store"},
         )
+
+
+class UserIdentitiesExportView(APIView):
+    def get(self, request):
+        if not isinstance(request.auth, InstanceAccessKey) or not request.auth.export_user_identities:
+            raise PermissionDenied("Chave sem autorização para exportar identidades.")
+        unit = get_unit(request, ["admin"])
+        from django.contrib.auth import get_user_model
+
+        users = list(get_user_model().objects.filter(
+            membership__unit=unit, is_active=True
+        ).order_by("pk").values("id", "username", "first_name", "email")[:10001])
+        if len(users) > 10000:
+            raise ValidationError("A unidade excede o limite de identidades para exportação.")
+        return Response({
+            "instance_id": settings.ORBITA_INSTANCE_ID,
+            "unit": unit.slug,
+            "users": users,
+        }, headers={"Cache-Control": "no-store"})
 
 
 class RemoteProxyView(APIView):
@@ -436,6 +474,23 @@ class RemoteProxyView(APIView):
             raise ValidationError("Conteúdo excede o limite da conexão remota.")
         params = {k: request.query_params.getlist(k) for k in request.query_params if k != "unit"}
         params["unit"] = connection.remote_unit_slug
+        root = resource.split("/")[0]
+        if root in {"cases", "contacts", "movements"} or (request.query_params.get("group") and root in {"appointments", "agenda-items"}):
+            # Older origins ignore the section ceiling; refuse them before reads or writes.
+            manifest_code, _, manifest_body = remote_http(
+                connection.base_url, decrypt_key(connection.key_ciphertext),
+                "federation/manifest/", role=role,
+            )
+            try:
+                feature = "cases_section_limit" if root == "cases" else "contacts_movements_section_limit"
+                features = json.loads(manifest_body)
+                supported = manifest_code == 200 and (root not in {"cases", "contacts", "movements"} or features.get(feature) is True)
+                if request.query_params.get("group"):
+                    supported = supported and features.get("group_object_scope") is True
+            except (ValueError, UnicodeError, AttributeError):
+                supported = False
+            if not supported:
+                raise PermissionDenied("A origem não suporta o limite de seções para este recurso.")
         code, headers, content = remote_http(
             connection.base_url,
             decrypt_key(connection.key_ciphertext),
@@ -446,6 +501,7 @@ class RemoteProxyView(APIView):
             role=role,
             idempotency=key,
             content_type=request.headers.get("Content-Type", "application/json"),
+            section_limit=policy if root in {"cases", "contacts", "movements"} else None,
         )
         content_type = next((v for k, v in headers.items() if k.lower() == "content-type"), "")
         if code in {401, 403}:

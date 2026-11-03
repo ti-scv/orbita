@@ -3,9 +3,9 @@ import {readRoute} from "./routes";
 import {normalizeLayout,sanitizeLayoutForApi} from "./components/report-canvas/model";
 describe("editor de relatórios em rota própria",()=>{
  it("abre o relatório certo e preserva as rotas existentes",()=>{
-  expect(readRoute("/relatorios/50/canvas")).toEqual({page:"reports",groupId:null,canvasId:50});
+  expect(readRoute("/relatorios/50/canvas")).toEqual({page:"reports",groupId:null,canvasId:50,notFound:false});
   expect(readRoute("/relatorios/50/canvas/").canvasId).toBe(50);
-  expect(readRoute("/relatorios")).toEqual({page:"reports",groupId:null});
+  expect(readRoute("/relatorios")).toEqual({page:"reports",groupId:null,notFound:false});
   expect(readRoute("/relatorios/abc/canvas").canvasId).toBeUndefined();
  });
  it("preserva os conjuntos de dados e larguras ao reabrir e salvar",()=>{

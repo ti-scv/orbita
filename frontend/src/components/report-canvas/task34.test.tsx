@@ -79,3 +79,23 @@ it("busca relatório pelo ID",()=>{
  fireEvent.click(screen.getByRole("combobox")); fireEvent.change(screen.getByRole("combobox",{name:/Buscar em/}),{target:{value:"18"}});
  expect(screen.getByRole("option",{name:/ID 18/})).toBeTruthy(); expect(screen.queryByRole("option",{name:/ID 17/})).toBeNull();
 });
+it("permite buscar relatórios por nome mesmo com poucas opções",()=>{Element.prototype.scrollIntoView=vi.fn(); mount(); fireEvent.click(screen.getByRole("combobox")); fireEvent.change(screen.getByRole("combobox",{name:/Buscar em/}),{target:{value:"Mesmo nome"}}); expect(screen.getAllByRole("option",{name:/Mesmo nome/})).toHaveLength(2); expect(screen.queryByRole("option",{name:/Outro/})).toBeNull();});
+
+
+it("busca no catálogo entre unidades somente quando solicitado", async()=>{
+ Element.prototype.scrollIntoView=vi.fn();
+ const fetchMock=vi.fn().mockResolvedValue({ok:true,status:200,json:async()=>({results:[{id:1,name:"Relatório externo",code:"externo",unit_name:"QA 33c",unit_slug:"qa33c"}]})});
+ vi.stubGlobal("fetch",fetchMock); mount();
+ expect(fetchMock).not.toHaveBeenCalled();
+ fireEvent.click(screen.getByLabelText("Mostrar outros estabelecimentos"));
+ await waitFor(()=>expect(fetchMock).toHaveBeenCalled());
+ expect(String(fetchMock.mock.calls[0][0])).toContain("reports/composition-catalog");
+ fireEvent.click(screen.getByRole("combobox"));
+ await screen.findByRole("option",{name:/Relatório externo · QA 33c · ID 1/});
+ fireEvent.change(screen.getByRole("combobox",{name:/Buscar em/}),{target:{value:"externo"}});
+ expect(screen.getByRole("option",{name:/Relatório externo/})).toBeTruthy();
+ fireEvent.keyDown(screen.getByRole("listbox"),{key:"Escape"});
+ fireEvent.click(screen.getByLabelText("Mostrar outros estabelecimentos"));
+ fireEvent.click(screen.getByRole("combobox"));
+ expect(screen.queryByRole("option",{name:/Relatório externo/})).toBeNull();
+});

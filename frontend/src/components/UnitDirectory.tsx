@@ -179,6 +179,8 @@ export default function UnitDirectory({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [revision, setRevision] = useState(0);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { if (!saved) return; const timer = window.setTimeout(() => setSaved(false), 4000); return () => window.clearTimeout(timer); }, [saved]);
 
   useEffect(() => {
     let active = true;
@@ -250,8 +252,10 @@ export default function UnitDirectory({
       setRevision((v) => v + 1);
       window.dispatchEvent(new Event("session-refresh"));
       await onChanged?.();
-    } catch (e) {
-      setError((e as Error).message);
+      setRevision((v) => v + 1);
+      setSaved(true);
+    } catch {
+      setError("Não foi possível salvar a unidade. Tente novamente.");
     } finally {
       setBusy(false);
     }
@@ -259,6 +263,7 @@ export default function UnitDirectory({
 
   return (
     <div className="unit-directory">
+      {saved && <div className="toast" role="status">Unidade salva.</div>}
       <div className="unit-toolbar">
         <div className="unit-summary">
           <span className="unit-count">

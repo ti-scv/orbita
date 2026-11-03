@@ -69,6 +69,25 @@ def test_original_bytes_pipeline_and_authorized_download(local_pdf):
         execution_access(job, for_download=True)
 
 
+def test_letterheaded_external_pdf_download_integrity(local_pdf):
+    from operations.models import Letterhead
+
+    e = local_pdf
+    letterhead = Letterhead.objects.create(
+        unit=e["unit"], name="Exemplo", margins={"top": 5, "bottom": 5, "left": 5, "right": 5}
+    )
+    job = make_execution(e["report"], {}, user=e["user"], letterhead_id=letterhead.pk)
+    with patch("operations.report_whatsapp.enqueue_delivery"):
+        execute_report(job.pk)
+    job.refresh_from_db()
+    assert job.state == "ready"
+    response = e["client"].get(f"/api/v1/report-executions/{job.pk}/download/?unit=scv")
+    assert response.status_code == 200 and response.content != e["content"]
+    job.result = base64.b64encode(b"tampered").decode()
+    with pytest.raises(PermissionDenied):
+        execution_access(job, for_download=True)
+
+
 @pytest.mark.parametrize("bad", [b"", b"not a PDF", b"%PDF-1.4 incomplete", pdf_bytes(encrypted=True), pdf_bytes(pages=0), pdf_bytes(pages=201)])
 def test_invalid_sources_block_before_execution(local_pdf, bad):
     e = local_pdf
