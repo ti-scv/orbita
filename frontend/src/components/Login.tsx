@@ -86,7 +86,7 @@ export default function Login({ onLogin }: { onLogin: (session: Session) => void
           </button>
         </form>
       </section>
-      <footer className="lg-meta">AME Votuporanga · Painel operacional</footer>
+      <footer className="lg-meta"></footer>
     </main>
   );
 }

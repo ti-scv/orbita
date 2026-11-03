@@ -1,0 +1,45 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import ParameterEditor from "./data/ParameterEditor";
+afterEach(() => {cleanup(); vi.restoreAllMocks();});
+describe("Parâmetros no rascunho", () => {
+ it("seleciona não usados, confirma e não grava automaticamente", () => {
+  const change = vi.fn(); vi.spyOn(window, "confirm").mockReturnValue(true);
+  render(<ParameterEditor items={[{name:"ANTIGO", status:"Não usado", uses:[], suggestion:"", historical:true}]} edits={[]} onChange={change} />);
+  fireEvent.click(screen.getByRole("button", {name:/Editar parâmetros/}));
+  fireEvent.click(screen.getByRole("button", {name:"Selecionar não usados"}));
+  expect(screen.getByRole("checkbox").getAttribute("type")).toBe("checkbox");
+  fireEvent.click(screen.getByRole("button", {name:"Excluir selecionados"}));
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("Antigo"));
+  expect(change).toHaveBeenCalledWith([{name:"ANTIGO"}]);
+ });
+});
+
+it("impede selecionar ou excluir parâmetros em uso", () => {
+ const change=vi.fn();
+ render(<ParameterEditor items={[{name:"start",status:"Usado",uses:["Consulta atual: :start"],suggestion:"",historical:false}]} edits={[]} onChange={change} />);
+ fireEvent.click(screen.getByRole("button",{name:/Editar parâmetros/}));
+ expect(screen.getByTitle("Consulta atual: :start")).toBeTruthy();
+ expect(screen.getByLabelText("Em uso: remova dos blocos antes de excluir")).toBeTruthy();
+ expect(screen.queryByRole("checkbox")).toBeNull();
+ expect(screen.queryByRole("button",{name:"Excluir parâmetro start"})).toBeNull();
+ expect(screen.queryByRole("button",{name:"Selecionar não usados"})).toBeNull();
+ expect(change).not.toHaveBeenCalled();
+});
+
+it("resume os parâmetros e as alterações com o editor recolhido", () => {
+  render(<ParameterEditor items={[
+    {name:"start", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"end", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"unidade", status:"Usado", uses:[], suggestion:"", historical:false},
+    {name:"tipo_envio", status:"Usado", uses:[], suggestion:"", historical:false},
+  ]} edits={[{name:"end"}]} onChange={() => {}} />);
+  expect(screen.getByText("4 parâmetros · 1 alterado")).toBeTruthy();
+  expect(screen.getByRole("button", {name:/Editar parâmetros/}).getAttribute("aria-expanded")).toBe("false");
+});
+
+ it("inclui valores de execução alterados no resumo", () => {
+  render(<ParameterEditor items={[{name:"unidade",status:"Usado",uses:[],suggestion:"",historical:false}]} edits={[]} changedParameters={["unidade"]} onChange={() => {}} />);
+  expect(screen.getByText("1 parâmetro · 1 alterado")).toBeTruthy();
+ });

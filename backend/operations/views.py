@@ -1462,13 +1462,19 @@ class UnitViewSet(viewsets.ReadOnlyModelViewSet):
             hours = serializer.validated_data.get("response_hours", obj.response_hours)
             if not 1 <= hours <= 168:
                 raise ValidationError("Prazo deve estar entre 1 e 168 horas.")
+            feature_changes = {
+                key: {"antes": getattr(obj, key), "depois": value}
+                for key, value in serializer.validated_data.items()
+                if key in ("checkin_enabled", "autoagenda_enabled", "surveys_enabled")
+                and getattr(obj, key) != value
+            }
             obj = serializer.save()
             Audit.objects.create(
                 unit=obj,
                 actor=request.user,
                 action="unit.configured",
                 object_id=str(obj.pk),
-                details={"version": obj.version},
+                details={"version": obj.version, "recursos": feature_changes},
             )
             return self.get_serializer(obj).data
 

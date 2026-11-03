@@ -842,6 +842,33 @@ def indicators(request):
                 }
             )
 
+    attendance_start = today
+    attendance_end = today
+    try:
+        if start_param:
+            attendance_start = datetime.strptime(start_param, "%Y-%m-%d").date()
+        if end_param:
+            attendance_end = datetime.strptime(end_param, "%Y-%m-%d").date()
+        elif start_param:
+            attendance_end = attendance_start
+        if attendance_end < attendance_start:
+            attendance_start, attendance_end = attendance_end, attendance_start
+        if (attendance_end - attendance_start).days > 31:
+            attendance_start = attendance_end - timedelta(days=31)
+    except ValueError:
+        attendance_start = today
+        attendance_end = today
+
+    from operations.oracle_absences import confirmed_attendance_stats
+
+    attendance = confirmed_attendance_stats(
+        unit,
+        appointments,
+        attendance_start,
+        attendance_end,
+        request.query_params.get("kind", ""),
+    )
+
     return Response(
         {
             "appointments": appointments_count,
@@ -873,6 +900,9 @@ def indicators(request):
             "appointments_unanswered": appointments_unanswered,
             "appointments_sent": appointments_sent,
             "appointments_invalid": appointments_invalid,
+            "appointments_confirmed": attendance["appointments_confirmed"],
+            "appointments_no_show": attendance["appointments_no_show"],
+            "attendance_available": attendance["attendance_available"],
         }
     )
 

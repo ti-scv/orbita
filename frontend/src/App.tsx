@@ -1,3 +1,4 @@
+import AutoAgendaWorkspace from "./components/AutoAgendaWorkspace";
 import PtBrDateInput from "./components/PtBrDateInput";
 import Select from "./components/Select";
 import BrandLogo from "./components/BrandLogo";
@@ -76,12 +77,15 @@ import type {
 const ReportCanvasPage = lazy(() => import("./components/ReportCanvasPage"));
 const MetaCosts = lazy(() => import("./components/MetaCosts"));
 const OverviewWorkspace = lazy(() => import("./components/OverviewWorkspace"));
+const SurveysWorkspace = lazy(() => import("./components/SurveysWorkspace"));
 
 const navigation: { id: PageName; label: string; icon: typeof Activity }[] = [
   { id: "appointments", label: "Agendamentos", icon: CalendarDays },
   { id: "overview", label: "Visão geral", icon: LayoutDashboard },
   { id: "messages", label: "Mensagens", icon: MessageCircle },
   { id: "groups", label: "Grupos", icon: CalendarDays },
+  { id: "autoagenda", label: "Autoagendamento", icon: CalendarDays },
+  { id: "surveys", label: "Pesquisas", icon: MessageCircle },
   { id: "issues", label: "Pendências", icon: ClipboardList },
   { id: "campaigns", label: "Importa CROSS", icon: Send },
   { id: "reports", label: "Relatórios", icon: Activity },
@@ -130,7 +134,8 @@ function AppRoot() {
     const refresh = () => { if (document.visibilityState === "visible") request<Session>("/api/v1/auth/session/").then(incoming => setSession(current => current ? reconcileSession(current, incoming) : null)).catch(() => setSession(null)); };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener("focus", refresh);
-    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); };
+    window.addEventListener("session-refresh", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); window.removeEventListener("session-refresh", refresh); };
   }, [session?.username]);
   if (checking)
     return (
@@ -224,6 +229,8 @@ function Workspace({
     [selectedAppointment, selectAppointment] = useState<number | null>(null),
     [start, setStart] = useState(""),
     [end, setEnd] = useState(""),
+    [issuesStart, setIssuesStart] = useState(""),
+    [issuesEnd, setIssuesEnd] = useState(""),
     [search, setSearch] = useState(""),
     [state, setState] = useState(""),
     [responseState, setResponseState] = useState(""),
@@ -264,7 +271,7 @@ function Workspace({
   const load = useCallback(async () => {
     const sequence = ++loadSequence.current;
     // Reports and Canvas own their requests. Do not queue unrelated dashboards here.
-    if (canvasId || page === "reports") {
+    if (canvasId || page === "reports" || page === "autoagenda" || page === "surveys") {
       setBusy(false);
       return;
     }
@@ -426,49 +433,69 @@ function Workspace({
   }
   const currentTitle = navigation.find((item) => item.id === page)?.label;
   const d = data?.indicators;
-  const periodFilter = (
-    <div className="date-range">
-      <CalendarDays size={15} />
-      <PtBrDateInput
-        aria-label={
-          page === "appointments"
-            ? "Data inicial do período"
-            : "Data inicial do agendamento"
-        }
-        value={start}
-        onChange={(value) => {
-          setStart(value);
-          setListPage(1);
-        }}
-      />
-      <span>até</span>
-      <PtBrDateInput
-        aria-label={
-          page === "appointments"
-            ? "Data final do período"
-            : "Data final do agendamento"
-        }
-        value={end}
-        onChange={(value) => {
-          setEnd(value);
-          setListPage(1);
-        }}
-      />
-      {(start || end) && (
-        <button
-          type="button"
-          aria-label="Limpar datas"
-          title="Limpar datas"
-          className="icon-button"
-          onClick={() => {
-            setStart("");
-            setEnd("");
+  function makePeriodFilter(
+    from: string,
+    to: string,
+    setFrom: (value: string) => void,
+    setTo: (value: string) => void,
+    aria: { start: string; end: string },
+  ) {
+    return (
+      <div className="date-range">
+        <CalendarDays size={15} />
+        <PtBrDateInput
+          aria-label={aria.start}
+          value={from}
+          onChange={(value) => {
+            setFrom(value);
+            setListPage(1);
           }}
-        >
-          <X size={14} />
-        </button>
-      )}
-    </div>
+        />
+        <span>até</span>
+        <PtBrDateInput
+          aria-label={aria.end}
+          value={to}
+          onChange={(value) => {
+            setTo(value);
+            setListPage(1);
+          }}
+        />
+        {(from || to) && (
+          <button
+            type="button"
+            aria-label="Limpar datas"
+            title="Limpar datas"
+            className="icon-button"
+            onClick={() => {
+              setFrom("");
+              setTo("");
+            }}
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+    );
+  }
+  const periodFilter = makePeriodFilter(start, end, setStart, setEnd, {
+    start:
+      page === "appointments"
+        ? "Data inicial do período"
+        : "Data inicial do agendamento",
+    end:
+      page === "appointments"
+        ? "Data final do período"
+        : "Data final do agendamento",
+  });
+  const issuesPeriodFilter = makePeriodFilter(
+    issuesStart,
+    issuesEnd,
+    setIssuesStart,
+    setIssuesEnd,
+    {
+      start: "Data inicial das pendências",
+      end: "Data final das pendências",
+    },
   );
   const activeList =
     page === "appointments"
@@ -678,6 +705,12 @@ function Workspace({
               </button>
             </div>
           )}
+          {page === "autoagenda" && <AutoAgendaWorkspace unit={unit} write={role!=="viewer"} admin={actualRole==="admin"}/> }
+          {page === "surveys" && (
+            <Suspense fallback={<p role="status">Carregando pesquisas…</p>}>
+              <SurveysWorkspace unit={unit} write={role !== "viewer"} admin={actualRole === "admin"} />
+            </Suspense>
+          )}
           {["care", "campaigns", "reports"].includes(page) && (
             <OperationsWorkspace key={`${unit}:${page}`} page={page} unit={unit} role={role}
               username={session.username} userAccess={false} />
@@ -704,7 +737,7 @@ function Workspace({
               {periodFilter}
             </div>
           )}
-          {page === "reports" ? null : !data ? (
+          {page === "reports" || page === "autoagenda" || page === "surveys" ? null : !data ? (
             <div className="loading-panels">
               <div />
               <div />
@@ -903,12 +936,13 @@ function Workspace({
                 <OperationalAppointments
                   key={`${unit}-issues`}
                   unit={unit}
+                  periodFilter={issuesPeriodFilter}
                   role={role}
                   username={session.username}
                   initialId={selectedAppointment}
                   refreshKey={loadSequence.current}
-                  start={start}
-                  end={end}
+                  start={issuesStart}
+                  end={issuesEnd}
                   issuesOnly
                 />
               )}

@@ -7,6 +7,8 @@ def backfill(apps, schema_editor):
     Message = apps.get_model("messaging", "Message")
     Group = apps.get_model("messaging", "AppointmentGroup")
     alias = schema_editor.connection.alias
+    if not Message.objects.using(alias).exists():
+        return
     messages = (
         Message.objects.using(alias)
         .filter(appointment__isnull=False, rule__isnull=False, group__isnull=True)

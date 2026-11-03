@@ -910,7 +910,7 @@ export default function ReportWorkspace({
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <strong>{String(r.name || r.report_name || "")}</strong>
+                      <strong>{tab === "connections" && r.engine === "postgres" && r.host === "db" && <img src="/brand-envelope.png?v=fe94463a5107" alt="SCV local" title="PostgreSQL local do SCV" width={14} height={14} style={{display:"inline-block",objectFit:"contain",verticalAlign:"-2px",marginRight:6}} draggable={false}/>} {String(r.name || r.report_name || "")}</strong>
                       {isReports && r.category && <small className="report-category">{r.category}</small>}
                       {tab === "executions" && r.data_origin === "legacy" && <small>Legado · produção</small>}
                       {tab === "executions" && r.missing_dates?.length > 0 && <small className="report-pending" title={r.missing_dates.map((d:string)=>d.split("-").reverse().join("/")).join(", ")}>{r.missing_dates.length} datas sem snapshot</small>}

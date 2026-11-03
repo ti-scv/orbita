@@ -10,7 +10,9 @@ DEBUG = os.getenv("DEBUG", "0") == "1"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "local-development-only-change-before-exposing")
 if not DEBUG and SECRET_KEY.startswith("local-development") and os.getenv("DATABASE_HOST"):
     raise RuntimeError("Configure DJANGO_SECRET_KEY antes de iniciar o ambiente Docker.")
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if h.strip()]
+if "testserver" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("testserver")
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -26,6 +28,8 @@ INSTALLED_APPS = [
     "messaging",
     "responses",
     "operations",
+    "autoagenda",
+    "surveys",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -144,6 +148,7 @@ CELERY_BEAT_SCHEDULE = {
     "tick": {"task": "scheduling.tick", "schedule": 60.0},
     "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0},
     "operations": {"task": "operations.tick", "schedule": 60.0},
+    "surveys": {"task": "surveys.tick", "schedule": 60.0},
 }
 SEND_MODE = os.getenv("SEND_MODE", "simulated")
 META_REAL_ENABLED = os.getenv("META_REAL_ENABLED", "0") == "1"

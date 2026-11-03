@@ -15,6 +15,11 @@ def run_report(job_id):
 
 @shared_task(name="operations.tick")
 def tick():
+    try:
+        from surveys.tasks import tick_surveys
+        tick_surveys()
+    except Exception:
+        pass
     from operations.reporting import tick_reports
 
     tick_reports()

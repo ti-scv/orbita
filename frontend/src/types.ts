@@ -1,4 +1,6 @@
 export type PageName =
+  | "autoagenda"
+  | "surveys"
   | "groups"
   | "care"
   | "campaigns"
@@ -23,6 +25,9 @@ export interface Unit {
   name: string;
   paused: boolean;
   response_hours: number;
+  checkin_enabled?: boolean;
+  autoagenda_enabled?: boolean;
+  surveys_enabled?: boolean;
   remote?: boolean;
   instance_id?: string;
   instance_name?: string;
@@ -229,6 +234,9 @@ export interface Indicators {
   appointments_unanswered?: number;
   appointments_sent?: number;
   appointments_invalid?: number;
+  appointments_confirmed?: number;
+  appointments_no_show?: number;
+  attendance_available?: boolean;
 }
 export interface Paginated<T> {
   count: number;
@@ -383,4 +391,53 @@ export interface ReportDescriptionInput { description?: string; }
 export interface ReportApplicationConnection {
  id:number;name:string;mode:"local"|"remote";local_unit:number|null;remote_instance:string|null;
  source_name:string;enabled:boolean;version:number;state:string;
+}
+
+export interface SurveyAutomation {
+  id: string;
+  name: string;
+  connection: number | null;
+  connection_name?: string;
+  table_name: string;
+  column_mapping: {
+    id_column: string;
+    attendance_column: string;
+    patient_name_column: string;
+    phone_column: string;
+    status_column?: string;
+    sent_date_column?: string;
+    attendance_date_column?: string;
+    patient_first_name_only?: boolean;
+  };
+  template_name: string;
+  template_language: string;
+  survey_base_url: string;
+  button_parameter_type: string;
+  schedule_type?: "daily_time" | "interval";
+  discharge_period?: "previous_day" | "same_day" | "lookback_hours";
+  interval_minutes: number;
+  weekdays: number[];
+  start_time: string;
+  end_time: string;
+  lookback_hours: number;
+  batch_limit: number;
+  enabled: boolean;
+  version: number;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SurveyExecution {
+  id: string;
+  automation: string;
+  source_record_id: string;
+  attendance_id: string;
+  patient_name: string;
+  phone: string;
+  survey_url: string;
+  status: "sent" | "test" | "skipped" | "failed";
+  error_message: string;
+  payload: Record<string, any>;
+  created_at: string;
 }

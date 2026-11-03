@@ -1,3 +1,5 @@
+from autoagenda import api as autoagenda
+from surveys import api as surveys_api
 from operations.report_app_api import AppConnectionViewSet
 from django.contrib import admin
 from django.urls import include, path
@@ -73,10 +75,23 @@ for prefix, view in [
     ("flow-runs", operations.FlowRunViewSet),
     ("units", operations.UnitViewSet),
     ("members", MemberViewSet),
+    ("surveys/automations", surveys_api.SurveyAutomationViewSet),
 ]:
     router.register(prefix, view, basename=prefix)
 
 urlpatterns = [
+    path("api/v1/autoagenda/config/", autoagenda.ConfigurationView.as_view()),
+    path("api/v1/autoagenda/check/", autoagenda.ConnectionCheck.as_view()),
+    path("api/v1/autoagenda/console/", autoagenda.ConsoleView.as_view()),
+    path("api/v1/autoagenda/conversations/<uuid:pk>/", autoagenda.ConversationView.as_view()),
+    path("api/v1/autoagenda/links/", autoagenda.LinkView.as_view()),
+    path("api/v1/autoagenda/public/", autoagenda.PublicView.as_view()),
+    path("api/v1/surveys/connections/", surveys_api.SurveysConnectionsListView.as_view()),
+    path("api/v1/surveys/inspect-columns/", surveys_api.InspectColumnsView.as_view()),
+    path("api/v1/surveys/meta-templates/", surveys_api.MetaTemplatesListView.as_view()),
+    path("api/v1/surveys/test-send/", surveys_api.TestSendSurveyView.as_view()),
+    path("api/v1/surveys/trigger/<uuid:pk>/", surveys_api.TriggerAutomationView.as_view()),
+    path("api/v1/surveys/executions/", surveys_api.SurveyExecutionsListView.as_view()),
     path("api/v1/report-whatsapp/authorize/", ReportWhatsAppAuthorizeView.as_view()),
     path("api/v1/report-whatsapp/", ReportWhatsAppView.as_view()),
     path("api/v1/report-whatsapp/inbound/", ReportWhatsAppInboundView.as_view()),

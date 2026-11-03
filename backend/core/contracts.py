@@ -89,6 +89,9 @@ class IndicatorsOutput(serializers.Serializer):
     appointments_unanswered = serializers.IntegerField(default=0)
     appointments_sent = serializers.IntegerField(default=0)
     appointments_invalid = serializers.IntegerField(default=0)
+    appointments_confirmed = serializers.IntegerField(default=0)
+    appointments_no_show = serializers.IntegerField(default=0)
+    attendance_available = serializers.BooleanField(default=False)
 
 
 class TestAppointmentInput(serializers.Serializer):

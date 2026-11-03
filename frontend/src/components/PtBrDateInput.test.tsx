@@ -15,3 +15,13 @@ it("datas são explícitas em português e rejeitam dias inexistentes", () => {
   fireEvent.change(field,{target:{value:""}});
   expect(change).toHaveBeenCalledWith("");
 });
+it("permite escolher a data pelo calendário", () => {
+  const change = vi.fn();
+  const { container } = render(
+    <PtBrDateInput value="2026-10-28" onChange={change} aria-label="Data" />,
+  );
+  expect(screen.getByRole("button", { name: /selecionar data/i })).toBeTruthy();
+  const picker = container.querySelector('input[type="date"]') as HTMLInputElement;
+  fireEvent.change(picker, { target: { value: "2026-11-03" } });
+  expect(change).toHaveBeenCalledWith("2026-11-03");
+});

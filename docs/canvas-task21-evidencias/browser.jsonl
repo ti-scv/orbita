@@ -1,4 +1,0 @@
-{"phase":"front_initial","wall_ms":1794,"blocks":2,"api":[{"path":"/api/v1/auth/csrf/","ms":108,"method":"GET"},{"path":"/api/v1/auth/session/","ms":94,"method":"GET"},{"path":"/api/v1/reports/6/","ms":138,"method":"GET"},{"path":"/api/v1/reports/6/canvas/","ms":200,"method":"GET"}]}
-{"phase":"preview_render","automation_to_response_ms":292,"click_event_to_response_ms":229,"response_to_frame_ms":148,"http_status":200,"returned_rows":50}
-{"phase":"preview_click","wall_ms":440,"api":[{"path":"/api/v1/reports/6/canvas-source-preview/","ms":151,"method":"POST"}],"blocked_writes":[]}
-{"resources":[{"name":"/css2","duration":201,"bytes":1208},{"name":"/assets/index-CV4qGQJP.js","duration":71,"bytes":166120},{"name":"/assets/index-DUbV-I0b.css","duration":91,"bytes":40452},{"name":"/css2","duration":208,"bytes":1250},{"name":"/assets/ReportCanvas-BYkKhKBF.js","duration":35,"bytes":85016},{"name":"/assets/ReportCanvas-s4nUXOdR.css","duration":51,"bytes":10805}]}
