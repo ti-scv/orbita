@@ -19,6 +19,7 @@ def fast_test_passwords(settings):
     settings.REPORT_BAILEYS_ALLOW_SENDS = False
     settings.SEND_MODE = "simulated"
     settings.META_INBOX_SSH_HOST = ""
+    settings.ASYNC_TASKS = False
     # Only test databases use this hasher; application password storage is unchanged.
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
