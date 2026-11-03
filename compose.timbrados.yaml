@@ -26,4 +26,4 @@ services:
       start_period: 60s
       retries: 3
   panel:
-    image: orbita-panel:communication-icon-20261103
+    image: orbita-panel:communication-icon-size-20261103

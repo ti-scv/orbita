@@ -6229,12 +6229,12 @@ body:has([role="dialog"][aria-modal="true"]) {
   flex-shrink: 0;
 }
 .brand-image-small {
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
 }
 .page-footer .brand-image {
-  width: 10px;
-  height: 10px;
+  width: 16px;
+  height: 16px;
   opacity: 0.65;
 }
 
@@ -6269,3 +6269,8 @@ body:has([role="dialog"][aria-modal="true"]) {
 .sidebar-heading .brand-image{max-height:160px;transition:max-height .2s ease,opacity .2s ease,visibility .2s ease;}
 .sidebar-logo-hidden .sidebar-heading .brand-image{max-height:0;opacity:0;visibility:hidden;}
 @media (prefers-reduced-motion:reduce){.sidebar-heading .brand-image{transition:none;}}
+
+.sidebar-collapsed .brand-image-communication {
+  width: 40px;
+  height: 40px;
+}
