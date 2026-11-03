@@ -6229,12 +6229,12 @@ body:has([role="dialog"][aria-modal="true"]) {
   flex-shrink: 0;
 }
 .brand-image-small {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
 }
 .page-footer .brand-image {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   opacity: 0.65;
 }
 

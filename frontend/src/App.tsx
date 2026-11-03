@@ -523,7 +523,7 @@ function Workspace({
       >
         <div className="sidebar-heading">
           <div className="brand" role="img" aria-label="SCV Messenger">
-            <BrandLogo wordmark={!sidebarCollapsed} />
+            <BrandLogo wordmark={!sidebarCollapsed} communication={sidebarCollapsed} />
           </div>
           <button
             className="sidebar-toggle icon-button"
@@ -1463,7 +1463,7 @@ function Workspace({
           )}
           <footer className="page-footer">
             <span>
-              <BrandLogo small />
+              <BrandLogo small communication />
               SCV Messenger
             </span>
             <span>
