@@ -120,3 +120,10 @@ def test_svg_and_single_page_pdf_are_flattened_and_unsafe_inputs_rejected(setup)
     for content in (unsafe, external, handler, multi.getvalue()):
         result = client.post("/api/v1/letterheads/", {**payload(), "background": base64.b64encode(content).decode()}, format="json")
         assert result.status_code == 400
+
+
+@pytest.mark.django_db
+def test_unit_directory_remains_available_with_letterhead_permissions(setup):
+    response = setup["client"].get("/api/v1/units/")
+    assert response.status_code == 200
+    assert any(row["slug"] == setup["unit"].slug for row in response.data["results"])

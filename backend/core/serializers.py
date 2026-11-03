@@ -48,6 +48,7 @@ class UnitSerializer(serializers.ModelSerializer):
             "version",
             "authorized_recipients",
             "effective_recipients",
+            "feature_warnings",
             "logo",
             "checkin_enabled",
             "autoagenda_enabled",
