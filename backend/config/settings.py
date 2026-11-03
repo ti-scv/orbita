@@ -143,12 +143,30 @@ CELERY_TASK_IGNORE_RESULT = True
 ASYNC_TASKS = bool(os.getenv("REDIS_URL"))
 CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_DEFAULT_QUEUE = "priority"
+CELERY_TASK_ROUTES = {
+    # Fila prioritária: disparo de WhatsApp, regras operacionais e crons de alta frequência
+    "messaging.dispatch_due": {"queue": "priority"},
+    "scheduling.tick": {"queue": "priority"},
+    "scheduling.run_rule": {"queue": "priority"},
+    "surveys.tick": {"queue": "priority"},
+    "operations.tick": {"queue": "priority"},
+    "core.sync_remote_users": {"queue": "priority"},
+
+    # Fila de relatórios: extrações demoradas do Oracle, snapshots de leitos e envios Baileys
+    "operations.report": {"queue": "reports"},
+    "operations.catalog_report": {"queue": "reports"},
+    "operations.tick_bed_snapshots": {"queue": "reports"},
+    "operations.collect_bed_snapshot": {"queue": "reports"},
+    "operations.deliver_report_baileys": {"queue": "reports"},
+    "scheduling.sync_oracle_agenda": {"queue": "reports"},
+}
 CELERY_BEAT_SCHEDULE = {
-    "bed-snapshots": {"task": "operations.tick_bed_snapshots", "schedule": 30.0},
-    "tick": {"task": "scheduling.tick", "schedule": 60.0},
-    "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0},
-    "operations": {"task": "operations.tick", "schedule": 60.0},
-    "surveys": {"task": "surveys.tick", "schedule": 60.0},
+    "bed-snapshots": {"task": "operations.tick_bed_snapshots", "schedule": 30.0, "options": {"queue": "reports"}},
+    "tick": {"task": "scheduling.tick", "schedule": 60.0, "options": {"queue": "priority"}},
+    "dispatch": {"task": "messaging.dispatch_due", "schedule": 1.0, "options": {"queue": "priority"}},
+    "operations": {"task": "operations.tick", "schedule": 60.0, "options": {"queue": "priority"}},
+    "surveys": {"task": "surveys.tick", "schedule": 60.0, "options": {"queue": "priority"}},
 }
 SEND_MODE = os.getenv("SEND_MODE", "simulated")
 META_REAL_ENABLED = os.getenv("META_REAL_ENABLED", "0") == "1"

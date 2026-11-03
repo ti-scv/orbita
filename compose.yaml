@@ -47,7 +47,16 @@ services:
     env_file: .env
     volumes: ["./data/report_sources:/app/report_sources:ro", "./files:/app/files:ro"]
     environment: *backend_environment
-    command: ["celery", "-A", "config", "worker", "--loglevel=warning", "--concurrency=2"]
+    command: ["celery", "-A", "config", "worker", "--loglevel=warning", "--concurrency=4", "-Q", "priority,celery"]
+    depends_on:
+      api: {condition: service_healthy}
+    restart: unless-stopped
+  worker-reports:
+    build: ./backend
+    env_file: .env
+    volumes: ["./data/report_sources:/app/report_sources:ro", "./files:/app/files:ro"]
+    environment: *backend_environment
+    command: ["celery", "-A", "config", "worker", "--loglevel=warning", "--concurrency=2", "-Q", "reports"]
     depends_on:
       api: {condition: service_healthy}
     restart: unless-stopped

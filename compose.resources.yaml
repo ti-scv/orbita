@@ -15,6 +15,11 @@ services:
     cpus: "1.50"
     pids_limit: 256
   worker:
+    mem_limit: 768m
+    memswap_limit: 1536m
+    cpus: "2.00"
+    pids_limit: 256
+  worker-reports:
     mem_limit: 512m
     memswap_limit: 1024m
     cpus: "1.50"
